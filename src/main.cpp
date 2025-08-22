@@ -8,8 +8,7 @@ void repl() {
   std::string line {};
   // Not the cleanest syntax, but this comma expression works to print the "~ >" prompt and then get input.
   while (std::cout << prompt, std::getline(std::cin >> std::ws, line)) {
-    // Normally this would interpret the code instead of spitting it back out.
-    std::cout << "you typed " << line << '\n';
+    interpret_and_print(&line, "input");
   }
 
   // Clear the prompt characters from the last line by printing \b as many times as necessary.
@@ -32,7 +31,8 @@ void run_file(const char* path) {
   //   std::cout << str_input << '\n';
   // }
 
-  interpret_result result = interpret(&in, "module");
+  std::string source {};
+  interpret_result result = interpret(&source, "module");
 
   // This will be done automatically when it goes out of scope, but it's good practice anyway.
   in.close();

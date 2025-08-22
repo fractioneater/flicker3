@@ -29,7 +29,10 @@ enum token_type {
   TOKEN_EOF, TOKEN_ERROR, TOKEN_NULL
 };
 
-// TODO: Should token be a struct or class?
+struct token {
+  token_type type;
+  int line;
+};
 
 void init_lexer(std::string src);
 void free_lexer();
