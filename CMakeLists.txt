@@ -7,4 +7,10 @@ set(CMAKE_CXX_FLAGS "-Wall -Werror")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
-add_executable(flicker_3 src/main.cpp)
+add_executable(flicker_3 src/main.cpp
+        src/vm.cpp
+        src/compiler.cpp
+        src/lexer.cpp)
+
+target_include_directories(flicker_3 PUBLIC h)
+
