@@ -2,15 +2,35 @@ cmake_minimum_required(VERSION 4.0)
 project(flicker_3)
 
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED on)
 
-set(CMAKE_CXX_FLAGS "-Wall -Werror")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
-add_executable(flicker_3 src/main.cpp
-        src/vm.cpp
-        src/compiler.cpp
-        src/lexer.cpp)
+# It's inside a library so my code is only compiled once and flags can be applied specifically to it
+add_library(flicker_lib
+    src/vm.cpp
+    src/compiler.cpp
+    src/lexer.cpp
+)
+target_compile_options(flicker_lib PRIVATE -Wall -Werror)
+target_include_directories(flicker_lib PUBLIC h)
 
-target_include_directories(flicker_3 PUBLIC h)
+# Flicker 3
+add_executable(flicker_3 src/main.cpp)
+target_link_libraries(flicker_3 flicker_lib)
+
+# GoogleTest
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.17.0
+)
+FetchContent_MakeAvailable(googletest)
+enable_testing()
+add_executable(tests test/lexer-test.cpp)
+target_link_libraries(tests GTest::gtest_main flicker_lib)
+include(GoogleTest)
+gtest_discover_tests(tests)
 
