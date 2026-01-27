@@ -1,4 +1,1 @@
-#ifndef FLICKER_3_COMPILER_H
-#define FLICKER_3_COMPILER_H
-
-#endif // FLICKER_3_COMPILER_H
+#pragma once

@@ -1,5 +1,4 @@
-#ifndef FLICKER_3_COMMON_H
-#define FLICKER_3_COMMON_H
+#pragma once
 
 // DEBUG FLAGS
 
@@ -21,5 +20,3 @@
 #define MAX_PARAMETERS 16
 #define MAX_METHOD_NAME 64
 #define MAX_CONSTANTS 0x7fff
-
-#endif // FLICKER_3_COMMON_H

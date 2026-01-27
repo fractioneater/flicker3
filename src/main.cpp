@@ -1,7 +1,7 @@
 #include "vm.h"
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
 void repl() {
   constexpr std::string_view prompt {"~ > "};
@@ -32,7 +32,7 @@ void run_file(const char* path) {
   // }
 
   std::string source {};
-  interpret_result result = interpret(&source, "module");
+  InterpretResult result = interpret(&source, "module");
 
   // This will be done automatically when it goes out of scope, but it's good practice anyway.
   in.close();
