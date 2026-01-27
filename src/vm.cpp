@@ -2,10 +2,10 @@
 
 #include "common.h"
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
-interpret_result interpret(std::string* source, std::string_view module) {
+InterpretResult interpret(std::string* source, std::string_view module) {
 # if DEBUG_PRINT_TOKENS
   std::cout << "I'm supposed to print your tokens.\n";
 # endif
@@ -19,8 +19,8 @@ interpret_result interpret(std::string* source, std::string_view module) {
   return INTERPRET_OK;
 }
 
-interpret_result interpret_and_print(std::string* source, std::string_view module) {
-  const interpret_result result = interpret(source, module);
+InterpretResult interpret_and_print(std::string* source, std::string_view module) {
+  const InterpretResult result = interpret(source, module);
 
   std::cout << "output\n";
 

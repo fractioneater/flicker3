@@ -1,9 +1,8 @@
-#ifndef FLICKER_3_LEXER_H
-#define FLICKER_3_LEXER_H
+#pragma once
 
 #include <string>
 
-enum token_type {
+enum TokenType {
   // Single-character tokens (0 - 14)
   TOKEN_LEFT_PAREN, TOKEN_RIGHT_PAREN, TOKEN_LEFT_BRACKET, TOKEN_RIGHT_BRACKET, TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE,
   TOKEN_SEMICOLON, TOKEN_COMMA, TOKEN_PLUS, TOKEN_SLASH, TOKEN_PERCENT, TOKEN_PIPE, TOKEN_CARET, TOKEN_AMPERSAND, TOKEN_TILDE,
@@ -29,13 +28,9 @@ enum token_type {
   TOKEN_EOF, TOKEN_ERROR, TOKEN_NULL
 };
 
-struct token {
-  token_type type;
+struct Token {
+  TokenType type;
   int line;
 };
 
-void init_lexer(std::string src);
-void free_lexer();
-token next_token();
-
-#endif // FLICKER_3_LEXER_H
+class Lexer;

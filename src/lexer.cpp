@@ -1,13 +1,18 @@
 #include "lexer.h"
 
-void init_lexer(std::string src) {
-  return;
-}
+#include <iostream>
 
-void free_lexer() {
-  return;
-}
+class Lexer {
+  const std::string& src_ {};
 
-token next_token() {
-  return token {TOKEN_IDENTIFIER, 0};
-}
+public:
+  explicit Lexer(const std::string& src) : src_ {src} {}
+
+  ~Lexer() {
+    std::cout << src_;
+  }
+
+  [[nodiscard]] Token next_token() const {
+    return Token {TOKEN_IDENTIFIER, static_cast<int>(std::size(src_))};
+  }
+};
