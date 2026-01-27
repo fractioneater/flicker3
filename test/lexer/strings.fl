@@ -1,0 +1,8 @@
+"abcdefg"
+'x'
+"after 8 is =(4 + 5)"
+'"'
+"'"
+"nesting =("nesting =("nesting =("nesting =("nesting")")")")"
+"\u00B0 is \U000000B0"
+"\e[1m;bold\e[0m;"
