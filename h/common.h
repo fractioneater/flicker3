@@ -20,3 +20,7 @@
 #define MAX_PARAMETERS 16
 #define MAX_METHOD_NAME 64
 #define MAX_CONSTANTS 0x7fff
+
+// Lexer
+#define MAX_COMMENT_NEST 16
+#define MAX_INTERPOLATION_NEST 8
