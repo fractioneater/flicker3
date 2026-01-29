@@ -4,7 +4,8 @@
 #include <iostream>
 #include <utility>
 
-#define ERROR(str) throw str // TODO: Handle errors better, hopefully remove TOKEN_ERROR. Store all error strings in one file for easy access.
+#define ERROR(str) throw std::runtime_error {str}
+// TODO: Handle errors better, hopefully remove TOKEN_ERROR. Store all error strings in one file for easy access.
 
 namespace Keywords {
   // The string on the left represents how these keywords should show up in USER CODE.
@@ -54,12 +55,9 @@ namespace Keywords {
 
 Lexer::Lexer(std::string src) : src_ {std::move(src)}, src_length_ {std::ssize(src_)} {
   indents_.emplace_back(0);
-  std::cout << "Lexer created\n"; //- TEMP
 }
 
-Lexer::~Lexer() {
-  std::cerr << src_; //- TEMP
-}
+Lexer::~Lexer() = default;
 
 // PRIVATE -------------------------------------------------------------------------------
 
@@ -223,8 +221,11 @@ void append_utf8(std::string& buffer, std::uint32_t code_point) {
   // The type is a string unless interpolation is found.
   TokenType type {TOKEN_STRING};
   std::string buffer {};
-  // One more than the estimated value, just to be safe.
-  buffer.reserve(src_.find('"', current_char_) - start_char_);
+  // This estimate will usually create one more than the estimate value, but that's okay.
+  const auto found_index {src_.find('"', current_char_)};
+  if (found_index == std::string::npos)
+    ERROR("Unterminated string");
+  buffer.reserve(found_index - start_char_);
 
   while (true) {
     const char c {advance()};
@@ -452,7 +453,7 @@ std::optional<Token> Lexer::indentation() {
 
 // PUBLIC --------------------------------------------------------------------------------
 
-[[nodiscard]] Token Lexer::next_token() {
+[[nodiscard]] Token Lexer::next_token() { // TODO NEXT: Fix column things, write tests
   // Top priority is to return dedents if more are called for.
   if (dedents_queued_ > 0) {
     --dedents_queued_;
@@ -466,7 +467,11 @@ std::optional<Token> Lexer::indentation() {
   }
 
   // Keep returning EOFs once we reach the end of the source.
-  if (at_eof()) return make_token(TOKEN_EOF);
+  if (at_eof()) {
+    start_char_ = current_char_;
+    start_col_  = col_;
+    return make_token(TOKEN_EOF);
+  }
 
   // The main loop, which will really only need to repeat once in most cases. Comments are the only thing that will fail to produce a token or an error.
   while (!at_eof()) {
