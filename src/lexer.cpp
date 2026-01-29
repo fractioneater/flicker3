@@ -166,12 +166,159 @@ TokenType word_type(std::string_view word) {
   return token;
 }
 
+int hex_value(char c) {
+  if (c >= '0' && c <= '9') return c - '0';
+  if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+  if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+  return -1;
+}
+
+[[nodiscard]] std::uint32_t Lexer::read_hex(int length) {
+  std::uint32_t value = 0;
+  for (int i = 0; i < length; ++i) {
+    if (at_eof())
+      ERROR("Unterminated escape sequence");
+
+    const char c {advance()};
+    const int digit = hex_value(c);
+    if (digit == -1)
+      ERROR("Unterminated escape sequence");
+
+    value = (value << 4) | static_cast<std::uint32_t>(digit);
+  }
+  return value;
+}
+
+void append_utf8(std::string& buffer, std::uint32_t code_point) {
+  if (code_point > 0x10FFFFu)
+    ERROR("Invalid Unicode code point");
+  if (code_point >= 0xD800u && code_point <= 0xDFFFu)
+    ERROR("Invalid Unicode surrogate");
+
+  if (code_point <= 0x7Fu) {
+    // One byte.
+    buffer.push_back(static_cast<char>(code_point));
+  } else if (code_point <= 0x7FFu) {
+    // Two bytes: 110xxxxx 10xxxxxx.
+    buffer.push_back(static_cast<char>(0xC0u | (code_point >> 6)));
+    buffer.push_back(static_cast<char>(0x80u | (code_point & 0x3Fu)));
+  } else if (code_point <= 0xFFFFu) {
+    // Three bytes: 1110xxxx 10xxxxxx 10xxxxxx.
+    buffer.push_back(static_cast<char>(0xE0u | (code_point >> 12)));
+    buffer.push_back(static_cast<char>(0x80u | ((code_point >> 6) & 0x3Fu)));
+    buffer.push_back(static_cast<char>(0x80u | (code_point & 0x3Fu)));
+  } else {
+    // Four bytes: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx.
+    buffer.push_back(static_cast<char>(0xF0u | (code_point >> 18)));
+    buffer.push_back(static_cast<char>(0x80u | ((code_point >> 12) & 0x3Fu)));
+    buffer.push_back(static_cast<char>(0x80u | ((code_point >> 6) & 0x3Fu)));
+    buffer.push_back(static_cast<char>(0x80u | (code_point & 0x3Fu)));
+  }
+}
+
 [[nodiscard]] Token Lexer::string() {
-  ERROR("Strings are not yet supported"); // TODO
+  // An interpolation token means the start of interpolation; it will have values in between and then a TOKEN_STRING to close it.
+  // The type is a string unless interpolation is found.
+  TokenType type {TOKEN_STRING};
+  std::string buffer {};
+
+  while (true) {
+    const char c {advance()};
+    if (c == '"') break;
+    if (c == '\r') continue; // TODO: Why am I removing these?
+    if (at_eof())
+      ERROR("Unterminated string");
+
+    // String interpolation, which looks like this: "abc =(thing)"
+    if (c == '=' && peek() == '(') {
+      if (interpolation_nesting_ < MAX_INTERPOLATION_NEST) {
+        advance(); // The parenthesis.
+        type = TOKEN_INTERPOLATION;
+        // When we find a closing parenthesis, we need to know it's THE closing parenthesis.
+        // This list stores the current parenthesis nesting for each level of interpolation to handle things like this:
+        //   "hello, world with a population of =(20 * (i + 3))!"
+        parens_[interpolation_nesting_++] = 1;
+        break;
+      }
+
+      ERROR("Too many nested strings");
+    }
+
+    // @formatter:off because it doesn't like two statements on one line.
+    if (c == '\\') {
+      switch (advance()) {
+        case '\\': buffer.push_back('\\'); break;
+        case '"': buffer.push_back('"'); break;
+        case '=': buffer.push_back('='); break;
+        case '0': buffer.push_back('\0'); break;
+        case 'a': buffer.push_back('\a'); break;
+        case 'b': buffer.push_back('\b'); break;
+        case 'e': buffer.push_back('\033'); break;
+        case 'f': buffer.push_back('\f'); break;
+        case 'n': buffer.push_back('\n'); break;
+        case 'r': buffer.push_back('\r'); break;
+        case 't': buffer.push_back('\t'); break;
+        case 'u': {
+          const std::uint32_t code_point {read_hex(4)};
+          append_utf8(buffer, code_point);
+          break;
+        }
+        case 'U': {
+          const std::uint32_t code_point {read_hex(8)};
+          append_utf8(buffer, code_point);
+          break;
+        }
+        case 'v': buffer.push_back('\v'); break;
+        case 'x': {
+          const std::uint32_t byte {read_hex(2)};
+          buffer.push_back(static_cast<char>(byte));
+          break;
+        }
+        default: ERROR("Invalid escape character");
+      }
+    } else {
+      buffer.push_back(c);
+    }
+  }
+  // @formatter:on again
+
+  std::cout << buffer << '\n'; //- TEMP
+  return make_token(type);
 }
 
 [[nodiscard]] Token Lexer::character() {
-  ERROR("Characters are not yet supported"); // TODO
+  char value {};
+  const char c {advance()};
+
+  if (c == '\'')
+    ERROR("Empty characters are not allowed");
+
+  // @formatter:off
+  if (c == '\\') {
+    switch (advance()) {
+      case '\\': value = '\\'; break;
+      case '\'': value = '\''; break;
+      case '0': value = '\0'; break;
+      case 'a': value = '\a'; break;
+      case 'b': value = '\b'; break;
+      case 'e': value = '\033'; break;
+      case 'f': value = '\f'; break;
+      case 'n': value = '\n'; break;
+      case 'r': value = '\r'; break;
+      case 't': value = '\t'; break;
+      case 'v': value = '\v'; break;
+      // TODO MAYBE: Store a character as a char32_t, allowing longer Unicode code points.
+      case 'x': value = static_cast<char>(read_hex(2)); break;
+      default: ERROR("Invalid escape character");
+    }
+  } else value = c;
+  // @formatter:on
+
+  if (!match('\''))
+    ERROR("Character is unterminated or more than one char");
+
+  std::cout << value << '\n'; //- TEMP
+  return make_token(TOKEN_CHAR);
 }
 
 void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
@@ -265,9 +412,21 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
     start_col_  = col_;
 
     switch (const char c {advance()}) {
+      // Special rules because of string interpolation.
+      case '(': {
+        // Increment the number of open parentheses inside the innermost nested interpolation.
+        if (interpolation_nesting_ > 0) parens_[interpolation_nesting_ - 1]++;
+        return make_token(TOKEN_LEFT_PAREN);
+      }
+      case ')': {
+        // Close the most recently opened parenthesis, and if we're out of the interpolation, continue the string.
+        if (interpolation_nesting_ > 0 && --parens_[interpolation_nesting_ - 1] == 0) {
+          --interpolation_nesting_;
+          return string();
+        }
+        return make_token(TOKEN_RIGHT_PAREN);
+      }
       // Handled easily here.
-      case '(': return make_token(TOKEN_LEFT_PAREN);
-      case ')': return make_token(TOKEN_RIGHT_PAREN);
       case '[': return make_token(TOKEN_LEFT_BRACKET);
       case ']': return make_token(TOKEN_RIGHT_BRACKET);
       case '{': return make_token(TOKEN_LEFT_BRACE);
