@@ -13,6 +13,8 @@ namespace Keywords {
   // Constants (nil, true, false) are usually lowercase, and because they aren't classes, I don't believe they should be Capitalized,
   //   although CAPITALIZED would be okay.
   const std::unordered_map<std::string_view, TokenType> map {
+    {"alias", TOKEN_ALIAS},
+    // TODO MAYBE: Merge "alias" and "use" into "using"
     {"and", TOKEN_AND},
     {"attribute", TOKEN_ATTRIBUTE},
     {"break", TOKEN_BREAK},
@@ -87,7 +89,7 @@ char Lexer::advance() {
 bool Lexer::match(char expected) {
   if (at_eof()) return false;
   if (src_[current_char_] != expected) return false;
-  ++current_char_;
+  advance();
   return true;
 }
 
@@ -102,13 +104,13 @@ void Lexer::block_comment() {
   // Keep consuming until the closing comment or EOF.
   for (int nest_depth = 1; nest_depth > 0; advance()) {
     if (at_eof())
-      ERROR("Unclosed block comment.");
+      ERROR("Unclosed block comment");
 
     if (peek() == '#') {
       if (peek_next() == ':') {
         advance();
         if (nest_depth++ == MAX_COMMENT_NEST)
-          ERROR("Too many nested comments.");
+          ERROR("Too many nested comments");
       } else --nest_depth;
     }
   }
@@ -164,6 +166,85 @@ TokenType word_type(std::string_view word) {
   return token;
 }
 
+[[nodiscard]] Token Lexer::string() {
+  ERROR("Strings are not yet supported"); // TODO
+}
+
+[[nodiscard]] Token Lexer::character() {
+  ERROR("Characters are not yet supported"); // TODO
+}
+
+void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
+  while (true) {
+    const char c {peek()};
+
+    if (is_digit(c)) {
+      advance();
+      continue;
+    }
+
+    if (c == '_') {
+      if (!is_digit(peek_next()))
+        ERROR("Underscores must be followed by digits");
+      advance(); // The underscore.
+      continue;
+    }
+
+    break;
+  }
+}
+
+[[nodiscard]] Token Lexer::hex_number() {
+  const auto is_hex_digit = [](char c) {
+    return std::isdigit(static_cast<unsigned char>(c)) != 0 || (c <= 'f' && c >= 'a') || (c <= 'F' && c >= 'A');
+  };
+
+  if (!is_hex_digit(peek()))
+    ERROR("Expected a hex digit after 0x");
+  consume_digit_chunk(is_hex_digit);
+
+  return make_token(TOKEN_NUMBER);
+}
+
+[[nodiscard]] Token Lexer::binary_number() {
+  const auto is_binary_digit = [](char c) { return c == '0' || c == '1'; };
+
+  if (!is_binary_digit(peek()))
+    ERROR("Expected a binary digit after 0b");
+  consume_digit_chunk(is_binary_digit);
+
+  return make_token(TOKEN_NUMBER);
+}
+
+[[nodiscard]] Token Lexer::number() {
+  const auto is_digit = [](char c) { return std::isdigit(static_cast<unsigned char>(c)) != 0; };
+
+  // This, number(), is called after a digit is found, so we can consume the rest of them.
+  consume_digit_chunk(is_digit);
+
+  // Fractional part.
+  // The second clause prevents confusing property access (62.prop) AND trailing decimal points.
+  if (peek() == '.' && is_digit(peek_next())) {
+    advance(); // Consume the dot.
+    consume_digit_chunk(is_digit);
+  }
+
+  // Exponent part.
+  if (peek() == 'E') {
+    advance(); // Consume the E.
+
+    if (peek() == '+' || peek() == '-') advance();
+
+    if (!is_digit(peek()))
+      ERROR("Exponent requires a digit");
+
+    consume_digit_chunk(is_digit);
+  }
+
+  // TODO: Parse it inside the lexer for coolness.
+  return make_token(TOKEN_NUMBER);
+}
+
 // PUBLIC --------------------------------------------------------------------------------
 
 [[nodiscard]] Token Lexer::next_token() {
@@ -175,6 +256,8 @@ TokenType word_type(std::string_view word) {
 
   // Keep returning EOFs once we reach the end of the source.
   if (at_eof()) return make_token(TOKEN_EOF);
+
+  // TODO: Indentation, the best part!
 
   // The main loop, which will really only need to repeat once in most cases. Comments are the only thing that will fail to produce a token or an error.
   while (!at_eof()) {
@@ -208,8 +291,8 @@ TokenType word_type(std::string_view word) {
       case '<': return make_token(match('=') ? TOKEN_LT_EQ : TOKEN_LT);
       // Not handled here.
       case '`': return backtick_identifier();
-      case '"': return string();     // TODO
-      case '\'': return character(); // TODO
+      case '"': return string();
+      case '\'': return character();
       case '#':
         line_comment();
         break;
@@ -222,13 +305,13 @@ TokenType word_type(std::string_view word) {
       case '\r':
         while (peek() == ' ' || peek() == '\t' || peek() == '\r') advance();
         break;
-      case '0':                                    // Zero-prefixed numbers (custom base)
-        if (peek() == 'x') return hex_number();    // TODO
-        if (peek() == 'b') return binary_number(); // TODO
-        return number();                           // TODO
+      case '0': // Zero-prefixed numbers (custom base)
+        if (match('x')) return hex_number();
+        if (match('b')) return binary_number();
+        return number();
       default:
         if (std::isalpha(static_cast<unsigned char>(c)) != 0) return word();
-        if (std::isdigit(static_cast<unsigned char>(c)) != 0) return number(); // TODO
+        if (std::isdigit(static_cast<unsigned char>(c)) != 0) return number();
         ERROR("Unexpected character");
     }
   }

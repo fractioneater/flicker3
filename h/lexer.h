@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -19,14 +20,14 @@ enum TokenType {
   TOKEN_LT, TOKEN_LT_EQ,
   // Literals (32 - 35)
   TOKEN_IDENTIFIER, TOKEN_STRING, TOKEN_INTERPOLATION, TOKEN_NUMBER,
-  // Keywords (36 - 69)
-  TOKEN_AND, TOKEN_ATTRIBUTE, TOKEN_BREAK, TOKEN_CLASS, TOKEN_CONTINUE, TOKEN_DO, TOKEN_EACH, TOKEN_ELIF, TOKEN_ELSE, TOKEN_FALSE,
-  TOKEN_FOR, TOKEN_FUN, TOKEN_IF, TOKEN_IN, TOKEN_IS, TOKEN_NIL, TOKEN_NOT, TOKEN_OF, TOKEN_OR, TOKEN_PASS, TOKEN_PRINT,
+  // Keywords (36 - 70)
+  TOKEN_ALIAS, TOKEN_AND, TOKEN_ATTRIBUTE, TOKEN_BREAK, TOKEN_CLASS, TOKEN_CONTINUE, TOKEN_DO, TOKEN_EACH, TOKEN_ELIF, TOKEN_ELSE,
+  TOKEN_FALSE, TOKEN_FOR, TOKEN_FUN, TOKEN_IF, TOKEN_IN, TOKEN_IS, TOKEN_NIL, TOKEN_NOT, TOKEN_OF, TOKEN_OR, TOKEN_PASS, TOKEN_PRINT,
   TOKEN_PRINT_ERROR, TOKEN_RETURN, TOKEN_SHL, TOKEN_SHR, TOKEN_STATIC, TOKEN_SUPER, TOKEN_THIS, TOKEN_TRUE, TOKEN_USE,
   TOKEN_VAL, TOKEN_VAR, TOKEN_WHEN, TOKEN_WHILE,
-  // Whitespace (70 - 72)
+  // Whitespace (71 - 73)
   TOKEN_INDENT, TOKEN_DEDENT, TOKEN_LINE,
-  // Misc (73)
+  // Misc (74)
   TOKEN_EOF,
 };
 
@@ -94,11 +95,11 @@ class Lexer {
    */
   [[nodiscard]] Token backtick_identifier();
 
-  // TODO! These five show up as six in the source file because number() is duplicated.
   [[nodiscard]] Token string();
   [[nodiscard]] Token character();
   [[nodiscard]] Token hex_number();
   [[nodiscard]] Token binary_number();
+  void consume_digit_chunk(bool (*is_digit)(char));
   [[nodiscard]] Token number();
 
 public:
