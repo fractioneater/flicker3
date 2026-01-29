@@ -1,9 +1,12 @@
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <string>
-#include <unordered_map>
 #include <vector>
+#include <bits/stdint-uintn.h>
+
+#include "common.h"
 
 enum TokenType {
   // Single-character tokens (0 - 14)
@@ -18,16 +21,16 @@ enum TokenType {
   TOKEN_EQ, TOKEN_EQ_EQ,
   TOKEN_GT, TOKEN_GT_EQ,
   TOKEN_LT, TOKEN_LT_EQ,
-  // Literals (32 - 35)
-  TOKEN_IDENTIFIER, TOKEN_STRING, TOKEN_INTERPOLATION, TOKEN_NUMBER,
-  // Keywords (36 - 70)
+  // Literals (32 - 36)
+  TOKEN_IDENTIFIER, TOKEN_STRING, TOKEN_INTERPOLATION, TOKEN_CHAR, TOKEN_NUMBER,
+  // Keywords (37 - 71)
   TOKEN_ALIAS, TOKEN_AND, TOKEN_ATTRIBUTE, TOKEN_BREAK, TOKEN_CLASS, TOKEN_CONTINUE, TOKEN_DO, TOKEN_EACH, TOKEN_ELIF, TOKEN_ELSE,
   TOKEN_FALSE, TOKEN_FOR, TOKEN_FUN, TOKEN_IF, TOKEN_IN, TOKEN_IS, TOKEN_NIL, TOKEN_NOT, TOKEN_OF, TOKEN_OR, TOKEN_PASS, TOKEN_PRINT,
   TOKEN_PRINT_ERROR, TOKEN_RETURN, TOKEN_SHL, TOKEN_SHR, TOKEN_STATIC, TOKEN_SUPER, TOKEN_THIS, TOKEN_TRUE, TOKEN_USE,
   TOKEN_VAL, TOKEN_VAR, TOKEN_WHEN, TOKEN_WHILE,
-  // Whitespace (71 - 73)
+  // Whitespace (72 - 74)
   TOKEN_INDENT, TOKEN_DEDENT, TOKEN_LINE,
-  // Misc (74)
+  // Misc (75)
   TOKEN_EOF,
 };
 
@@ -51,6 +54,9 @@ class Lexer {
   long current_char_ {};
 
   TokenType prev_type_ {TOKEN_EOF}; // I feel like this may come in handy.
+
+  int interpolation_nesting_ {};
+  std::array<int, MAX_INTERPOLATION_NEST> parens_ {};
 
   bool check_indent_ {true};
   int dedents_queued_ {};       // The number of dedents waiting to be scanned.
@@ -80,7 +86,14 @@ class Lexer {
    */
   [[nodiscard]] Token make_token(TokenType type); // To set prev_type_ automatically.
 
+  /**
+   * Scans a block comment until the closing #. Allows, and tracks, nesting.
+   */
   void block_comment();
+
+  /**
+   * Assumes a line comment is being parsed, but will call block_comment() if it sees the next character is a colon.
+   */
   void line_comment();
 
   /**
@@ -95,11 +108,63 @@ class Lexer {
    */
   [[nodiscard]] Token backtick_identifier();
 
+  /**
+   * Reads a sequence of hexadecimal digits, advancing the lexer state.
+   * @param length The number of hexadecimal digits to read
+   * @return A 32-bit unsigned integer computed from the hexadecimal digits
+   */
+  [[nodiscard]] uint32_t read_hex(int length);
+
+  /**
+   * Scans a double-quote delineated string, allowing newlines and the following escape codes:
+   * - \\\\ backslash
+   * - \" double quote
+   * - \\= non-interpolating equals sign
+   * - \\0 null character
+   * - \\a alert/bell
+   * - \\b backspace
+   * - \\e escape (\\033)
+   * - \\f form feed
+   * - \\n newline
+   * - \\r carriage return
+   * - \\t horizontal tab
+   * - \\u.... four-digit Unicode escape
+   * - \\U........ eight-digit Unicode escape
+   * - \\v vertical tab
+   * - \\x.. two-digit hex byte
+   * @return Either a TOKEN_STRING or a TOKEN_INTERPOLATION depending on the string's content
+   */
   [[nodiscard]] Token string();
+
+  /**
+   * Scans a single character, delineated with single-quotes. Allows most of the same escape sequences that string() allows.
+   * @return A TOKEN_CHARACTER, not to be confused with one of Tolkien's characters (ex. Sam or Treebeard)
+   */
   [[nodiscard]] Token character();
+
+  /**
+   * Scans a hexadecimal number. No support for floating point or exponents.
+   * @return A TOKEN_NUMBER
+   */
   [[nodiscard]] Token hex_number();
+
+  /**
+   * Scans a binary number. No support for floating point or exponents.
+   * @return A TOKEN_NUMBER
+   */
   [[nodiscard]] Token binary_number();
+
+  /**
+   * Consumes a sequence of characters classified as digits, handling underscores between them.
+   * Underscores must be followed by valid digit characters.
+   * @param is_digit A pointer to a function that takes a character as input and returns true if the character is considered a digit
+   */
   void consume_digit_chunk(bool (*is_digit)(char));
+
+  /**
+   * Scans a decimal number, including optional fractional and exponent part.
+   * @return A token for the scanned number
+   */
   [[nodiscard]] Token number();
 
 public:
@@ -112,3 +177,12 @@ public:
    */
   [[nodiscard]] Token next_token();
 };
+
+/**
+ * Appends the UTF-8 encoded representation of a Unicode code point to a buffer. Also checks
+ * the code point to ensure it is within the valid Unicode range and not a surrogate.
+ * @param buffer The string to which the UTF-8 encoded bytes will be appended
+ * @param code_point The Unicode code point to be encoded and added to the buffer
+ *                   Must be a valid code point in the Unicode range (0x0 to 0x10FFFF) and not a surrogate (0xD800 to 0xDFFF)
+ */
+void append_utf8(std::string& buffer, std::uint32_t code_point);

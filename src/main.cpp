@@ -32,7 +32,7 @@ void run_file(const char* path) {
   // }
 
   std::string source {};
-  InterpretResult result = interpret(&source, "module");
+  const InterpretResult result {interpret(&source, "module")};
 
   // This will be done automatically when it goes out of scope, but it's good practice anyway.
   in.close();

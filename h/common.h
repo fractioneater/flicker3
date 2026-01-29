@@ -19,7 +19,7 @@
 
 #define MAX_PARAMETERS 16
 #define MAX_METHOD_NAME 64
-#define MAX_CONSTANTS 0x7fff
+#define MAX_CONSTANTS 0x7FFF
 
 // Lexer
 #define MAX_COMMENT_NEST 16
