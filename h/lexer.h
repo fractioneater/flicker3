@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 #include <bits/stdint-uintn.h>
@@ -166,6 +167,12 @@ class Lexer {
    * @return A token for the scanned number
    */
   [[nodiscard]] Token number();
+
+  /**
+   * Check for indents or dedents. Should only called at the start of a line.
+   * @return An indent or dedent token if applicable, otherwise std::nullopt
+   */
+  std::optional<Token> indentation();
 
 public:
   explicit Lexer(std::string src);

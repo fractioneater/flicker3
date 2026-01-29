@@ -14,7 +14,7 @@ namespace Keywords {
   //   although CAPITALIZED would be okay.
   const std::unordered_map<std::string_view, TokenType> map {
     {"alias", TOKEN_ALIAS},
-    // TODO MAYBE: Merge "alias" and "use" into "using"
+    // CONSIDER! Merge "alias" and "use" into "using"
     {"and", TOKEN_AND},
     {"attribute", TOKEN_ATTRIBUTE},
     {"break", TOKEN_BREAK},
@@ -62,7 +62,8 @@ Lexer::~Lexer() {
 }
 
 // PRIVATE -------------------------------------------------------------------------------
-// TODO MAYBE: Use only basic methods as part of the lexer class, turn others into public functions that use the lexer's basic functionality.
+
+// CONSIDER! Use only basic methods as part of the lexer class, turn others into public functions that use the lexer's basic functionality.
 
 [[nodiscard]] bool Lexer::at_eof() const { return current_char_ >= src_length_; }
 
@@ -80,6 +81,7 @@ char Lexer::advance() {
   ++current_char_;
   ++col_;
   if (src_[current_char_ - 1] == '\n') {
+    // Hopefully, when this is called, we shouldn't be at the point where we need to check for indentation again.
     ++line_;
     col_ = 1;
   }
@@ -221,6 +223,8 @@ void append_utf8(std::string& buffer, std::uint32_t code_point) {
   // The type is a string unless interpolation is found.
   TokenType type {TOKEN_STRING};
   std::string buffer {};
+  // One more than the estimated value, just to be safe.
+  buffer.reserve(src_.find('"', current_char_) - start_char_);
 
   while (true) {
     const char c {advance()};
@@ -307,7 +311,7 @@ void append_utf8(std::string& buffer, std::uint32_t code_point) {
       case 'r': value = '\r'; break;
       case 't': value = '\t'; break;
       case 'v': value = '\v'; break;
-      // TODO MAYBE: Store a character as a char32_t, allowing longer Unicode code points.
+      // CONSIDER! Store a character as a char32_t, allowing longer Unicode code points.
       case 'x': value = static_cast<char>(read_hex(2)); break;
       default: ERROR("Invalid escape character");
     }
@@ -392,6 +396,60 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
   return make_token(TOKEN_NUMBER);
 }
 
+// This function will only be called at the start of a line.
+std::optional<Token> Lexer::indentation() {
+  int indent {0};
+  char c {peek()};
+
+  // Consume all the whitespace and count its indentantion value.
+  while (c == ' ' || c == '\t' || c == '\r') {
+    advance();
+    if (c == ' ') indent++;
+    if (c == '\t') indent += ARBITRARY_TAB_WIDTH;
+    c = peek();
+  }
+
+  if (c == '\n' || c == '#') {
+    // This line doesn't count, it's just whitespace or a comment.
+    advance();
+
+    if (c == '#') line_comment();
+    // TODO: What if it's a block comment?
+
+    // Move on to the next line and try again.
+    return indentation();
+  }
+
+  if (indent > indents_.back()) { // If it's an indentation...
+    // We'll return an indent token, so we don't need to keep looking.
+    check_indent_ = false;
+
+    indents_.push_back(indent);
+    return make_token(TOKEN_INDENT);
+  }
+
+  bool had_a_dedent {false};
+  while (indent < indents_.back()) { // If there are dedents...
+    had_a_dedent = true;
+
+    ++dedents_queued_;
+    indents_.pop_back(); // Check again with a new, more shallow indent.
+
+    if (indents_.empty())
+      ERROR("AAAAH"); // So, um, this really shouldn't be happening. Because, you know, it would mean...
+    //                   It would mean the indentation level was less than zero.
+  }
+
+  if (had_a_dedent && indent != indents_.back()) {
+    dedents_queued_ = 0;
+    ERROR("Indentation does not match any previous line");
+  }
+
+  // We're not at the start of a line anymore.
+  check_indent_ = false;
+  return std::nullopt;
+}
+
 // PUBLIC --------------------------------------------------------------------------------
 
 [[nodiscard]] Token Lexer::next_token() {
@@ -401,10 +459,14 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
     return make_token(TOKEN_DEDENT);
   }
 
+  if (check_indent_) {
+    if (const auto token {indentation()})
+      return *token;
+    check_indent_ = false;
+  }
+
   // Keep returning EOFs once we reach the end of the source.
   if (at_eof()) return make_token(TOKEN_EOF);
-
-  // TODO: Indentation, the best part!
 
   // The main loop, which will really only need to repeat once in most cases. Comments are the only thing that will fail to produce a token or an error.
   while (!at_eof()) {
