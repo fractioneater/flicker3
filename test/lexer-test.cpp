@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-TEST(Lexer, SimpleExpressions) {
+TEST(Lexer, SimpleExpression) {
   Lexer lexer {"3 + 2 - 1"};
   int token_count {};
   while (lexer.next_token().type != TOKEN_EOF)
