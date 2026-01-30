@@ -1,13 +1,6 @@
-class A of B
-  val member: B
+# This has nothing to do with polymorphism anymore...
 
-fun output for T (item: T)
-  print item
-
-A of Int (84)
-A for Int (84)
-output of String ("hello")
-output for String ("hello")
-	three
-	 four
-	#comment
+first_line
+  #: hello
+   #    second_line
+        no

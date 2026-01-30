@@ -614,7 +614,7 @@ TEST(LexerTest, InvalidIndentation) {
 
 // Confusion (warnings): // TODO NEXT: Implement warnings for comments before code, and numbers pressed up against other things that aren't numbers.
 TEST(LexerTest, CommentBeforeCode) {
-  Lexer lexer {"fun not_fun\n  #: what's this?    # print 3"};
+  Lexer lexer {"fun not_fun\n  #: what's this?#     print 3"};
   std::vector<Token> tokens;
   Token token;
   do {

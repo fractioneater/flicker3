@@ -28,7 +28,10 @@ public:
   [[nodiscard]] const char* what() const noexcept { return message.c_str(); }
 };
 
-class LexerWarning : public LexerError {};
+class LexerWarning : public LexerError {
+public:
+  LexerWarning(int line, int col, long char_index, std::string&& message) : LexerError {line, col, char_index, std::move(message)} {}
+};
 
 enum TokenType {
   // Single-character tokens (0 - 14)
