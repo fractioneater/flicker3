@@ -352,6 +352,11 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
     throw LexerError {line_, col_, current_char_, "Expected a hex digit after 0x"};
   consume_digit_chunk(is_hex_digit);
 
+  if (!is_hex_digit(peek()) && std::isalpha(static_cast<unsigned char>(peek())) != 0) {
+    const LexerWarning warning {line_, col_, current_char_, "Character appears to be part of the number, but is actually not"};
+    warnings_.emplace_back(warning);
+  }
+
   return make_token(TOKEN_NUMBER);
 }
 
@@ -361,6 +366,11 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
   if (!is_binary_digit(peek()))
     throw LexerError {line_, col_, current_char_, "Expected a binary digit after 0b"};
   consume_digit_chunk(is_binary_digit);
+
+  if (!is_binary_digit(peek()) && std::isalnum(static_cast<unsigned char>(peek())) != 0) {
+    const LexerWarning warning {line_, col_, current_char_, "Character appears to be part of the number, but is actually not"};
+    warnings_.emplace_back(warning);
+  }
 
   return make_token(TOKEN_NUMBER);
 }
@@ -390,33 +400,48 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
     consume_digit_chunk(is_digit);
   }
 
+  if (!is_digit(peek()) && std::isalpha(static_cast<unsigned char>(peek())) != 0) {
+    const LexerWarning warning {line_, col_, current_char_, "Character appears to be part of the number, but is actually not"};
+    warnings_.emplace_back(warning);
+  }
+
   // TODO: Parse it inside the lexer for coolness.
   return make_token(TOKEN_NUMBER);
 }
 
 // This function will only be called at the start of a line.
 std::optional<Token> Lexer::indentation() {
-  int indent {0};
-  char c {peek()};
+  // Loop through characters until something significant (not whitespace or comment) is found.
+  while (true) {
+    switch (peek()) {
+      case '\0': return std::nullopt; // EOF, no need to report this indentation.
 
-  // Consume all the whitespace and count its indentation value.
-  while (c == ' ' || c == '\t' || c == '\r') {
-    advance();
-    if (c == ' ') indent++;
-    if (c == '\t') indent += ARBITRARY_TAB_WIDTH;
-    c = peek();
+      case ' ': // Whitespace character
+      case '\r': // Whitespace character
+      case '\n': // This line was whitespace or comments only. Try again on the next line.
+        advance();
+        continue;
+
+      case '\t': throw LexerError {line_, col_, current_char_, "Tabs are not allowed in indentation"};
+
+      case '#': {
+        advance();
+        if (peek() == ':') {
+          const LexerWarning warning {line_, col_ - 1, current_char_ - 1, "Consider moving this comment to the end of the line"};
+          warnings_.emplace_back(warning);
+          block_comment(); // May cross lines; the ending column is what matters.
+        } else {
+          while (peek() != '\n' && !at_eof()) advance();
+        }
+        continue; // Keep processing stuff after a block comment.
+      }
+
+      default: ; // Break from here, which in turn breaks from the loop.
+    }
+    break;
   }
 
-  if (c == '\n' || c == '#') {
-    // This line doesn't count, it's just whitespace or a comment.
-    advance();
-
-    if (c == '#') line_comment();
-    // TODO: What if it's a block comment?
-
-    // Move on to the next line and try again.
-    return indentation();
-  }
+  const int indent {col_ - 1};
 
   if (indent > indents_.back()) { // If it's an indentation...
     // We'll return an indent token, so we don't need to keep looking.
@@ -433,9 +458,9 @@ std::optional<Token> Lexer::indentation() {
     ++dedents_queued_;
     indents_.pop_back(); // Check again with a new, more shallow indent.
 
+    // So, um, this really shouldn't be happening. Because, you know, it would mean... it would mean the indentation level was less than zero.
     if (indents_.empty())
-      throw LexerError {line_, col_, current_char_, "AAAAH"}; // So, um, this really shouldn't be happening. Because, you know, it would mean...
-    //                   It would mean the indentation level was less than zero.
+      throw LexerError {line_, col_, current_char_, "AAAAH"};
   }
 
   if (had_a_dedent) {
@@ -469,7 +494,7 @@ std::optional<Token> Lexer::indentation() {
 
 // PUBLIC --------------------------------------------------------------------------------
 
-[[nodiscard]] Token Lexer::next_token() { // TODO NEXT: Fix column things, write tests
+[[nodiscard]] Token Lexer::next_token() {
   start_char_ = current_char_;
   start_col_  = col_;
 
@@ -488,8 +513,9 @@ std::optional<Token> Lexer::indentation() {
   // Keep returning EOFs once we reach the end of the source.
   if (at_eof()) return eof();
 
-  // The main loop, which will really only need to repeat once in most cases. Comments are the only thing that will fail to produce a token or an error.
-  while (!at_eof()) {
+  // The main loop, which will really only need to repeat once in most cases. Whitespace (including comments) is the only thing that will fail to produce a
+  // token or an error.
+  do {
     start_char_ = current_char_;
     start_col_  = col_;
 
@@ -553,9 +579,9 @@ std::optional<Token> Lexer::indentation() {
       default:
         if (std::isalpha(static_cast<unsigned char>(c)) != 0) return word();
         if (std::isdigit(static_cast<unsigned char>(c)) != 0) return number();
-        throw LexerError {line_, col_, current_char_, "Unexpected character"};
+        throw LexerError {line_, col_ - 1, current_char_ - 1, "Unexpected character"};
     }
-  }
+  } while (!at_eof());
 
   // It has to be EOF by this point
   return eof();
