@@ -3,6 +3,43 @@
 #include <fstream>
 #include <iostream>
 
+std::string read_entire_file(const char* path) {
+  std::ifstream in {path, std::ios::binary};
+
+  if (!in) {
+    std::cerr << "Could not open file '" << path << "'\n";
+    throw std::system_error(74, std::iostream_category()); // Exit code 74: generic i/o failure.
+  }
+
+  in.seekg(0, std::ios::end);
+  const std::streampos end_pos = in.tellg();
+
+  if (end_pos >= 0) {
+    std::string contents {};
+    const auto size = static_cast<std::streamsize>(end_pos);
+    if (size == static_cast<std::streamsize>(-1)) {
+      std::cerr << "File '" << path << "' is too large\n";
+      throw std::system_error(74, std::iostream_category());
+    }
+    contents.resize(size);
+
+    in.seekg(0, std::ios::beg);
+    in.read(contents.data(), size);
+    if (!in) {
+      std::cerr << "Could not read file '" << path << "'\n";
+      throw std::system_error(74, std::iostream_category());
+    }
+
+    in.close();
+    return contents;
+  }
+
+  // Fallback in case seek and tell aren't supported.
+  in.clear();
+  in.seekg(0, std::ios::beg);
+  return std::string {std::istreambuf_iterator(in), std::istreambuf_iterator<char>()};
+}
+
 void repl() {
   constexpr std::string_view prompt {"~ > "};
   std::string line {};
@@ -16,21 +53,8 @@ void repl() {
 }
 
 void run_file(const char* path) {
-  std::ifstream in {path};
-
-  if (!in) {
-    std::cerr << "Could not open file '" << path << "'\n";
-    throw std::system_error(74, std::iostream_category()); // Exit code 74: generic i/o failure.
-  }
-
-  // TODO: What about memory errors? How will they be reported?
-
-  // TODO: Put "in" into source.
-  const std::string source {};
+  const std::string source {read_entire_file(path)};
   const InterpretResult result {interpret(source, "module")};
-
-  // This will be done automatically when it goes out of scope, but it's good practice anyway.
-  in.close();
 
   if (result == INTERPRET_COMPILE_ERROR) throw std::system_error(65, std::generic_category()); // Exit code 65: data format error (compile error).
   if (result == INTERPRET_RUNTIME_ERROR) throw std::system_error(70, std::generic_category()); // Exit code 70: internal software error (runtime error).

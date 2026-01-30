@@ -13,14 +13,17 @@ public:
   // If the line number is -1, it's an error at EOF.
   int line {-1};
   int col {-1};
+  long char_index {};
   std::string message {};
+  // This is set in interpret() because the lexer doesn't have module information.
+  std::string module {};
 
   // CONSIDER! Removing EOF errors, modifying string buffer reserve() to not complain if closing quote isn't found and let the error be reported at the
   //   correct column
 
   // For EOF errors that don't need a line.
   explicit LexerError(std::string&& message) : message {std::move(message)} {}
-  LexerError(int line, int col, std::string&& message) : line {line}, col {col}, message {std::move(message)} {}
+  LexerError(int line, int col, long char_index, std::string&& message) : line {line}, col {col}, char_index {char_index}, message {std::move(message)} {}
 
   [[nodiscard]] const char* what() const noexcept override { return message.c_str(); }
 };

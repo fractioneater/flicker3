@@ -2,7 +2,7 @@ class A of B
   val member: B
 
 fun output for T (item: T)
-  print item
+  print item '\t' '\l'
 
 A of Int (84)
 A for Int (84)
