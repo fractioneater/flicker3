@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <functional>
 #include <optional>
 #include <string>
@@ -8,6 +7,23 @@
 #include <bits/stdint-uintn.h>
 
 #include "common.h"
+
+class LexerError : public std::exception {
+public:
+  // If the line number is -1, it's an error at EOF.
+  int line {-1};
+  int col {-1};
+  std::string message {};
+
+  // CONSIDER! Removing EOF errors, modifying string buffer reserve() to not complain if closing quote isn't found and let the error be reported at the
+  //   correct column
+
+  // For EOF errors that don't need a line.
+  explicit LexerError(std::string&& message) : message {std::move(message)} {}
+  LexerError(int line, int col, std::string&& message) : line {line}, col {col}, message {std::move(message)} {}
+
+  [[nodiscard]] const char* what() const noexcept override { return message.c_str(); }
+};
 
 enum TokenType {
   // Single-character tokens (0 - 14)
@@ -117,6 +133,15 @@ class Lexer {
   [[nodiscard]] uint32_t read_hex(int length);
 
   /**
+   * Appends the UTF-8 encoded representation of a Unicode code point to a buffer. Also checks
+   * the code point to ensure it is within the valid Unicode range and not a surrogate.
+   * @param buffer The string to which the UTF-8 encoded bytes will be appended
+   * @param code_point The Unicode code point to be encoded and added to the buffer
+   *                   Must be a valid code point in the Unicode range (0x0 to 0x10FFFF) and not a surrogate (0xD800 to 0xDFFF)
+   */
+  void append_utf8(std::string& buffer, uint32_t code_point) const;
+
+  /**
    * Scans a double-quote delineated string, allowing newlines and the following escape codes:
    * - \\\\ backslash
    * - \" double quote
@@ -169,7 +194,7 @@ class Lexer {
   [[nodiscard]] Token number();
 
   /**
-   * Check for indents or dedents. Should only called at the start of a line.
+   * Check for indents or dedents. Should only be called at the start of a line.
    * @return An indent or dedent token if applicable, otherwise std::nullopt
    */
   std::optional<Token> indentation();
@@ -184,12 +209,3 @@ public:
    */
   [[nodiscard]] Token next_token();
 };
-
-/**
- * Appends the UTF-8 encoded representation of a Unicode code point to a buffer. Also checks
- * the code point to ensure it is within the valid Unicode range and not a surrogate.
- * @param buffer The string to which the UTF-8 encoded bytes will be appended
- * @param code_point The Unicode code point to be encoded and added to the buffer
- *                   Must be a valid code point in the Unicode range (0x0 to 0x10FFFF) and not a surrogate (0xD800 to 0xDFFF)
- */
-void append_utf8(std::string& buffer, std::uint32_t code_point);
