@@ -109,7 +109,7 @@ void Lexer::block_comment() {
       if (peek_next() == ':') {
         advance();
         if (nest_depth++ == MAX_COMMENT_NEST)
-          throw LexerError {line_, col_, "Too many nested comments"};
+          throw LexerError {line_, col_, current_char_, "Too many nested comments"};
       } else --nest_depth;
     }
   }
@@ -146,7 +146,7 @@ TokenType word_type(std::string_view word) {
 [[nodiscard]] Token Lexer::backtick_identifier() {
   while (peek() != '`' && !at_eof()) {
     if (peek() == '\n')
-      throw LexerError {line_, col_, "Unclosed identifier—even these can't have newlines"};
+      throw LexerError {line_, col_, current_char_, "Unclosed identifier—even these can't have newlines"};
     advance();
   }
 
@@ -160,7 +160,7 @@ TokenType word_type(std::string_view word) {
   token.length -= 2;
 
   if (token.length == 0)
-    throw LexerError {line_, col_, "Empty identifier"};
+    throw LexerError {line_, col_, current_char_, "Empty identifier"};
 
   return token;
 }
@@ -181,7 +181,7 @@ int hex_value(char c) {
     const char c {advance()};
     const int digit = hex_value(c);
     if (digit == -1)
-      throw LexerError {line_, col_, "Unterminated escape sequence"};
+      throw LexerError {line_, col_, current_char_, "Unterminated escape sequence"};
 
     value = (value << 4) | static_cast<std::uint32_t>(digit);
   }
@@ -190,9 +190,9 @@ int hex_value(char c) {
 
 void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) const {
   if (code_point > 0x10FFFFu)
-    throw LexerError {line_, col_, "Invalid Unicode code point"};
+    throw LexerError {line_, col_, current_char_, "Invalid Unicode code point"};
   if (code_point >= 0xD800u && code_point <= 0xDFFFu)
-    throw LexerError {line_, col_, "Invalid Unicode surrogate"};
+    throw LexerError {line_, col_, current_char_, "Invalid Unicode surrogate"};
 
   if (code_point <= 0x7Fu) {
     // One byte.
@@ -245,7 +245,7 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) const {
         break;
       }
 
-      throw LexerError {line_, col_, "Too many nested strings"};
+      throw LexerError {line_, col_, current_char_, "Too many nested strings"};
     }
 
     // @formatter:off because it doesn't like two statements on one line.
@@ -278,7 +278,7 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) const {
           buffer.push_back(static_cast<char>(byte));
           break;
         }
-        default: throw LexerError {line_, col_, "Invalid escape character"};
+        default: throw LexerError {line_, col_ - 1, current_char_ - 1, "Invalid escape character"};
       }
     } else {
       buffer.push_back(c);
@@ -286,16 +286,15 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) const {
   }
   // @formatter:on again
 
-  std::cout << buffer << '\n'; //- TEMP
   return make_token(type);
 }
 
 [[nodiscard]] Token Lexer::character() {
-  char value {};
+  [[maybe_unused]] char value {}; //- TEMP (maybe_unused for -Werror)
   const char c {advance()};
 
   if (c == '\'')
-    throw LexerError {line_, col_, "Empty characters are not allowed"};
+    throw LexerError {line_, col_, current_char_, "Empty characters are not allowed"};
 
   // @formatter:off
   if (c == '\\') {
@@ -313,15 +312,14 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) const {
       case 'v': value = '\v'; break;
       // CONSIDER! Store a character as a char32_t, allowing longer Unicode code points.
       case 'x': value = static_cast<char>(read_hex(2)); break;
-      default: throw LexerError {line_, col_, "Invalid escape character"};
+      default: throw LexerError {line_, col_ - 1, current_char_ - 1, "Invalid escape character"};
     }
   } else value = c;
   // @formatter:on
 
   if (!match('\''))
-    throw LexerError {line_, col_, "Character is unterminated or more than one char"};
+    throw LexerError {line_, col_, current_char_, "Character is unterminated or more than one char"};
 
-  std::cout << value << '\n'; //- TEMP
   return make_token(TOKEN_CHAR);
 }
 
@@ -336,7 +334,7 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
 
     if (c == '_') {
       if (!is_digit(peek_next()))
-        throw LexerError {line_, col_, "Underscores must be followed by digits"};
+        throw LexerError {line_, col_, current_char_, "Underscores must be followed by digits"};
       advance(); // The underscore.
       continue;
     }
@@ -351,7 +349,7 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
   };
 
   if (!is_hex_digit(peek()))
-    throw LexerError {line_, col_, "Expected a hex digit after 0x"};
+    throw LexerError {line_, col_, current_char_, "Expected a hex digit after 0x"};
   consume_digit_chunk(is_hex_digit);
 
   return make_token(TOKEN_NUMBER);
@@ -361,7 +359,7 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
   const auto is_binary_digit = [](char c) { return c == '0' || c == '1'; };
 
   if (!is_binary_digit(peek()))
-    throw LexerError {line_, col_, "Expected a binary digit after 0b"};
+    throw LexerError {line_, col_, current_char_, "Expected a binary digit after 0b"};
   consume_digit_chunk(is_binary_digit);
 
   return make_token(TOKEN_NUMBER);
@@ -387,7 +385,7 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
     if (peek() == '+' || peek() == '-') advance();
 
     if (!is_digit(peek()))
-      throw LexerError {line_, col_, "Exponent requires a digit"};
+      throw LexerError {line_, col_, current_char_, "Exponent requires a digit"};
 
     consume_digit_chunk(is_digit);
   }
@@ -436,13 +434,13 @@ std::optional<Token> Lexer::indentation() {
     indents_.pop_back(); // Check again with a new, more shallow indent.
 
     if (indents_.empty())
-      throw LexerError {line_, col_, "AAAAH"}; // So, um, this really shouldn't be happening. Because, you know, it would mean...
+      throw LexerError {line_, col_, current_char_, "AAAAH"}; // So, um, this really shouldn't be happening. Because, you know, it would mean...
     //                   It would mean the indentation level was less than zero.
   }
 
   if (had_a_dedent && indent != indents_.back()) {
     dedents_queued_ = 0;
-    throw LexerError {line_, col_, "Indentation does not match any previous line"};
+    throw LexerError {line_, col_, current_char_, "Indentation does not match any previous line"};
   }
 
   // We're not at the start of a line anymore.
@@ -537,7 +535,7 @@ std::optional<Token> Lexer::indentation() {
       default:
         if (std::isalpha(static_cast<unsigned char>(c)) != 0) return word();
         if (std::isdigit(static_cast<unsigned char>(c)) != 0) return number();
-        throw LexerError {line_, col_, "Unexpected character"};
+        throw LexerError {line_, col_, current_char_, "Unexpected character"};
     }
   }
 
