@@ -8,7 +8,7 @@
 
 #include "common.h"
 
-class LexerError : public std::exception {
+class LexerError {
 public:
   // If the line number is -1, it's an error at EOF.
   int line {-1};
@@ -25,8 +25,10 @@ public:
   explicit LexerError(std::string&& message) : message {std::move(message)} {}
   LexerError(int line, int col, long char_index, std::string&& message) : line {line}, col {col}, char_index {char_index}, message {std::move(message)} {}
 
-  [[nodiscard]] const char* what() const noexcept override { return message.c_str(); }
+  [[nodiscard]] const char* what() const noexcept { return message.c_str(); }
 };
+
+class LexerWarning : public LexerError {};
 
 enum TokenType {
   // Single-character tokens (0 - 14)
@@ -81,6 +83,9 @@ class Lexer {
   bool check_indent_ {true};
   int dedents_queued_ {};       // The number of dedents waiting to be scanned.
   std::vector<int> indents_ {}; // A list of past indentation levels, to determine how many dedents are created.
+
+  std::vector<LexerError> errors_ {};
+  std::vector<LexerWarning> warnings_ {};
 
   [[nodiscard]] bool at_eof() const;
   [[nodiscard]] char peek() const;
@@ -202,6 +207,11 @@ class Lexer {
    */
   std::optional<Token> indentation();
 
+  /**
+   * @return A dedent if necessary, otherwise EOF token
+   */
+  [[nodiscard]] Token eof();
+
 public:
   explicit Lexer(std::string src);
   ~Lexer();
@@ -211,4 +221,6 @@ public:
    * @return A token, specifically the next one
    */
   [[nodiscard]] Token next_token();
+
+  const std::vector<LexerWarning>& get_warnings() { return warnings_; }
 };

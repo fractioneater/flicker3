@@ -2,9 +2,12 @@ class A of B
   val member: B
 
 fun output for T (item: T)
-  print item '\t' '\l'
+  print item
 
 A of Int (84)
 A for Int (84)
 output of String ("hello")
 output for String ("hello")
+	three
+	 four
+	#comment

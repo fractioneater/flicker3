@@ -24,4 +24,4 @@
 // Lexer
 #define MAX_COMMENT_NEST 16
 #define MAX_INTERPOLATION_NEST 8
-#define ARBITRARY_TAB_WIDTH 4 // CONSIDER!
+#define ARBITRARY_TAB_WIDTH 4 // CONSIDER! Disallowing mixing tabs and spaces, setting this to 1.

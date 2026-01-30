@@ -399,7 +399,7 @@ std::optional<Token> Lexer::indentation() {
   int indent {0};
   char c {peek()};
 
-  // Consume all the whitespace and count its indentantion value.
+  // Consume all the whitespace and count its indentation value.
   while (c == ' ' || c == '\t' || c == '\r') {
     advance();
     if (c == ' ') indent++;
@@ -438,9 +438,13 @@ std::optional<Token> Lexer::indentation() {
     //                   It would mean the indentation level was less than zero.
   }
 
-  if (had_a_dedent && indent != indents_.back()) {
-    dedents_queued_ = 0;
-    throw LexerError {line_, col_, current_char_, "Indentation does not match any previous line"};
+  if (had_a_dedent) {
+    if (indent != indents_.back()) {
+      dedents_queued_ = 0;
+      throw LexerError {line_, col_, current_char_, "Indentation does not match any previous line"};
+    }
+    --dedents_queued_;
+    return make_token(TOKEN_DEDENT);
   }
 
   // We're not at the start of a line anymore.
@@ -448,9 +452,27 @@ std::optional<Token> Lexer::indentation() {
   return std::nullopt;
 }
 
+[[nodiscard]] Token Lexer::eof() {
+  start_char_ = current_char_;
+  start_col_  = col_;
+  // Create dedents at EOF: emit one now and queue the rest.
+  // The indents list should still hold the original 0.
+  const int open_blocks {static_cast<int>(indents_.size()) - 1};
+  if (open_blocks > 0) {
+    indents_.resize(1);
+    // Minus one for the one we're creating right now.
+    dedents_queued_ += open_blocks - 1;
+    return make_token(TOKEN_DEDENT);
+  }
+  return make_token(TOKEN_EOF);
+}
+
 // PUBLIC --------------------------------------------------------------------------------
 
 [[nodiscard]] Token Lexer::next_token() { // TODO NEXT: Fix column things, write tests
+  start_char_ = current_char_;
+  start_col_  = col_;
+
   // Top priority is to return dedents if more are called for.
   if (dedents_queued_ > 0) {
     --dedents_queued_;
@@ -464,11 +486,7 @@ std::optional<Token> Lexer::indentation() {
   }
 
   // Keep returning EOFs once we reach the end of the source.
-  if (at_eof()) {
-    start_char_ = current_char_;
-    start_col_  = col_;
-    return make_token(TOKEN_EOF);
-  }
+  if (at_eof()) return eof();
 
   // The main loop, which will really only need to repeat once in most cases. Comments are the only thing that will fail to produce a token or an error.
   while (!at_eof()) {
@@ -540,7 +558,5 @@ std::optional<Token> Lexer::indentation() {
   }
 
   // It has to be EOF by this point
-  start_char_ = current_char_;
-  start_col_  = col_;
-  return make_token(TOKEN_EOF);
+  return eof();
 }
