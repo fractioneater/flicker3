@@ -1,6 +1,4 @@
 # This has nothing to do with polymorphism anymore...
 
-first_line
-  #: hello
-   #    second_line
-        no
+if a = true do
+  print b

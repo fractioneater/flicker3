@@ -4,6 +4,8 @@
 
 #include <iostream>
 
+#include "flicker.h"
+#include "lexer-adapter.h"
 #include "lexer.h"
 
 void print_error_prefix(const LexerError& err) {
@@ -23,7 +25,7 @@ std::string_view get_line_containing_index(std::string_view source, long char_in
 
 void print_error(std::string_view source, const LexerError& err) {
   if (err.line == -1)
-    // CONSIDER! See the thing in lexer.h, in the LexerError class, about this.
+  // CONSIDER! See the thing in lexer.h, in the LexerError class, about this.
     std::cout << "\033[1m" << err.module << "@EOF\033[0m " << err.what() << '\n';
   else {
     print_error_prefix(err);
@@ -33,35 +35,74 @@ void print_error(std::string_view source, const LexerError& err) {
   }
 }
 
+class FlickerErrorListener : public antlr4::BaseErrorListener {
+  std::string_view source_ {};
+  std::string module_ {};
+
+public:
+  FlickerErrorListener(std::string_view source, std::string module) : source_ {source}, module_ {std::move(module)} {}
+
+  void syntaxError(
+    antlr4::Recognizer* recognizer, antlr4::Token* offending_symbol, size_t line, size_t char_position_in_line, const std::string& msg, std::exception_ptr e
+  ) override {
+    LexerError err {
+      static_cast<int>(line),
+      static_cast<int>(char_position_in_line + 1),
+      offending_symbol ? static_cast<long>(offending_symbol->getStartIndex()) : -1L,
+      std::string(msg)
+    };
+    err.module = module_;
+    print_error(source_, err);
+  }
+};
+
 InterpretResult interpret(const std::string& source, std::string_view module) {
-  // TODO: Review std::string/string_view, find out which is better for Lexer constructor.
   Lexer lexer {source};
 
-  std::vector<Token> tokens {};
-
   try {
-    do {
-      tokens.push_back(lexer.next_token());
-    } while (tokens.back().type != TOKEN_EOF);
+    antlr::LexerAdapter adapter {lexer, std::string(module)};
+    antlr4::CommonTokenStream token_stream {&adapter};
+    antlr::flicker parser {&token_stream};
+
+    FlickerErrorListener error_listener {source, std::string(module)};
+    parser.removeErrorListeners();
+    parser.addErrorListener(&error_listener);
+
+    auto tree {parser.program()};
+
+    #if DEBUG_PRINT_TOKENS
+    token_stream.fill();
+    for (auto token : token_stream.getTokens()) {
+      if (token->getType() == antlr4::Token::EOF) { // EOF:
+        std::cout << "EOF: col " << token->getCharPositionInLine() << ", length 0\n";
+        continue;
+      }
+
+      const auto type = token->getType();
+      if (type == 33) { // Identifier:
+        std::cout << "Identifier '" << token->getText() << "': " << token->getLine() << ':' << token->getCharPositionInLine() << ", length "
+          << token->getText().length() << "\n";
+      } else { // Other:
+        std::cout << "Token: type " << (type - 1) << ", " << token->getLine() << ":" << token->getCharPositionInLine() << ", length "
+          << token->getText().length() << "\n";
+      }
+    }
+    #endif
+
+    if (parser.getNumberOfSyntaxErrors() > 0) {
+      std::cout << "Parser error, compiling halted\n";
+      return INTERPRET_COMPILE_ERROR;
+    }
+
+    // Temporarily print things out in a Lisp-like tree.
+    std::cout << tree->toStringTree(&parser) << '\n';
   } catch (LexerError& err) {
-    std::cout << "Lexer error, compiling halted\n";
     err.module = module;
     print_error(source, err);
+    std::cout << "Lexer error, compiling halted\n";
 
     return INTERPRET_COMPILE_ERROR;
   }
-
-  #if DEBUG_PRINT_TOKENS
-  for (const auto& token : tokens) {
-    if (token.type == TOKEN_EOF)
-      std::cout << "EOF: col " << token.col << ", length " << token.length << "\n";
-    else if (token.type == TOKEN_IDENTIFIER)
-      std::cout << "Identifier '" << source.substr(token.start_char, token.length) << "': " << token.line << ':' << token.col << ", length " << token.length
-        << "\n";
-    else
-      std::cout << "Token: type " << token.type << ", " << token.line << ':' << token.col << ", length " << token.length << "\n";
-  }
-  #endif
 
   #if DEBUG_PRINT_CODE
   std::cout << "I'm supposed to print your code after compiling.\n";
