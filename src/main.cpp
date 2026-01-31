@@ -54,7 +54,7 @@ void repl() {
 
 void run_file(const char* path) {
   const std::string source {read_entire_file(path)};
-  const InterpretResult result {interpret(source, "module")};
+  const InterpretResult result {interpret(source, path)};
 
   if (result == INTERPRET_COMPILE_ERROR) throw std::system_error(65, std::generic_category()); // Exit code 65: data format error (compile error).
   if (result == INTERPRET_RUNTIME_ERROR) throw std::system_error(70, std::generic_category()); // Exit code 70: internal software error (runtime error).

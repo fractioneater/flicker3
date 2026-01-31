@@ -12,7 +12,15 @@ add_library(flicker_lib
     src/vm.cpp
     src/compiler.cpp
     src/lexer.cpp
+    gen/antlr/flicker.cpp
+    gen/antlr/flickerBaseVisitor.cpp
+    gen/antlr/flickerVisitor.cpp
 )
+
+# ANTLR4 Setup
+target_include_directories(flicker_lib PUBLIC /usr/local/include/antlr4-runtime gen/antlr)
+target_link_libraries(flicker_lib PRIVATE /usr/local/lib/libantlr4-runtime.a)
+
 target_compile_options(flicker_lib PRIVATE -Wall -Werror)
 target_include_directories(flicker_lib PUBLIC h)
 
@@ -29,8 +37,19 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 enable_testing()
+
 add_executable(tests test/lexer-test.cpp)
 target_link_libraries(tests GTest::gtest_main flicker_lib)
+
+# Adapter test
+add_executable(test_adapter test/adapter-test.cpp)
+target_link_libraries(test_adapter GTest::gtest_main flicker_lib)
+
+# Parser test
+add_executable(test_parser test/parser-test.cpp)
+target_link_libraries(test_parser GTest::gtest_main flicker_lib)
+
 include(GoogleTest)
 gtest_discover_tests(tests)
-
+gtest_discover_tests(test_adapter)
+gtest_discover_tests(test_parser)

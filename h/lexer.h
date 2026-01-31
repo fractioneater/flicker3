@@ -225,5 +225,7 @@ public:
    */
   [[nodiscard]] Token next_token();
 
+  [[nodiscard]] const std::string& get_src() const { return src_; }
+
   const std::vector<LexerWarning>& get_warnings() { return warnings_; }
 };

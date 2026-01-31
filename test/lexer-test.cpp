@@ -612,7 +612,7 @@ TEST(LexerTest, InvalidIndentation) {
   FAIL() << "Expected LexerError for invalid indentation";
 }
 
-// Confusion (warnings): // TODO NEXT: Implement warnings for comments before code, and numbers pressed up against other things that aren't numbers.
+// Confusion (warnings):
 TEST(LexerTest, CommentBeforeCode) {
   Lexer lexer {"fun not_fun\n  #: what's this?#     print 3"};
   std::vector<Token> tokens;
