@@ -30,11 +30,11 @@ public:
   virtual void enterTopLevel(flicker::TopLevelContext * /*ctx*/) override { }
   virtual void exitTopLevel(flicker::TopLevelContext * /*ctx*/) override { }
 
+  virtual void enterType(flicker::TypeContext * /*ctx*/) override { }
+  virtual void exitType(flicker::TypeContext * /*ctx*/) override { }
+
   virtual void enterStatement(flicker::StatementContext * /*ctx*/) override { }
   virtual void exitStatement(flicker::StatementContext * /*ctx*/) override { }
-
-  virtual void enterDeclaration(flicker::DeclarationContext * /*ctx*/) override { }
-  virtual void exitDeclaration(flicker::DeclarationContext * /*ctx*/) override { }
 
   virtual void enterVariableDecl(flicker::VariableDeclContext * /*ctx*/) override { }
   virtual void exitVariableDecl(flicker::VariableDeclContext * /*ctx*/) override { }
@@ -66,14 +66,14 @@ public:
   virtual void enterClassBody(flicker::ClassBodyContext * /*ctx*/) override { }
   virtual void exitClassBody(flicker::ClassBodyContext * /*ctx*/) override { }
 
-  virtual void enterUse(flicker::UseContext * /*ctx*/) override { }
-  virtual void exitUse(flicker::UseContext * /*ctx*/) override { }
+  virtual void enterUsingStatement(flicker::UsingStatementContext * /*ctx*/) override { }
+  virtual void exitUsingStatement(flicker::UsingStatementContext * /*ctx*/) override { }
 
   virtual void enterImportList(flicker::ImportListContext * /*ctx*/) override { }
   virtual void exitImportList(flicker::ImportListContext * /*ctx*/) override { }
 
-  virtual void enterKeywordStatement(flicker::KeywordStatementContext * /*ctx*/) override { }
-  virtual void exitKeywordStatement(flicker::KeywordStatementContext * /*ctx*/) override { }
+  virtual void enterImportItem(flicker::ImportItemContext * /*ctx*/) override { }
+  virtual void exitImportItem(flicker::ImportItemContext * /*ctx*/) override { }
 
   virtual void enterLoopLabel(flicker::LoopLabelContext * /*ctx*/) override { }
   virtual void exitLoopLabel(flicker::LoopLabelContext * /*ctx*/) override { }
@@ -198,9 +198,6 @@ public:
   virtual void enterComparisonOperator(flicker::ComparisonOperatorContext * /*ctx*/) override { }
   virtual void exitComparisonOperator(flicker::ComparisonOperatorContext * /*ctx*/) override { }
 
-  virtual void enterParenthesizedExpr(flicker::ParenthesizedExprContext * /*ctx*/) override { }
-  virtual void exitParenthesizedExpr(flicker::ParenthesizedExprContext * /*ctx*/) override { }
-
   virtual void enterInterpolationExpr(flicker::InterpolationExprContext * /*ctx*/) override { }
   virtual void exitInterpolationExpr(flicker::InterpolationExprContext * /*ctx*/) override { }
 
@@ -239,6 +236,9 @@ public:
 
   virtual void enterBraceBody(flicker::BraceBodyContext * /*ctx*/) override { }
   virtual void exitBraceBody(flicker::BraceBodyContext * /*ctx*/) override { }
+
+  virtual void enterTerminator(flicker::TerminatorContext * /*ctx*/) override { }
+  virtual void exitTerminator(flicker::TerminatorContext * /*ctx*/) override { }
 
 
   virtual void enterEveryRule(antlr4::ParserRuleContext * /*ctx*/) override { }

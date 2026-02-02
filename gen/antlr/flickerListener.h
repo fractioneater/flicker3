@@ -28,11 +28,11 @@ public:
   virtual void enterTopLevel(flicker::TopLevelContext *ctx) = 0;
   virtual void exitTopLevel(flicker::TopLevelContext *ctx) = 0;
 
+  virtual void enterType(flicker::TypeContext *ctx) = 0;
+  virtual void exitType(flicker::TypeContext *ctx) = 0;
+
   virtual void enterStatement(flicker::StatementContext *ctx) = 0;
   virtual void exitStatement(flicker::StatementContext *ctx) = 0;
-
-  virtual void enterDeclaration(flicker::DeclarationContext *ctx) = 0;
-  virtual void exitDeclaration(flicker::DeclarationContext *ctx) = 0;
 
   virtual void enterVariableDecl(flicker::VariableDeclContext *ctx) = 0;
   virtual void exitVariableDecl(flicker::VariableDeclContext *ctx) = 0;
@@ -64,14 +64,14 @@ public:
   virtual void enterClassBody(flicker::ClassBodyContext *ctx) = 0;
   virtual void exitClassBody(flicker::ClassBodyContext *ctx) = 0;
 
-  virtual void enterUse(flicker::UseContext *ctx) = 0;
-  virtual void exitUse(flicker::UseContext *ctx) = 0;
+  virtual void enterUsingStatement(flicker::UsingStatementContext *ctx) = 0;
+  virtual void exitUsingStatement(flicker::UsingStatementContext *ctx) = 0;
 
   virtual void enterImportList(flicker::ImportListContext *ctx) = 0;
   virtual void exitImportList(flicker::ImportListContext *ctx) = 0;
 
-  virtual void enterKeywordStatement(flicker::KeywordStatementContext *ctx) = 0;
-  virtual void exitKeywordStatement(flicker::KeywordStatementContext *ctx) = 0;
+  virtual void enterImportItem(flicker::ImportItemContext *ctx) = 0;
+  virtual void exitImportItem(flicker::ImportItemContext *ctx) = 0;
 
   virtual void enterLoopLabel(flicker::LoopLabelContext *ctx) = 0;
   virtual void exitLoopLabel(flicker::LoopLabelContext *ctx) = 0;
@@ -196,9 +196,6 @@ public:
   virtual void enterComparisonOperator(flicker::ComparisonOperatorContext *ctx) = 0;
   virtual void exitComparisonOperator(flicker::ComparisonOperatorContext *ctx) = 0;
 
-  virtual void enterParenthesizedExpr(flicker::ParenthesizedExprContext *ctx) = 0;
-  virtual void exitParenthesizedExpr(flicker::ParenthesizedExprContext *ctx) = 0;
-
   virtual void enterInterpolationExpr(flicker::InterpolationExprContext *ctx) = 0;
   virtual void exitInterpolationExpr(flicker::InterpolationExprContext *ctx) = 0;
 
@@ -237,6 +234,9 @@ public:
 
   virtual void enterBraceBody(flicker::BraceBodyContext *ctx) = 0;
   virtual void exitBraceBody(flicker::BraceBodyContext *ctx) = 0;
+
+  virtual void enterTerminator(flicker::TerminatorContext *ctx) = 0;
+  virtual void exitTerminator(flicker::TerminatorContext *ctx) = 0;
 
 
 };

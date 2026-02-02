@@ -20,30 +20,30 @@ public:
     STAR = 21, STAR_STAR = 22, MINUS = 23, RIGHT_ARROW = 24, BANG = 25, 
     BANG_EQ = 26, EQ = 27, EQ_EQ = 28, GT = 29, GT_EQ = 30, LT = 31, LT_EQ = 32, 
     IDENTIFIER = 33, STRING = 34, INTERPOLATION = 35, CHAR = 36, NUMBER = 37, 
-    ALIAS = 38, AND = 39, ATTRIBUTE = 40, BREAK = 41, CLASS = 42, CONTINUE = 43, 
-    DO = 44, EACH = 45, ELIF = 46, ELSE = 47, FALSE = 48, FOR = 49, FUN = 50, 
-    IF = 51, IN = 52, IS = 53, NIL = 54, NOT = 55, OF = 56, OR = 57, PASS = 58, 
-    PRINT = 59, PRINT_ERROR = 60, RETURN = 61, SHL = 62, SHR = 63, STATIC = 64, 
-    SUPER = 65, THIS = 66, TRUE = 67, USE = 68, VAL = 69, VAR = 70, WHEN = 71, 
-    WHILE = 72, INDENT = 73, DEDENT = 74, LINE = 75
+    AND = 38, ATTRIBUTE = 39, BREAK = 40, CLASS = 41, CONTINUE = 42, DO = 43, 
+    EACH = 44, ELIF = 45, ELSE = 46, FALSE = 47, FOR = 48, FUN = 49, IF = 50, 
+    IN = 51, IS = 52, NIL = 53, NOT = 54, OF = 55, OR = 56, PASS = 57, PRINT = 58, 
+    PRINT_ERROR = 59, RETURN = 60, SHL = 61, SHR = 62, STATIC = 63, SUPER = 64, 
+    THIS = 65, TRUE = 66, USING = 67, VAL = 68, VAR = 69, WHEN = 70, WHILE = 71, 
+    INDENT = 72, DEDENT = 73, LINE = 74
   };
 
   enum {
     RuleProgram = 0, RuleNewline = 1, RuleStatementEnd = 2, RuleTopLevel = 3, 
-    RuleStatement = 4, RuleDeclaration = 5, RuleVariableDecl = 6, RuleFunctionDecl = 7, 
+    RuleType = 4, RuleStatement = 5, RuleVariableDecl = 6, RuleFunctionDecl = 7, 
     RuleFuncReturnType = 8, RuleFunctionContents = 9, RuleParamList = 10, 
     RuleParam = 11, RuleBlock = 12, RuleBlockBody = 13, RuleClassDecl = 14, 
-    RuleClassBody = 15, RuleUse = 16, RuleImportList = 17, RuleKeywordStatement = 18, 
+    RuleClassBody = 15, RuleUsingStatement = 16, RuleImportList = 17, RuleImportItem = 18, 
     RuleLoopLabel = 19, RuleDoStatement = 20, RuleBlockOrStatement = 21, 
     RuleIfStmt = 22, RuleWhileStmt = 23, RuleEachStmt = 24, RuleForStmt = 25, 
     RuleBreakStmt = 26, RuleContinueStmt = 27, RuleWhenStmt = 28, RuleReturnStmt = 29, 
     RulePrintStmt = 30, RuleConsoleErrorStmt = 31, RulePassStmt = 32, RuleWhenBody = 33, 
     RuleWhenContents = 34, RuleWhenCase = 35, RuleElseCase = 36, RuleExpression = 37, 
-    RuleComparisonOperator = 38, RuleParenthesizedExpr = 39, RuleInterpolationExpr = 40, 
-    RuleConstantExpr = 41, RuleListOrMapLiteral = 42, RuleListLiteral = 43, 
-    RuleListItems = 44, RuleMapLiteral = 45, RuleMapItems = 46, RuleMapItem = 47, 
-    RuleLambdaLiteral = 48, RuleLambdaParams = 49, RuleParenthesizedOptionalParamList = 50, 
-    RuleLambdaBody = 51, RuleBraceBody = 52
+    RuleComparisonOperator = 38, RuleInterpolationExpr = 39, RuleConstantExpr = 40, 
+    RuleListOrMapLiteral = 41, RuleListLiteral = 42, RuleListItems = 43, 
+    RuleMapLiteral = 44, RuleMapItems = 45, RuleMapItem = 46, RuleLambdaLiteral = 47, 
+    RuleLambdaParams = 48, RuleParenthesizedOptionalParamList = 49, RuleLambdaBody = 50, 
+    RuleBraceBody = 51, RuleTerminator = 52
   };
 
   explicit flicker(antlr4::TokenStream *input);
@@ -67,8 +67,8 @@ public:
   class NewlineContext;
   class StatementEndContext;
   class TopLevelContext;
+  class TypeContext;
   class StatementContext;
-  class DeclarationContext;
   class VariableDeclContext;
   class FunctionDeclContext;
   class FuncReturnTypeContext;
@@ -79,9 +79,9 @@ public:
   class BlockBodyContext;
   class ClassDeclContext;
   class ClassBodyContext;
-  class UseContext;
+  class UsingStatementContext;
   class ImportListContext;
-  class KeywordStatementContext;
+  class ImportItemContext;
   class LoopLabelContext;
   class DoStatementContext;
   class BlockOrStatementContext;
@@ -102,7 +102,6 @@ public:
   class ElseCaseContext;
   class ExpressionContext;
   class ComparisonOperatorContext;
-  class ParenthesizedExprContext;
   class InterpolationExprContext;
   class ConstantExprContext;
   class ListOrMapLiteralContext;
@@ -115,7 +114,8 @@ public:
   class LambdaParamsContext;
   class ParenthesizedOptionalParamListContext;
   class LambdaBodyContext;
-  class BraceBodyContext; 
+  class BraceBodyContext;
+  class TerminatorContext; 
 
   class  ProgramContext : public antlr4::ParserRuleContext {
   public:
@@ -186,12 +186,43 @@ public:
 
   TopLevelContext* topLevel();
 
+  class  TypeContext : public antlr4::ParserRuleContext {
+  public:
+    TypeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<antlr4::tree::TerminalNode *> IDENTIFIER();
+    antlr4::tree::TerminalNode* IDENTIFIER(size_t i);
+    antlr4::tree::TerminalNode *OF();
+    antlr4::tree::TerminalNode *FOR();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  TypeContext* type();
+
   class  StatementContext : public antlr4::ParserRuleContext {
   public:
     StatementContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    DeclarationContext *declaration();
-    KeywordStatementContext *keywordStatement();
+    VariableDeclContext *variableDecl();
+    FunctionDeclContext *functionDecl();
+    ClassDeclContext *classDecl();
+    UsingStatementContext *usingStatement();
+    IfStmtContext *ifStmt();
+    WhileStmtContext *whileStmt();
+    EachStmtContext *eachStmt();
+    ForStmtContext *forStmt();
+    BreakStmtContext *breakStmt();
+    ContinueStmtContext *continueStmt();
+    WhenStmtContext *whenStmt();
+    ReturnStmtContext *returnStmt();
+    PrintStmtContext *printStmt();
+    ConsoleErrorStmtContext *consoleErrorStmt();
+    PassStmtContext *passStmt();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -202,33 +233,15 @@ public:
 
   StatementContext* statement();
 
-  class  DeclarationContext : public antlr4::ParserRuleContext {
-  public:
-    DeclarationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    VariableDeclContext *variableDecl();
-    FunctionDeclContext *functionDecl();
-    ClassDeclContext *classDecl();
-    UseContext *use();
-
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  DeclarationContext* declaration();
-
   class  VariableDeclContext : public antlr4::ParserRuleContext {
   public:
     VariableDeclContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    std::vector<antlr4::tree::TerminalNode *> IDENTIFIER();
-    antlr4::tree::TerminalNode* IDENTIFIER(size_t i);
+    antlr4::tree::TerminalNode *IDENTIFIER();
     antlr4::tree::TerminalNode *VAR();
     antlr4::tree::TerminalNode *VAL();
     antlr4::tree::TerminalNode *COLON();
+    TypeContext *type();
     antlr4::tree::TerminalNode *EQ();
     ExpressionContext *expression();
 
@@ -283,7 +296,7 @@ public:
   public:
     FunctionContentsContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    BlockContext *block();
+    BlockOrStatementContext *blockOrStatement();
     antlr4::tree::TerminalNode *EQ();
     ExpressionContext *expression();
 
@@ -318,9 +331,9 @@ public:
   public:
     ParamContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    std::vector<antlr4::tree::TerminalNode *> IDENTIFIER();
-    antlr4::tree::TerminalNode* IDENTIFIER(size_t i);
+    antlr4::tree::TerminalNode *IDENTIFIER();
     antlr4::tree::TerminalNode *COLON();
+    TypeContext *type();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -402,15 +415,19 @@ public:
 
   ClassBodyContext* classBody();
 
-  class  UseContext : public antlr4::ParserRuleContext {
+  class  UsingStatementContext : public antlr4::ParserRuleContext {
   public:
-    UseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    UsingStatementContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *USE();
+    antlr4::tree::TerminalNode *USING();
     antlr4::tree::TerminalNode *STRING();
-    antlr4::tree::TerminalNode *OF();
+    antlr4::tree::TerminalNode *FOR();
     antlr4::tree::TerminalNode *DOT();
+    antlr4::tree::TerminalNode *STAR();
     ImportListContext *importList();
+    antlr4::tree::TerminalNode *IDENTIFIER();
+    antlr4::tree::TerminalNode *EQ();
+    TypeContext *type();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -419,14 +436,14 @@ public:
    
   };
 
-  UseContext* use();
+  UsingStatementContext* usingStatement();
 
   class  ImportListContext : public antlr4::ParserRuleContext {
   public:
     ImportListContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    std::vector<antlr4::tree::TerminalNode *> IDENTIFIER();
-    antlr4::tree::TerminalNode* IDENTIFIER(size_t i);
+    std::vector<ImportItemContext *> importItem();
+    ImportItemContext* importItem(size_t i);
     std::vector<antlr4::tree::TerminalNode *> COMMA();
     antlr4::tree::TerminalNode* COMMA(size_t i);
 
@@ -439,21 +456,13 @@ public:
 
   ImportListContext* importList();
 
-  class  KeywordStatementContext : public antlr4::ParserRuleContext {
+  class  ImportItemContext : public antlr4::ParserRuleContext {
   public:
-    KeywordStatementContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    ImportItemContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    IfStmtContext *ifStmt();
-    WhileStmtContext *whileStmt();
-    EachStmtContext *eachStmt();
-    ForStmtContext *forStmt();
-    BreakStmtContext *breakStmt();
-    ContinueStmtContext *continueStmt();
-    WhenStmtContext *whenStmt();
-    ReturnStmtContext *returnStmt();
-    PrintStmtContext *printStmt();
-    ConsoleErrorStmtContext *consoleErrorStmt();
-    PassStmtContext *passStmt();
+    std::vector<antlr4::tree::TerminalNode *> IDENTIFIER();
+    antlr4::tree::TerminalNode* IDENTIFIER(size_t i);
+    antlr4::tree::TerminalNode *RIGHT_ARROW();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -462,7 +471,7 @@ public:
    
   };
 
-  KeywordStatementContext* keywordStatement();
+  ImportItemContext* importItem();
 
   class  LoopLabelContext : public antlr4::ParserRuleContext {
   public:
@@ -898,7 +907,9 @@ public:
   public:
     ExprParenContext(ExpressionContext *ctx);
 
-    ParenthesizedExprContext *parenthesizedExpr();
+    antlr4::tree::TerminalNode *LEFT_PAREN();
+    ExpressionContext *expression();
+    antlr4::tree::TerminalNode *RIGHT_PAREN();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 
@@ -1101,30 +1112,13 @@ public:
 
   ComparisonOperatorContext* comparisonOperator();
 
-  class  ParenthesizedExprContext : public antlr4::ParserRuleContext {
-  public:
-    ParenthesizedExprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *LEFT_PAREN();
-    ExpressionContext *expression();
-    antlr4::tree::TerminalNode *RIGHT_PAREN();
-
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  ParenthesizedExprContext* parenthesizedExpr();
-
   class  InterpolationExprContext : public antlr4::ParserRuleContext {
   public:
     InterpolationExprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *INTERPOLATION();
-    ExpressionContext *expression();
     antlr4::tree::TerminalNode *STRING();
+    ExpressionContext *expression();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -1335,8 +1329,8 @@ public:
     antlr4::tree::TerminalNode *RIGHT_BRACE();
     std::vector<StatementContext *> statement();
     StatementContext* statement(size_t i);
-    std::vector<antlr4::tree::TerminalNode *> SEMICOLON();
-    antlr4::tree::TerminalNode* SEMICOLON(size_t i);
+    std::vector<TerminatorContext *> terminator();
+    TerminatorContext* terminator(size_t i);
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -1346,6 +1340,22 @@ public:
   };
 
   BraceBodyContext* braceBody();
+
+  class  TerminatorContext : public antlr4::ParserRuleContext {
+  public:
+    TerminatorContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *SEMICOLON();
+    NewlineContext *newline();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  TerminatorContext* terminator();
 
 
   bool sempred(antlr4::RuleContext *_localctx, size_t ruleIndex, size_t predicateIndex) override;

@@ -47,7 +47,7 @@ public:
   ) override {
     LexerError err {
       static_cast<int>(line),
-      static_cast<int>(char_position_in_line + 1),
+      static_cast<int>(char_position_in_line),
       offending_symbol ? static_cast<long>(offending_symbol->getStartIndex()) : -1L,
       std::string(msg)
     };

@@ -28,9 +28,9 @@ public:
 
     virtual std::any visitTopLevel(flicker::TopLevelContext *context) = 0;
 
-    virtual std::any visitStatement(flicker::StatementContext *context) = 0;
+    virtual std::any visitType(flicker::TypeContext *context) = 0;
 
-    virtual std::any visitDeclaration(flicker::DeclarationContext *context) = 0;
+    virtual std::any visitStatement(flicker::StatementContext *context) = 0;
 
     virtual std::any visitVariableDecl(flicker::VariableDeclContext *context) = 0;
 
@@ -52,11 +52,11 @@ public:
 
     virtual std::any visitClassBody(flicker::ClassBodyContext *context) = 0;
 
-    virtual std::any visitUse(flicker::UseContext *context) = 0;
+    virtual std::any visitUsingStatement(flicker::UsingStatementContext *context) = 0;
 
     virtual std::any visitImportList(flicker::ImportListContext *context) = 0;
 
-    virtual std::any visitKeywordStatement(flicker::KeywordStatementContext *context) = 0;
+    virtual std::any visitImportItem(flicker::ImportItemContext *context) = 0;
 
     virtual std::any visitLoopLabel(flicker::LoopLabelContext *context) = 0;
 
@@ -140,8 +140,6 @@ public:
 
     virtual std::any visitComparisonOperator(flicker::ComparisonOperatorContext *context) = 0;
 
-    virtual std::any visitParenthesizedExpr(flicker::ParenthesizedExprContext *context) = 0;
-
     virtual std::any visitInterpolationExpr(flicker::InterpolationExprContext *context) = 0;
 
     virtual std::any visitConstantExpr(flicker::ConstantExprContext *context) = 0;
@@ -167,6 +165,8 @@ public:
     virtual std::any visitLambdaBody(flicker::LambdaBodyContext *context) = 0;
 
     virtual std::any visitBraceBody(flicker::BraceBodyContext *context) = 0;
+
+    virtual std::any visitTerminator(flicker::TerminatorContext *context) = 0;
 
 
 };

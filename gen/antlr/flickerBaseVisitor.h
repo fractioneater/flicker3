@@ -33,11 +33,11 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitStatement(flicker::StatementContext *ctx) override {
+  virtual std::any visitType(flicker::TypeContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitDeclaration(flicker::DeclarationContext *ctx) override {
+  virtual std::any visitStatement(flicker::StatementContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -81,7 +81,7 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitUse(flicker::UseContext *ctx) override {
+  virtual std::any visitUsingStatement(flicker::UsingStatementContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -89,7 +89,7 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitKeywordStatement(flicker::KeywordStatementContext *ctx) override {
+  virtual std::any visitImportItem(flicker::ImportItemContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -257,10 +257,6 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitParenthesizedExpr(flicker::ParenthesizedExprContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual std::any visitInterpolationExpr(flicker::InterpolationExprContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -310,6 +306,10 @@ public:
   }
 
   virtual std::any visitBraceBody(flicker::BraceBodyContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitTerminator(flicker::TerminatorContext *ctx) override {
     return visitChildren(ctx);
   }
 
