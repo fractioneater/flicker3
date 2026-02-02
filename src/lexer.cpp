@@ -13,8 +13,6 @@ namespace Keywords {
   // Constants (nil, true, false) are usually lowercase, and because they aren't classes, I don't believe they should be Capitalized,
   //   although CAPITALIZED would be okay.
   const std::unordered_map<std::string_view, TokenType> map {
-    {"alias", TOKEN_ALIAS},
-    // CONSIDER! Merge "alias" and "use" into "using"
     {"and", TOKEN_AND},
     {"attribute", TOKEN_ATTRIBUTE},
     {"break", TOKEN_BREAK},
@@ -44,7 +42,7 @@ namespace Keywords {
     {"super", TOKEN_SUPER},
     {"this", TOKEN_THIS},
     {"true", TOKEN_TRUE},
-    {"use", TOKEN_USE},
+    {"using", TOKEN_USING},
     {"val", TOKEN_VAL},
     {"var", TOKEN_VAR},
     {"when", TOKEN_WHEN},

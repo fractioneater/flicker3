@@ -15,49 +15,72 @@ tokens {
 	LT, LT_EQ,
 	// Literals (32 - 36)
 	IDENTIFIER, STRING, INTERPOLATION, CHAR, NUMBER,
-	// Keywords (37 - 71)
-	ALIAS, AND, ATTRIBUTE, BREAK, CLASS, CONTINUE, DO, EACH, ELIF, ELSE,
+	// Keywords (37 - 70)
+	AND, ATTRIBUTE, BREAK, CLASS, CONTINUE, DO, EACH, ELIF, ELSE,
 	FALSE, FOR, FUN, IF, IN, IS, NIL, NOT, OF, OR, PASS, PRINT,
-	PRINT_ERROR, RETURN, SHL, SHR, STATIC, SUPER, THIS, TRUE, USE,
+	PRINT_ERROR, RETURN, SHL, SHR, STATIC, SUPER, THIS, TRUE, USING,
 	VAL, VAR, WHEN, WHILE,
-	// Whitespace (72 - 74)
+	// Whitespace (71 - 73)
 	INDENT, DEDENT, LINE
 }
 
-program : newline* (topLevel statementEnd)* EOF;
+program : newline* (topLevel statementEnd)* EOF ;
 
-newline : LINE+; // This one is just a plain newline.
-statementEnd : newline | EOF; // This one is a statement end check.
-topLevel : (statement | expression);
+newline : LINE+ ; // This one is just a plain newline.
+statementEnd      // This one is a statement end check.
+	: newline EOF?
+	| EOF
+	;
 
-// ------------------------------
+topLevel : statement | expression ;
 
-statement : declaration | keywordStatement;
+type : IDENTIFIER /* QUEST? */ ((OF | FOR) IDENTIFIER /* QUEST? */)? ;
+// List of Int, Bagel?, List? of Bagel?, FunctionWrapper? for SpecialFunction
 
-declaration : variableDecl | functionDecl | classDecl | use;
+// Statement ------------------------------
 
-variableDecl : (VAR | VAL) IDENTIFIER (COLON IDENTIFIER /*(QUEST)?*/)? (EQ expression)?;
+statement
+	: variableDecl
+	| functionDecl
+	| classDecl
+	| usingStatement
+	| ifStmt
+	| whileStmt
+	| eachStmt
+	| forStmt
+	| breakStmt
+	| continueStmt
+	| whenStmt
+	| returnStmt
+	| printStmt
+	| consoleErrorStmt
+	| passStmt
+	;
+
+variableDecl : (VAR | VAL) IDENTIFIER (COLON type)? (EQ expression)?;
 
 functionDecl : FUN IDENTIFIER LEFT_PAREN (paramList)? RIGHT_PAREN (funcReturnType)? functionContents;
 
 funcReturnType : (COLON | RIGHT_ARROW) IDENTIFIER; // TODO: Decide on a symbol.
-functionContents : block | (EQ expression);
+functionContents : blockOrStatement | (EQ expression);
 
 paramList : param (COMMA param)* ;
-param : IDENTIFIER COLON IDENTIFIER /*(QUEST)?*/ ;
+param : IDENTIFIER COLON type ;
 
 block : (DO)? newline INDENT blockBody DEDENT ;
-blockBody : (topLevel statementEnd) * ;
+blockBody : (topLevel statementEnd)* ;
 
 classDecl : CLASS IDENTIFIER (LT IDENTIFIER)? classBody ;
 
 classBody : NUMBER ; // TODO!
 
-use : USE ((DOT | importList) OF)? STRING ;
+usingStatement
+	: USING STRING (FOR (DOT | STAR | importList))? // Import
+	| USING IDENTIFIER EQ type // Type alias
+	;
 
-importList : IDENTIFIER (COMMA IDENTIFIER) * ;
-
-keywordStatement : ifStmt | whileStmt | eachStmt | forStmt | breakStmt | continueStmt | whenStmt | returnStmt | printStmt | consoleErrorStmt | passStmt ;
+importList : importItem (COMMA importItem)* ;
+importItem : IDENTIFIER | IDENTIFIER RIGHT_ARROW IDENTIFIER ;
 
 loopLabel : COLON IDENTIFIER ;
 
@@ -65,11 +88,11 @@ doStatement : DO topLevel ;
 blockOrStatement : block | doStatement ;
 
 ifStmt : IF expression blockOrStatement (ELIF expression blockOrStatement)* (ELSE blockOrStatement)? ;
-whileStmt : WHILE (loopLabel)? expression blockOrStatement ;
-eachStmt : EACH (loopLabel)? IDENTIFIER (LEFT_BRACKET IDENTIFIER RIGHT_BRACKET)? IN expression blockOrStatement ;
-forStmt : FOR (loopLabel)? (variableDecl | expression)? SEMICOLON (expression)? SEMICOLON (expression)? blockOrStatement ;
-breakStmt : BREAK (loopLabel)? ;
-continueStmt : CONTINUE (loopLabel)? ;
+whileStmt : WHILE loopLabel? expression blockOrStatement ;
+eachStmt : EACH loopLabel? IDENTIFIER (LEFT_BRACKET IDENTIFIER RIGHT_BRACKET)? IN expression blockOrStatement ;
+forStmt : FOR loopLabel? (variableDecl | expression)? SEMICOLON (expression)? SEMICOLON (expression)? blockOrStatement ;
+breakStmt : BREAK loopLabel? ;
+continueStmt : CONTINUE loopLabel? ;
 whenStmt : WHEN expression whenBody ;
 returnStmt : RETURN (expression)? ;
 printStmt : PRINT expression ;
@@ -77,11 +100,11 @@ consoleErrorStmt : PRINT_ERROR expression ;
 passStmt : PASS ;
 
 whenBody : newline INDENT whenContents DEDENT ;
-whenContents : (whenCase statementEnd) + (elseCase statementEnd)? ;
+whenContents : (whenCase statementEnd)+ (elseCase statementEnd)? ;
 whenCase : expression blockOrStatement ;
 elseCase : ELSE blockOrStatement ;
 
-// ------------------------------
+// Expression ------------------------------
 
 expression
 	: IDENTIFIER                                                            #exprIdentifier
@@ -89,7 +112,7 @@ expression
 	| interpolationExpr                                                     #exprInterpolation
 	| listOrMapLiteral                                                      #exprListOrMap
 	| lambdaLiteral                                                         #exprLambda
-	| parenthesizedExpr                                                     #exprParen
+	| LEFT_PAREN expression RIGHT_PAREN                                     #exprParen
 	| expression DOT IDENTIFIER                                             #exprMember
 	| expression COLON_COLON IDENTIFIER                                     #exprStaticMember
 	| expression LEFT_PAREN (expression (COMMA expression)*)? RIGHT_PAREN   #exprCall
@@ -110,10 +133,9 @@ expression
 
 comparisonOperator : EQ_EQ | BANG_EQ | GT | GT_EQ | LT | LT_EQ ;
 
-parenthesizedExpr : LEFT_PAREN expression RIGHT_PAREN ;
-
-// There's no reason to have it blank, but it's still allowed.
-interpolationExpr : INTERPOLATION expression STRING ;
+// There's no reason to have empty interpolation, but it's still allowed.
+// Question: what happens if it tries to consume the next string as its expression?
+interpolationExpr : INTERPOLATION expression? STRING ;
 
 constantExpr : NUMBER | TRUE | FALSE | NIL | STRING ;
 
@@ -129,10 +151,10 @@ mapItem : expression RIGHT_ARROW expression ;
 
 lambdaLiteral : FUN lambdaParams ((RIGHT_ARROW lambdaBody) | (EQ expression)) ;
 
-// If there are 0 params, there must be ().
-lambdaParams : paramList | parenthesizedOptionalParamList ;
+lambdaParams : paramList | parenthesizedOptionalParamList | /* No params at all */ ;
 parenthesizedOptionalParamList : (LEFT_PAREN (paramList)? RIGHT_PAREN) ;
 
 lambdaBody : braceBody | block ;
 
-braceBody : LEFT_BRACE (statement (SEMICOLON)?)* RIGHT_BRACE ;
+braceBody : LEFT_BRACE (statement terminator+)* statement? terminator* RIGHT_BRACE ;
+terminator : (SEMICOLON | newline) ;
