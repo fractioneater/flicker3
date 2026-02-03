@@ -45,6 +45,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitTypeParam(flicker::TypeParamContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitFunctionDecl(flicker::FunctionDeclContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -73,11 +77,27 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitAccessSpecifier(flicker::AccessSpecifierContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitClassDecl(flicker::ClassDeclContext *ctx) override {
     return visitChildren(ctx);
   }
 
   virtual std::any visitClassBody(flicker::ClassBodyContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitCompanionNamespace(flicker::CompanionNamespaceContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitClassItem(flicker::ClassItemContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitMethod(flicker::MethodContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -165,91 +185,107 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprMulDivMod(flicker::ExprMulDivModContext *ctx) override {
+  virtual std::any visitConstant(flicker::ConstantContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprAddSub(flicker::ExprAddSubContext *ctx) override {
+  virtual std::any visitPowerExpr(flicker::PowerExprContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprIdentifier(flicker::ExprIdentifierContext *ctx) override {
+  virtual std::any visitTermExpr(flicker::TermExprContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprRange(flicker::ExprRangeContext *ctx) override {
+  virtual std::any visitBitShiftExpr(flicker::BitShiftExprContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprAssign(flicker::ExprAssignContext *ctx) override {
+  virtual std::any visitFactorExpr(flicker::FactorExprContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprLambda(flicker::ExprLambdaContext *ctx) override {
+  virtual std::any visitParenExpr(flicker::ParenExprContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprCompare(flicker::ExprCompareContext *ctx) override {
+  virtual std::any visitLambda(flicker::LambdaContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprMember(flicker::ExprMemberContext *ctx) override {
+  virtual std::any visitBitwisExpr(flicker::BitwisExprContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprParen(flicker::ExprParenContext *ctx) override {
+  virtual std::any visitMember(flicker::MemberContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprOr(flicker::ExprOrContext *ctx) override {
+  virtual std::any visitIfExpr(flicker::IfExprContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprInterpolation(flicker::ExprInterpolationContext *ctx) override {
+  virtual std::any visitArrayAccess(flicker::ArrayAccessContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprCall(flicker::ExprCallContext *ctx) override {
+  virtual std::any visitListOrMap(flicker::ListOrMapContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprListOrMap(flicker::ExprListOrMapContext *ctx) override {
+  virtual std::any visitIsExpr(flicker::IsExprContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprPrefix(flicker::ExprPrefixContext *ctx) override {
+  virtual std::any visitIdentifier(flicker::IdentifierContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprBitwiseB(flicker::ExprBitwiseBContext *ctx) override {
+  virtual std::any visitComparison(flicker::ComparisonContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprAnd(flicker::ExprAndContext *ctx) override {
+  virtual std::any visitCheckNotNil(flicker::CheckNotNilContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprPower(flicker::ExprPowerContext *ctx) override {
+  virtual std::any visitInExpr(flicker::InExprContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprIndex(flicker::ExprIndexContext *ctx) override {
+  virtual std::any visitAssignment(flicker::AssignmentContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprIf(flicker::ExprIfContext *ctx) override {
+  virtual std::any visitOrExpr(flicker::OrExprContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprShift(flicker::ExprShiftContext *ctx) override {
+  virtual std::any visitCall(flicker::CallContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprConstant(flicker::ExprConstantContext *ctx) override {
+  virtual std::any visitPrefixExpr(flicker::PrefixExprContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprStaticMember(flicker::ExprStaticMemberContext *ctx) override {
+  virtual std::any visitInterpolation(flicker::InterpolationContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitNotExpr(flicker::NotExprContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitScopedIdentifier(flicker::ScopedIdentifierContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitRangeExpr(flicker::RangeExprContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitAndExpr(flicker::AndExprContext *ctx) override {
     return visitChildren(ctx);
   }
 

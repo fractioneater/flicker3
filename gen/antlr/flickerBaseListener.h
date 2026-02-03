@@ -39,6 +39,9 @@ public:
   virtual void enterVariableDecl(flicker::VariableDeclContext * /*ctx*/) override { }
   virtual void exitVariableDecl(flicker::VariableDeclContext * /*ctx*/) override { }
 
+  virtual void enterTypeParam(flicker::TypeParamContext * /*ctx*/) override { }
+  virtual void exitTypeParam(flicker::TypeParamContext * /*ctx*/) override { }
+
   virtual void enterFunctionDecl(flicker::FunctionDeclContext * /*ctx*/) override { }
   virtual void exitFunctionDecl(flicker::FunctionDeclContext * /*ctx*/) override { }
 
@@ -60,11 +63,23 @@ public:
   virtual void enterBlockBody(flicker::BlockBodyContext * /*ctx*/) override { }
   virtual void exitBlockBody(flicker::BlockBodyContext * /*ctx*/) override { }
 
+  virtual void enterAccessSpecifier(flicker::AccessSpecifierContext * /*ctx*/) override { }
+  virtual void exitAccessSpecifier(flicker::AccessSpecifierContext * /*ctx*/) override { }
+
   virtual void enterClassDecl(flicker::ClassDeclContext * /*ctx*/) override { }
   virtual void exitClassDecl(flicker::ClassDeclContext * /*ctx*/) override { }
 
   virtual void enterClassBody(flicker::ClassBodyContext * /*ctx*/) override { }
   virtual void exitClassBody(flicker::ClassBodyContext * /*ctx*/) override { }
+
+  virtual void enterCompanionNamespace(flicker::CompanionNamespaceContext * /*ctx*/) override { }
+  virtual void exitCompanionNamespace(flicker::CompanionNamespaceContext * /*ctx*/) override { }
+
+  virtual void enterClassItem(flicker::ClassItemContext * /*ctx*/) override { }
+  virtual void exitClassItem(flicker::ClassItemContext * /*ctx*/) override { }
+
+  virtual void enterMethod(flicker::MethodContext * /*ctx*/) override { }
+  virtual void exitMethod(flicker::MethodContext * /*ctx*/) override { }
 
   virtual void enterUsingStatement(flicker::UsingStatementContext * /*ctx*/) override { }
   virtual void exitUsingStatement(flicker::UsingStatementContext * /*ctx*/) override { }
@@ -129,71 +144,83 @@ public:
   virtual void enterElseCase(flicker::ElseCaseContext * /*ctx*/) override { }
   virtual void exitElseCase(flicker::ElseCaseContext * /*ctx*/) override { }
 
-  virtual void enterExprMulDivMod(flicker::ExprMulDivModContext * /*ctx*/) override { }
-  virtual void exitExprMulDivMod(flicker::ExprMulDivModContext * /*ctx*/) override { }
+  virtual void enterConstant(flicker::ConstantContext * /*ctx*/) override { }
+  virtual void exitConstant(flicker::ConstantContext * /*ctx*/) override { }
 
-  virtual void enterExprAddSub(flicker::ExprAddSubContext * /*ctx*/) override { }
-  virtual void exitExprAddSub(flicker::ExprAddSubContext * /*ctx*/) override { }
+  virtual void enterPowerExpr(flicker::PowerExprContext * /*ctx*/) override { }
+  virtual void exitPowerExpr(flicker::PowerExprContext * /*ctx*/) override { }
 
-  virtual void enterExprIdentifier(flicker::ExprIdentifierContext * /*ctx*/) override { }
-  virtual void exitExprIdentifier(flicker::ExprIdentifierContext * /*ctx*/) override { }
+  virtual void enterTermExpr(flicker::TermExprContext * /*ctx*/) override { }
+  virtual void exitTermExpr(flicker::TermExprContext * /*ctx*/) override { }
 
-  virtual void enterExprRange(flicker::ExprRangeContext * /*ctx*/) override { }
-  virtual void exitExprRange(flicker::ExprRangeContext * /*ctx*/) override { }
+  virtual void enterBitShiftExpr(flicker::BitShiftExprContext * /*ctx*/) override { }
+  virtual void exitBitShiftExpr(flicker::BitShiftExprContext * /*ctx*/) override { }
 
-  virtual void enterExprAssign(flicker::ExprAssignContext * /*ctx*/) override { }
-  virtual void exitExprAssign(flicker::ExprAssignContext * /*ctx*/) override { }
+  virtual void enterFactorExpr(flicker::FactorExprContext * /*ctx*/) override { }
+  virtual void exitFactorExpr(flicker::FactorExprContext * /*ctx*/) override { }
 
-  virtual void enterExprLambda(flicker::ExprLambdaContext * /*ctx*/) override { }
-  virtual void exitExprLambda(flicker::ExprLambdaContext * /*ctx*/) override { }
+  virtual void enterParenExpr(flicker::ParenExprContext * /*ctx*/) override { }
+  virtual void exitParenExpr(flicker::ParenExprContext * /*ctx*/) override { }
 
-  virtual void enterExprCompare(flicker::ExprCompareContext * /*ctx*/) override { }
-  virtual void exitExprCompare(flicker::ExprCompareContext * /*ctx*/) override { }
+  virtual void enterLambda(flicker::LambdaContext * /*ctx*/) override { }
+  virtual void exitLambda(flicker::LambdaContext * /*ctx*/) override { }
 
-  virtual void enterExprMember(flicker::ExprMemberContext * /*ctx*/) override { }
-  virtual void exitExprMember(flicker::ExprMemberContext * /*ctx*/) override { }
+  virtual void enterBitwisExpr(flicker::BitwisExprContext * /*ctx*/) override { }
+  virtual void exitBitwisExpr(flicker::BitwisExprContext * /*ctx*/) override { }
 
-  virtual void enterExprParen(flicker::ExprParenContext * /*ctx*/) override { }
-  virtual void exitExprParen(flicker::ExprParenContext * /*ctx*/) override { }
+  virtual void enterMember(flicker::MemberContext * /*ctx*/) override { }
+  virtual void exitMember(flicker::MemberContext * /*ctx*/) override { }
 
-  virtual void enterExprOr(flicker::ExprOrContext * /*ctx*/) override { }
-  virtual void exitExprOr(flicker::ExprOrContext * /*ctx*/) override { }
+  virtual void enterIfExpr(flicker::IfExprContext * /*ctx*/) override { }
+  virtual void exitIfExpr(flicker::IfExprContext * /*ctx*/) override { }
 
-  virtual void enterExprInterpolation(flicker::ExprInterpolationContext * /*ctx*/) override { }
-  virtual void exitExprInterpolation(flicker::ExprInterpolationContext * /*ctx*/) override { }
+  virtual void enterArrayAccess(flicker::ArrayAccessContext * /*ctx*/) override { }
+  virtual void exitArrayAccess(flicker::ArrayAccessContext * /*ctx*/) override { }
 
-  virtual void enterExprCall(flicker::ExprCallContext * /*ctx*/) override { }
-  virtual void exitExprCall(flicker::ExprCallContext * /*ctx*/) override { }
+  virtual void enterListOrMap(flicker::ListOrMapContext * /*ctx*/) override { }
+  virtual void exitListOrMap(flicker::ListOrMapContext * /*ctx*/) override { }
 
-  virtual void enterExprListOrMap(flicker::ExprListOrMapContext * /*ctx*/) override { }
-  virtual void exitExprListOrMap(flicker::ExprListOrMapContext * /*ctx*/) override { }
+  virtual void enterIsExpr(flicker::IsExprContext * /*ctx*/) override { }
+  virtual void exitIsExpr(flicker::IsExprContext * /*ctx*/) override { }
 
-  virtual void enterExprPrefix(flicker::ExprPrefixContext * /*ctx*/) override { }
-  virtual void exitExprPrefix(flicker::ExprPrefixContext * /*ctx*/) override { }
+  virtual void enterIdentifier(flicker::IdentifierContext * /*ctx*/) override { }
+  virtual void exitIdentifier(flicker::IdentifierContext * /*ctx*/) override { }
 
-  virtual void enterExprBitwiseB(flicker::ExprBitwiseBContext * /*ctx*/) override { }
-  virtual void exitExprBitwiseB(flicker::ExprBitwiseBContext * /*ctx*/) override { }
+  virtual void enterComparison(flicker::ComparisonContext * /*ctx*/) override { }
+  virtual void exitComparison(flicker::ComparisonContext * /*ctx*/) override { }
 
-  virtual void enterExprAnd(flicker::ExprAndContext * /*ctx*/) override { }
-  virtual void exitExprAnd(flicker::ExprAndContext * /*ctx*/) override { }
+  virtual void enterCheckNotNil(flicker::CheckNotNilContext * /*ctx*/) override { }
+  virtual void exitCheckNotNil(flicker::CheckNotNilContext * /*ctx*/) override { }
 
-  virtual void enterExprPower(flicker::ExprPowerContext * /*ctx*/) override { }
-  virtual void exitExprPower(flicker::ExprPowerContext * /*ctx*/) override { }
+  virtual void enterInExpr(flicker::InExprContext * /*ctx*/) override { }
+  virtual void exitInExpr(flicker::InExprContext * /*ctx*/) override { }
 
-  virtual void enterExprIndex(flicker::ExprIndexContext * /*ctx*/) override { }
-  virtual void exitExprIndex(flicker::ExprIndexContext * /*ctx*/) override { }
+  virtual void enterAssignment(flicker::AssignmentContext * /*ctx*/) override { }
+  virtual void exitAssignment(flicker::AssignmentContext * /*ctx*/) override { }
 
-  virtual void enterExprIf(flicker::ExprIfContext * /*ctx*/) override { }
-  virtual void exitExprIf(flicker::ExprIfContext * /*ctx*/) override { }
+  virtual void enterOrExpr(flicker::OrExprContext * /*ctx*/) override { }
+  virtual void exitOrExpr(flicker::OrExprContext * /*ctx*/) override { }
 
-  virtual void enterExprShift(flicker::ExprShiftContext * /*ctx*/) override { }
-  virtual void exitExprShift(flicker::ExprShiftContext * /*ctx*/) override { }
+  virtual void enterCall(flicker::CallContext * /*ctx*/) override { }
+  virtual void exitCall(flicker::CallContext * /*ctx*/) override { }
 
-  virtual void enterExprConstant(flicker::ExprConstantContext * /*ctx*/) override { }
-  virtual void exitExprConstant(flicker::ExprConstantContext * /*ctx*/) override { }
+  virtual void enterPrefixExpr(flicker::PrefixExprContext * /*ctx*/) override { }
+  virtual void exitPrefixExpr(flicker::PrefixExprContext * /*ctx*/) override { }
 
-  virtual void enterExprStaticMember(flicker::ExprStaticMemberContext * /*ctx*/) override { }
-  virtual void exitExprStaticMember(flicker::ExprStaticMemberContext * /*ctx*/) override { }
+  virtual void enterInterpolation(flicker::InterpolationContext * /*ctx*/) override { }
+  virtual void exitInterpolation(flicker::InterpolationContext * /*ctx*/) override { }
+
+  virtual void enterNotExpr(flicker::NotExprContext * /*ctx*/) override { }
+  virtual void exitNotExpr(flicker::NotExprContext * /*ctx*/) override { }
+
+  virtual void enterScopedIdentifier(flicker::ScopedIdentifierContext * /*ctx*/) override { }
+  virtual void exitScopedIdentifier(flicker::ScopedIdentifierContext * /*ctx*/) override { }
+
+  virtual void enterRangeExpr(flicker::RangeExprContext * /*ctx*/) override { }
+  virtual void exitRangeExpr(flicker::RangeExprContext * /*ctx*/) override { }
+
+  virtual void enterAndExpr(flicker::AndExprContext * /*ctx*/) override { }
+  virtual void exitAndExpr(flicker::AndExprContext * /*ctx*/) override { }
 
   virtual void enterComparisonOperator(flicker::ComparisonOperatorContext * /*ctx*/) override { }
   virtual void exitComparisonOperator(flicker::ComparisonOperatorContext * /*ctx*/) override { }
