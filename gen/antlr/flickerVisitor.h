@@ -34,6 +34,8 @@ public:
 
     virtual std::any visitVariableDecl(flicker::VariableDeclContext *context) = 0;
 
+    virtual std::any visitTypeParam(flicker::TypeParamContext *context) = 0;
+
     virtual std::any visitFunctionDecl(flicker::FunctionDeclContext *context) = 0;
 
     virtual std::any visitFuncReturnType(flicker::FuncReturnTypeContext *context) = 0;
@@ -48,9 +50,17 @@ public:
 
     virtual std::any visitBlockBody(flicker::BlockBodyContext *context) = 0;
 
+    virtual std::any visitAccessSpecifier(flicker::AccessSpecifierContext *context) = 0;
+
     virtual std::any visitClassDecl(flicker::ClassDeclContext *context) = 0;
 
     virtual std::any visitClassBody(flicker::ClassBodyContext *context) = 0;
+
+    virtual std::any visitCompanionNamespace(flicker::CompanionNamespaceContext *context) = 0;
+
+    virtual std::any visitClassItem(flicker::ClassItemContext *context) = 0;
+
+    virtual std::any visitMethod(flicker::MethodContext *context) = 0;
 
     virtual std::any visitUsingStatement(flicker::UsingStatementContext *context) = 0;
 
@@ -94,49 +104,57 @@ public:
 
     virtual std::any visitElseCase(flicker::ElseCaseContext *context) = 0;
 
-    virtual std::any visitExprMulDivMod(flicker::ExprMulDivModContext *context) = 0;
+    virtual std::any visitConstant(flicker::ConstantContext *context) = 0;
 
-    virtual std::any visitExprAddSub(flicker::ExprAddSubContext *context) = 0;
+    virtual std::any visitPowerExpr(flicker::PowerExprContext *context) = 0;
 
-    virtual std::any visitExprIdentifier(flicker::ExprIdentifierContext *context) = 0;
+    virtual std::any visitTermExpr(flicker::TermExprContext *context) = 0;
 
-    virtual std::any visitExprRange(flicker::ExprRangeContext *context) = 0;
+    virtual std::any visitBitShiftExpr(flicker::BitShiftExprContext *context) = 0;
 
-    virtual std::any visitExprAssign(flicker::ExprAssignContext *context) = 0;
+    virtual std::any visitFactorExpr(flicker::FactorExprContext *context) = 0;
 
-    virtual std::any visitExprLambda(flicker::ExprLambdaContext *context) = 0;
+    virtual std::any visitParenExpr(flicker::ParenExprContext *context) = 0;
 
-    virtual std::any visitExprCompare(flicker::ExprCompareContext *context) = 0;
+    virtual std::any visitLambda(flicker::LambdaContext *context) = 0;
 
-    virtual std::any visitExprMember(flicker::ExprMemberContext *context) = 0;
+    virtual std::any visitBitwisExpr(flicker::BitwisExprContext *context) = 0;
 
-    virtual std::any visitExprParen(flicker::ExprParenContext *context) = 0;
+    virtual std::any visitMember(flicker::MemberContext *context) = 0;
 
-    virtual std::any visitExprOr(flicker::ExprOrContext *context) = 0;
+    virtual std::any visitIfExpr(flicker::IfExprContext *context) = 0;
 
-    virtual std::any visitExprInterpolation(flicker::ExprInterpolationContext *context) = 0;
+    virtual std::any visitArrayAccess(flicker::ArrayAccessContext *context) = 0;
 
-    virtual std::any visitExprCall(flicker::ExprCallContext *context) = 0;
+    virtual std::any visitListOrMap(flicker::ListOrMapContext *context) = 0;
 
-    virtual std::any visitExprListOrMap(flicker::ExprListOrMapContext *context) = 0;
+    virtual std::any visitIsExpr(flicker::IsExprContext *context) = 0;
 
-    virtual std::any visitExprPrefix(flicker::ExprPrefixContext *context) = 0;
+    virtual std::any visitIdentifier(flicker::IdentifierContext *context) = 0;
 
-    virtual std::any visitExprBitwiseB(flicker::ExprBitwiseBContext *context) = 0;
+    virtual std::any visitComparison(flicker::ComparisonContext *context) = 0;
 
-    virtual std::any visitExprAnd(flicker::ExprAndContext *context) = 0;
+    virtual std::any visitCheckNotNil(flicker::CheckNotNilContext *context) = 0;
 
-    virtual std::any visitExprPower(flicker::ExprPowerContext *context) = 0;
+    virtual std::any visitInExpr(flicker::InExprContext *context) = 0;
 
-    virtual std::any visitExprIndex(flicker::ExprIndexContext *context) = 0;
+    virtual std::any visitAssignment(flicker::AssignmentContext *context) = 0;
 
-    virtual std::any visitExprIf(flicker::ExprIfContext *context) = 0;
+    virtual std::any visitOrExpr(flicker::OrExprContext *context) = 0;
 
-    virtual std::any visitExprShift(flicker::ExprShiftContext *context) = 0;
+    virtual std::any visitCall(flicker::CallContext *context) = 0;
 
-    virtual std::any visitExprConstant(flicker::ExprConstantContext *context) = 0;
+    virtual std::any visitPrefixExpr(flicker::PrefixExprContext *context) = 0;
 
-    virtual std::any visitExprStaticMember(flicker::ExprStaticMemberContext *context) = 0;
+    virtual std::any visitInterpolation(flicker::InterpolationContext *context) = 0;
+
+    virtual std::any visitNotExpr(flicker::NotExprContext *context) = 0;
+
+    virtual std::any visitScopedIdentifier(flicker::ScopedIdentifierContext *context) = 0;
+
+    virtual std::any visitRangeExpr(flicker::RangeExprContext *context) = 0;
+
+    virtual std::any visitAndExpr(flicker::AndExprContext *context) = 0;
 
     virtual std::any visitComparisonOperator(flicker::ComparisonOperatorContext *context) = 0;
 

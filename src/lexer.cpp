@@ -14,9 +14,9 @@ namespace Keywords {
   //   although CAPITALIZED would be okay.
   const std::unordered_map<std::string_view, TokenType> map {
     {"and", TOKEN_AND},
-    {"attribute", TOKEN_ATTRIBUTE},
     {"break", TOKEN_BREAK},
     {"class", TOKEN_CLASS},
+    {"companion_namespace", TOKEN_CN},
     {"continue", TOKEN_CONTINUE},
     {"do", TOKEN_DO},
     {"each", TOKEN_EACH},
@@ -32,9 +32,11 @@ namespace Keywords {
     {"not", TOKEN_NOT},
     {"of", TOKEN_OF},
     {"or", TOKEN_OR},
+    {"override", TOKEN_OVERRIDE},
     {"pass", TOKEN_PASS},
     {"print", TOKEN_PRINT},
     {"error", TOKEN_PRINT_ERROR},
+    {"private", TOKEN_PRIVATE},
     {"return", TOKEN_RETURN},
     {"shl", TOKEN_SHL},
     {"shr", TOKEN_SHR},
@@ -414,7 +416,7 @@ std::optional<Token> Lexer::indentation() {
     switch (peek()) {
       case '\0': return std::nullopt; // EOF, no need to report this indentation.
 
-      case ' ': // Whitespace character
+      case ' ':  // Whitespace character
       case '\r': // Whitespace character
       case '\n': // This line was whitespace or comments only. Try again on the next line.
         advance();
@@ -547,6 +549,7 @@ std::optional<Token> Lexer::indentation() {
       case '&': return make_token(TOKEN_AMPERSAND);
       case '~': return make_token(TOKEN_TILDE);
       case '.': return make_token(match('.') ? (match('<') ? TOKEN_DOT_DOT_LT : TOKEN_DOT_DOT) : TOKEN_DOT);
+      case '?': return make_token(match('.') ? TOKEN_QUEST_DOT : match('?') ? TOKEN_QUEST_QUEST : TOKEN_QUEST);
       case ':': return make_token(match(':') ? TOKEN_COLON_COLON : TOKEN_COLON);
       case '*': return make_token(match('*') ? TOKEN_STAR_STAR : TOKEN_STAR);
       case '-': return make_token(match('>') ? TOKEN_RIGHT_ARROW : TOKEN_MINUS);

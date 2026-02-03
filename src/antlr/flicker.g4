@@ -1,27 +1,27 @@
 parser grammar flicker;
 
 tokens {
-	// Single-character tokens (0 - 14)
-	LEFT_PAREN, RIGHT_PAREN, LEFT_BRACKET, RIGHT_BRACKET, LEFT_BRACE, RIGHT_BRACE,
-	SEMICOLON, COMMA, PLUS, SLASH, PERCENT, PIPE, CARET, AMPERSAND, TILDE,
-	// 1-3 character tokens (15 - 31)
-	DOT, DOT_DOT, DOT_DOT_LT,
-	COLON, COLON_COLON,
-	STAR, STAR_STAR,
-	MINUS, RIGHT_ARROW,
-	BANG, BANG_EQ,
-	EQ, EQ_EQ,
-	GT, GT_EQ,
-	LT, LT_EQ,
-	// Literals (32 - 36)
-	IDENTIFIER, STRING, INTERPOLATION, CHAR, NUMBER,
-	// Keywords (37 - 70)
-	AND, ATTRIBUTE, BREAK, CLASS, CONTINUE, DO, EACH, ELIF, ELSE,
-	FALSE, FOR, FUN, IF, IN, IS, NIL, NOT, OF, OR, PASS, PRINT,
-	PRINT_ERROR, RETURN, SHL, SHR, STATIC, SUPER, THIS, TRUE, USING,
-	VAL, VAR, WHEN, WHILE,
-	// Whitespace (71 - 73)
-	INDENT, DEDENT, LINE
+  // Single-character tokens
+  LEFT_PAREN, RIGHT_PAREN, LEFT_BRACKET, RIGHT_BRACKET, LEFT_BRACE, RIGHT_BRACE, SEMICOLON, COMMA,
+  PLUS, SLASH, PERCENT, PIPE, CARET, AMPERSAND, TILDE,
+  // 1-3 character tokens
+  DOT, DOT_DOT, DOT_DOT_LT,
+  QUEST, QUEST_QUEST, QUEST_DOT,
+  COLON, COLON_COLON,
+  STAR, STAR_STAR,
+  MINUS, RIGHT_ARROW,
+  BANG, BANG_EQ,
+  EQ, EQ_EQ,
+  GT, GT_EQ,
+  LT, LT_EQ,
+  // Literals
+  IDENTIFIER, STRING, INTERPOLATION, CHAR, NUMBER,
+  // Keywords
+  AND, BREAK, CLASS, CONTINUE, CN, DO, EACH, ELIF, ELSE, FALSE, FOR, FUN, IF,
+  IN, IS, NIL, NOT, OF, OR, OVERRIDE, PASS, PRINT, PRINT_ERROR, PRIVATE, RETURN,
+  SHL, SHR, STATIC, SUPER, THIS, TRUE, USING, VAL, VAR, WHEN, WHILE,
+  // Whitespace
+  INDENT, DEDENT, LINE
 }
 
 program : newline* (topLevel statementEnd)* EOF ;
@@ -34,7 +34,7 @@ statementEnd      // This one is a statement end check.
 
 topLevel : statement | expression ;
 
-type : IDENTIFIER /* QUEST? */ ((OF | FOR) IDENTIFIER /* QUEST? */)? ;
+type : IDENTIFIER QUEST? ((OF | FOR) IDENTIFIER QUEST?)? ;
 // List of Int, Bagel?, List? of Bagel?, FunctionWrapper? for SpecialFunction
 
 // Statement ------------------------------
@@ -59,7 +59,8 @@ statement
 
 variableDecl : (VAR | VAL) IDENTIFIER (COLON type)? (EQ expression)?;
 
-functionDecl : FUN IDENTIFIER LEFT_PAREN (paramList)? RIGHT_PAREN (funcReturnType)? functionContents;
+typeParam : (OF | FOR) IDENTIFIER ;
+functionDecl : FUN IDENTIFIER typeParam? LEFT_PAREN (paramList)? RIGHT_PAREN (funcReturnType)? functionContents;
 
 funcReturnType : (COLON | RIGHT_ARROW) IDENTIFIER; // TODO: Decide on a symbol.
 functionContents : blockOrStatement | (EQ expression);
@@ -70,9 +71,13 @@ param : IDENTIFIER COLON type ;
 block : (DO)? newline INDENT blockBody DEDENT ;
 blockBody : (topLevel statementEnd)* ;
 
-classDecl : CLASS IDENTIFIER (LT IDENTIFIER)? classBody ;
+accessSpecifier : PRIVATE ; // There may be more
 
-classBody : NUMBER ; // TODO!
+classDecl : CLASS IDENTIFIER typeParam? (IS type)? classBody ;
+classBody : (companionNamespace newline)? (classItem newline)* ;
+companionNamespace : CN newline INDENT (classItem newline)* DEDENT ;
+classItem : accessSpecifier* (variableDecl | method ) ;
+method: OVERRIDE? functionDecl ;
 
 usingStatement
 	: USING STRING (FOR (DOT | STAR | importList))? // Import
@@ -107,28 +112,32 @@ elseCase : ELSE blockOrStatement ;
 // Expression ------------------------------
 
 expression
-	: IDENTIFIER                                                            #exprIdentifier
-	| constantExpr                                                          #exprConstant
-	| interpolationExpr                                                     #exprInterpolation
-	| listOrMapLiteral                                                      #exprListOrMap
-	| lambdaLiteral                                                         #exprLambda
-	| LEFT_PAREN expression RIGHT_PAREN                                     #exprParen
-	| expression DOT IDENTIFIER                                             #exprMember
-	| expression COLON_COLON IDENTIFIER                                     #exprStaticMember
-	| expression LEFT_PAREN (expression (COMMA expression)*)? RIGHT_PAREN   #exprCall
-	| expression LEFT_BRACKET (expression (COMMA expression)*) RIGHT_BRACKET #exprIndex
-	| (MINUS | BANG | TILDE) expression                                     #exprPrefix
-	| <assoc=right> expression STAR_STAR expression                         #exprPower
-	| expression (SLASH | STAR) expression                                  #exprMulDivMod
-	| expression (PLUS | MINUS) expression                                  #exprAddSub
-	| expression (SHL | SHR) expression                                     #exprShift
-	| expression (PIPE | AMPERSAND | CARET) expression                      #exprBitwiseB
-	| expression comparisonOperator expression                              #exprCompare
-	| expression (DOT_DOT | DOT_DOT_LT) expression                          #exprRange
-	| expression AND expression                                             #exprAnd
-	| expression OR expression                                              #exprOr
-	| expression IF expression ELSE expression                              #exprIf
-	| <assoc=right> expression EQ expression                                #exprAssign
+	: IDENTIFIER COLON_COLON IDENTIFIER                                     #scopedIdentifier
+	| IDENTIFIER                                                            #identifier
+	| constantExpr                                                          #constant
+	| interpolationExpr                                                     #interpolation
+	| listOrMapLiteral                                                      #listOrMap
+	| lambdaLiteral                                                         #lambda
+	| LEFT_PAREN expression RIGHT_PAREN                                     #parenExpr
+	| expression (DOT_DOT | DOT_DOT_LT) expression                          #rangeExpr
+	| expression (DOT | QUEST_DOT) IDENTIFIER                               #member
+	| expression LEFT_PAREN (expression (COMMA expression)*)? RIGHT_PAREN   #call
+	| expression LEFT_BRACKET (expression (COMMA expression)*) RIGHT_BRACKET #arrayAccess
+	| expression QUEST_QUEST                                                #checkNotNil
+	| <assoc=right> expression STAR_STAR expression                         #powerExpr
+	| (MINUS | BANG | TILDE) expression                                     #prefixExpr
+	| expression (SLASH | STAR) expression                                  #factorExpr
+	| expression (PLUS | MINUS) expression                                  #termExpr
+	| expression (SHL | SHR) expression                                     #bitShiftExpr
+	| expression (PIPE | AMPERSAND | CARET) expression                      #bitwisExpr
+	| expression (IS | IS NOT) expression                                   #isExpr
+	| expression (IN | NOT IN) expression                                   #inExpr
+	| expression comparisonOperator expression                              #comparison
+	| expression AND expression                                             #andExpr
+	| expression OR expression                                              #orExpr
+	| NOT expression                                                        #notExpr
+	| expression IF expression ELSE expression                              #ifExpr
+	| <assoc=right> expression EQ expression                                #assignment
 	;
 
 comparisonOperator : EQ_EQ | BANG_EQ | GT | GT_EQ | LT | LT_EQ ;

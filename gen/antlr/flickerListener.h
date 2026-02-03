@@ -37,6 +37,9 @@ public:
   virtual void enterVariableDecl(flicker::VariableDeclContext *ctx) = 0;
   virtual void exitVariableDecl(flicker::VariableDeclContext *ctx) = 0;
 
+  virtual void enterTypeParam(flicker::TypeParamContext *ctx) = 0;
+  virtual void exitTypeParam(flicker::TypeParamContext *ctx) = 0;
+
   virtual void enterFunctionDecl(flicker::FunctionDeclContext *ctx) = 0;
   virtual void exitFunctionDecl(flicker::FunctionDeclContext *ctx) = 0;
 
@@ -58,11 +61,23 @@ public:
   virtual void enterBlockBody(flicker::BlockBodyContext *ctx) = 0;
   virtual void exitBlockBody(flicker::BlockBodyContext *ctx) = 0;
 
+  virtual void enterAccessSpecifier(flicker::AccessSpecifierContext *ctx) = 0;
+  virtual void exitAccessSpecifier(flicker::AccessSpecifierContext *ctx) = 0;
+
   virtual void enterClassDecl(flicker::ClassDeclContext *ctx) = 0;
   virtual void exitClassDecl(flicker::ClassDeclContext *ctx) = 0;
 
   virtual void enterClassBody(flicker::ClassBodyContext *ctx) = 0;
   virtual void exitClassBody(flicker::ClassBodyContext *ctx) = 0;
+
+  virtual void enterCompanionNamespace(flicker::CompanionNamespaceContext *ctx) = 0;
+  virtual void exitCompanionNamespace(flicker::CompanionNamespaceContext *ctx) = 0;
+
+  virtual void enterClassItem(flicker::ClassItemContext *ctx) = 0;
+  virtual void exitClassItem(flicker::ClassItemContext *ctx) = 0;
+
+  virtual void enterMethod(flicker::MethodContext *ctx) = 0;
+  virtual void exitMethod(flicker::MethodContext *ctx) = 0;
 
   virtual void enterUsingStatement(flicker::UsingStatementContext *ctx) = 0;
   virtual void exitUsingStatement(flicker::UsingStatementContext *ctx) = 0;
@@ -127,71 +142,83 @@ public:
   virtual void enterElseCase(flicker::ElseCaseContext *ctx) = 0;
   virtual void exitElseCase(flicker::ElseCaseContext *ctx) = 0;
 
-  virtual void enterExprMulDivMod(flicker::ExprMulDivModContext *ctx) = 0;
-  virtual void exitExprMulDivMod(flicker::ExprMulDivModContext *ctx) = 0;
+  virtual void enterConstant(flicker::ConstantContext *ctx) = 0;
+  virtual void exitConstant(flicker::ConstantContext *ctx) = 0;
 
-  virtual void enterExprAddSub(flicker::ExprAddSubContext *ctx) = 0;
-  virtual void exitExprAddSub(flicker::ExprAddSubContext *ctx) = 0;
+  virtual void enterPowerExpr(flicker::PowerExprContext *ctx) = 0;
+  virtual void exitPowerExpr(flicker::PowerExprContext *ctx) = 0;
 
-  virtual void enterExprIdentifier(flicker::ExprIdentifierContext *ctx) = 0;
-  virtual void exitExprIdentifier(flicker::ExprIdentifierContext *ctx) = 0;
+  virtual void enterTermExpr(flicker::TermExprContext *ctx) = 0;
+  virtual void exitTermExpr(flicker::TermExprContext *ctx) = 0;
 
-  virtual void enterExprRange(flicker::ExprRangeContext *ctx) = 0;
-  virtual void exitExprRange(flicker::ExprRangeContext *ctx) = 0;
+  virtual void enterBitShiftExpr(flicker::BitShiftExprContext *ctx) = 0;
+  virtual void exitBitShiftExpr(flicker::BitShiftExprContext *ctx) = 0;
 
-  virtual void enterExprAssign(flicker::ExprAssignContext *ctx) = 0;
-  virtual void exitExprAssign(flicker::ExprAssignContext *ctx) = 0;
+  virtual void enterFactorExpr(flicker::FactorExprContext *ctx) = 0;
+  virtual void exitFactorExpr(flicker::FactorExprContext *ctx) = 0;
 
-  virtual void enterExprLambda(flicker::ExprLambdaContext *ctx) = 0;
-  virtual void exitExprLambda(flicker::ExprLambdaContext *ctx) = 0;
+  virtual void enterParenExpr(flicker::ParenExprContext *ctx) = 0;
+  virtual void exitParenExpr(flicker::ParenExprContext *ctx) = 0;
 
-  virtual void enterExprCompare(flicker::ExprCompareContext *ctx) = 0;
-  virtual void exitExprCompare(flicker::ExprCompareContext *ctx) = 0;
+  virtual void enterLambda(flicker::LambdaContext *ctx) = 0;
+  virtual void exitLambda(flicker::LambdaContext *ctx) = 0;
 
-  virtual void enterExprMember(flicker::ExprMemberContext *ctx) = 0;
-  virtual void exitExprMember(flicker::ExprMemberContext *ctx) = 0;
+  virtual void enterBitwisExpr(flicker::BitwisExprContext *ctx) = 0;
+  virtual void exitBitwisExpr(flicker::BitwisExprContext *ctx) = 0;
 
-  virtual void enterExprParen(flicker::ExprParenContext *ctx) = 0;
-  virtual void exitExprParen(flicker::ExprParenContext *ctx) = 0;
+  virtual void enterMember(flicker::MemberContext *ctx) = 0;
+  virtual void exitMember(flicker::MemberContext *ctx) = 0;
 
-  virtual void enterExprOr(flicker::ExprOrContext *ctx) = 0;
-  virtual void exitExprOr(flicker::ExprOrContext *ctx) = 0;
+  virtual void enterIfExpr(flicker::IfExprContext *ctx) = 0;
+  virtual void exitIfExpr(flicker::IfExprContext *ctx) = 0;
 
-  virtual void enterExprInterpolation(flicker::ExprInterpolationContext *ctx) = 0;
-  virtual void exitExprInterpolation(flicker::ExprInterpolationContext *ctx) = 0;
+  virtual void enterArrayAccess(flicker::ArrayAccessContext *ctx) = 0;
+  virtual void exitArrayAccess(flicker::ArrayAccessContext *ctx) = 0;
 
-  virtual void enterExprCall(flicker::ExprCallContext *ctx) = 0;
-  virtual void exitExprCall(flicker::ExprCallContext *ctx) = 0;
+  virtual void enterListOrMap(flicker::ListOrMapContext *ctx) = 0;
+  virtual void exitListOrMap(flicker::ListOrMapContext *ctx) = 0;
 
-  virtual void enterExprListOrMap(flicker::ExprListOrMapContext *ctx) = 0;
-  virtual void exitExprListOrMap(flicker::ExprListOrMapContext *ctx) = 0;
+  virtual void enterIsExpr(flicker::IsExprContext *ctx) = 0;
+  virtual void exitIsExpr(flicker::IsExprContext *ctx) = 0;
 
-  virtual void enterExprPrefix(flicker::ExprPrefixContext *ctx) = 0;
-  virtual void exitExprPrefix(flicker::ExprPrefixContext *ctx) = 0;
+  virtual void enterIdentifier(flicker::IdentifierContext *ctx) = 0;
+  virtual void exitIdentifier(flicker::IdentifierContext *ctx) = 0;
 
-  virtual void enterExprBitwiseB(flicker::ExprBitwiseBContext *ctx) = 0;
-  virtual void exitExprBitwiseB(flicker::ExprBitwiseBContext *ctx) = 0;
+  virtual void enterComparison(flicker::ComparisonContext *ctx) = 0;
+  virtual void exitComparison(flicker::ComparisonContext *ctx) = 0;
 
-  virtual void enterExprAnd(flicker::ExprAndContext *ctx) = 0;
-  virtual void exitExprAnd(flicker::ExprAndContext *ctx) = 0;
+  virtual void enterCheckNotNil(flicker::CheckNotNilContext *ctx) = 0;
+  virtual void exitCheckNotNil(flicker::CheckNotNilContext *ctx) = 0;
 
-  virtual void enterExprPower(flicker::ExprPowerContext *ctx) = 0;
-  virtual void exitExprPower(flicker::ExprPowerContext *ctx) = 0;
+  virtual void enterInExpr(flicker::InExprContext *ctx) = 0;
+  virtual void exitInExpr(flicker::InExprContext *ctx) = 0;
 
-  virtual void enterExprIndex(flicker::ExprIndexContext *ctx) = 0;
-  virtual void exitExprIndex(flicker::ExprIndexContext *ctx) = 0;
+  virtual void enterAssignment(flicker::AssignmentContext *ctx) = 0;
+  virtual void exitAssignment(flicker::AssignmentContext *ctx) = 0;
 
-  virtual void enterExprIf(flicker::ExprIfContext *ctx) = 0;
-  virtual void exitExprIf(flicker::ExprIfContext *ctx) = 0;
+  virtual void enterOrExpr(flicker::OrExprContext *ctx) = 0;
+  virtual void exitOrExpr(flicker::OrExprContext *ctx) = 0;
 
-  virtual void enterExprShift(flicker::ExprShiftContext *ctx) = 0;
-  virtual void exitExprShift(flicker::ExprShiftContext *ctx) = 0;
+  virtual void enterCall(flicker::CallContext *ctx) = 0;
+  virtual void exitCall(flicker::CallContext *ctx) = 0;
 
-  virtual void enterExprConstant(flicker::ExprConstantContext *ctx) = 0;
-  virtual void exitExprConstant(flicker::ExprConstantContext *ctx) = 0;
+  virtual void enterPrefixExpr(flicker::PrefixExprContext *ctx) = 0;
+  virtual void exitPrefixExpr(flicker::PrefixExprContext *ctx) = 0;
 
-  virtual void enterExprStaticMember(flicker::ExprStaticMemberContext *ctx) = 0;
-  virtual void exitExprStaticMember(flicker::ExprStaticMemberContext *ctx) = 0;
+  virtual void enterInterpolation(flicker::InterpolationContext *ctx) = 0;
+  virtual void exitInterpolation(flicker::InterpolationContext *ctx) = 0;
+
+  virtual void enterNotExpr(flicker::NotExprContext *ctx) = 0;
+  virtual void exitNotExpr(flicker::NotExprContext *ctx) = 0;
+
+  virtual void enterScopedIdentifier(flicker::ScopedIdentifierContext *ctx) = 0;
+  virtual void exitScopedIdentifier(flicker::ScopedIdentifierContext *ctx) = 0;
+
+  virtual void enterRangeExpr(flicker::RangeExprContext *ctx) = 0;
+  virtual void exitRangeExpr(flicker::RangeExprContext *ctx) = 0;
+
+  virtual void enterAndExpr(flicker::AndExprContext *ctx) = 0;
+  virtual void exitAndExpr(flicker::AndExprContext *ctx) = 0;
 
   virtual void enterComparisonOperator(flicker::ComparisonOperatorContext *ctx) = 0;
   virtual void exitComparisonOperator(flicker::ComparisonOperatorContext *ctx) = 0;
