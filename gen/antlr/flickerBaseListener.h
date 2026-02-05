@@ -168,6 +168,9 @@ public:
   virtual void enterBitwisExpr(flicker::BitwisExprContext * /*ctx*/) override { }
   virtual void exitBitwisExpr(flicker::BitwisExprContext * /*ctx*/) override { }
 
+  virtual void enterNilCoalescingOp(flicker::NilCoalescingOpContext * /*ctx*/) override { }
+  virtual void exitNilCoalescingOp(flicker::NilCoalescingOpContext * /*ctx*/) override { }
+
   virtual void enterMember(flicker::MemberContext * /*ctx*/) override { }
   virtual void exitMember(flicker::MemberContext * /*ctx*/) override { }
 
@@ -188,9 +191,6 @@ public:
 
   virtual void enterComparison(flicker::ComparisonContext * /*ctx*/) override { }
   virtual void exitComparison(flicker::ComparisonContext * /*ctx*/) override { }
-
-  virtual void enterCheckNotNil(flicker::CheckNotNilContext * /*ctx*/) override { }
-  virtual void exitCheckNotNil(flicker::CheckNotNilContext * /*ctx*/) override { }
 
   virtual void enterInExpr(flicker::InExprContext * /*ctx*/) override { }
   virtual void exitInExpr(flicker::InExprContext * /*ctx*/) override { }

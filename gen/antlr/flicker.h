@@ -16,7 +16,7 @@ public:
     LEFT_PAREN = 1, RIGHT_PAREN = 2, LEFT_BRACKET = 3, RIGHT_BRACKET = 4, 
     LEFT_BRACE = 5, RIGHT_BRACE = 6, SEMICOLON = 7, COMMA = 8, PLUS = 9, 
     SLASH = 10, PERCENT = 11, PIPE = 12, CARET = 13, AMPERSAND = 14, TILDE = 15, 
-    DOT = 16, DOT_DOT = 17, DOT_DOT_LT = 18, QUEST = 19, QUEST_QUEST = 20, 
+    DOT = 16, DOT_DOT = 17, DOT_DOT_LT = 18, QUEST = 19, QUEST_COLON = 20, 
     QUEST_DOT = 21, COLON = 22, COLON_COLON = 23, STAR = 24, STAR_STAR = 25, 
     MINUS = 26, RIGHT_ARROW = 27, BANG = 28, BANG_EQ = 29, EQ = 30, EQ_EQ = 31, 
     GT = 32, GT_EQ = 33, LT = 34, LT_EQ = 35, IDENTIFIER = 36, STRING = 37, 
@@ -1007,6 +1007,19 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
+  class  NilCoalescingOpContext : public ExpressionContext {
+  public:
+    NilCoalescingOpContext(ExpressionContext *ctx);
+
+    std::vector<ExpressionContext *> expression();
+    ExpressionContext* expression(size_t i);
+    antlr4::tree::TerminalNode *QUEST_COLON();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
   class  MemberContext : public ExpressionContext {
   public:
     MemberContext(ExpressionContext *ctx);
@@ -1094,18 +1107,6 @@ public:
     std::vector<ExpressionContext *> expression();
     ExpressionContext* expression(size_t i);
     ComparisonOperatorContext *comparisonOperator();
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  CheckNotNilContext : public ExpressionContext {
-  public:
-    CheckNotNilContext(ExpressionContext *ctx);
-
-    ExpressionContext *expression();
-    antlr4::tree::TerminalNode *QUEST_QUEST();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 

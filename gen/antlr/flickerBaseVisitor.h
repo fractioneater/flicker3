@@ -217,6 +217,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitNilCoalescingOp(flicker::NilCoalescingOpContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitMember(flicker::MemberContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -242,10 +246,6 @@ public:
   }
 
   virtual std::any visitComparison(flicker::ComparisonContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitCheckNotNil(flicker::CheckNotNilContext *ctx) override {
     return visitChildren(ctx);
   }
 

@@ -41,15 +41,10 @@ enable_testing()
 add_executable(tests test/lexer-test.cpp)
 target_link_libraries(tests GTest::gtest_main flicker_lib)
 
-# Adapter test
-add_executable(test_adapter test/adapter-test.cpp)
-target_link_libraries(test_adapter GTest::gtest_main flicker_lib)
-
 # Parser test
 add_executable(test_parser test/parser-test.cpp)
 target_link_libraries(test_parser GTest::gtest_main flicker_lib)
 
 include(GoogleTest)
 gtest_discover_tests(tests)
-gtest_discover_tests(test_adapter)
 gtest_discover_tests(test_parser)

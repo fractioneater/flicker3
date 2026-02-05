@@ -78,12 +78,18 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
         continue;
       }
 
-      const auto type = token->getType();
-      if (type == 33) { // Identifier:
+      const auto type = token->getType() - 1;
+      if (type == TOKEN_IDENTIFIER) { // Identifier:
         std::cout << "Identifier '" << token->getText() << "': " << token->getLine() << ':' << token->getCharPositionInLine() << ", length "
           << token->getText().length() << "\n";
+      } else if (type == TOKEN_INDENT) {
+        std::cout << "Indent\n";
+      } else if (type == TOKEN_DEDENT) {
+        std::cout << "Dedent\n";
+      } else if (type == TOKEN_LINE) {
+        std::cout << "Newline\n";
       } else { // Other:
-        std::cout << "Token: type " << (type - 1) << ", " << token->getLine() << ":" << token->getCharPositionInLine() << ", length "
+        std::cout << "Token: type " << type << ", " << token->getLine() << ":" << token->getCharPositionInLine() << ", length "
           << token->getText().length() << "\n";
       }
     }

@@ -6,7 +6,7 @@ tokens {
   PLUS, SLASH, PERCENT, PIPE, CARET, AMPERSAND, TILDE,
   // 1-3 character tokens
   DOT, DOT_DOT, DOT_DOT_LT,
-  QUEST, QUEST_QUEST, QUEST_DOT,
+  QUEST, QUEST_COLON, QUEST_DOT,
   COLON, COLON_COLON,
   STAR, STAR_STAR,
   MINUS, RIGHT_ARROW,
@@ -123,7 +123,7 @@ expression
 	| expression (DOT | QUEST_DOT) IDENTIFIER                               #member
 	| expression LEFT_PAREN (expression (COMMA expression)*)? RIGHT_PAREN   #call
 	| expression LEFT_BRACKET (expression (COMMA expression)*) RIGHT_BRACKET #arrayAccess
-	| expression QUEST_QUEST                                                #checkNotNil
+	| expression QUEST_COLON expression                                     #nilCoalescingOp
 	| <assoc=right> expression STAR_STAR expression                         #powerExpr
 	| (MINUS | BANG | TILDE) expression                                     #prefixExpr
 	| expression (SLASH | STAR) expression                                  #factorExpr
@@ -158,7 +158,7 @@ mapLiteral : LEFT_BRACKET (RIGHT_ARROW | mapItems) RIGHT_BRACKET ;
 mapItems : mapItem (COMMA mapItem)* (COMMA)? ; // See above.
 mapItem : expression RIGHT_ARROW expression ;
 
-lambdaLiteral : FUN lambdaParams ((RIGHT_ARROW lambdaBody) | (EQ expression)) ;
+lambdaLiteral : FUN lambdaParams (RIGHT_ARROW lambdaBody | EQ expression) ;
 
 lambdaParams : paramList | parenthesizedOptionalParamList | /* No params at all */ ;
 parenthesizedOptionalParamList : (LEFT_PAREN (paramList)? RIGHT_PAREN) ;
