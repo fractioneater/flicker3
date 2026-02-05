@@ -25,11 +25,7 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitStatementEnd(flicker::StatementEndContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitTopLevel(flicker::TopLevelContext *ctx) override {
+  virtual std::any visitCodeItem(flicker::CodeItemContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -205,6 +201,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitLambdaCall(flicker::LambdaCallContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitParenExpr(flicker::ParenExprContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -337,15 +337,19 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitLambdaBody(flicker::LambdaBodyContext *ctx) override {
+  virtual std::any visitBlockLambda(flicker::BlockLambdaContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitBraceBody(flicker::BraceBodyContext *ctx) override {
+  virtual std::any visitBraceLambda(flicker::BraceLambdaContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitTerminator(flicker::TerminatorContext *ctx) override {
+  virtual std::any visitStatementLambdaBody(flicker::StatementLambdaBodyContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitExprLambdaBody(flicker::ExprLambdaBodyContext *ctx) override {
     return visitChildren(ctx);
   }
 

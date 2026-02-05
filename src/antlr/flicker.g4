@@ -24,15 +24,15 @@ tokens {
   INDENT, DEDENT, LINE
 }
 
-program : newline* (topLevel statementEnd)* EOF ;
+// TODO: Currently, a dedent looks like this: LINE DEDENT LINE. Both are there for convenience of this grammar file. There's a way to deal with both of them.
+//       The first, however, is much easier to remove. In fact, 'program' already shows how we can take an EOF without a line, so why don't we just take a
+//       DEDENT without a line?
+
+program : newline? (codeItem newline)* codeItem? EOF ;
 
 newline : LINE+ ; // This one is just a plain newline.
-statementEnd      // This one is a statement end check.
-	: newline EOF?
-	| EOF
-	;
 
-topLevel : statement | expression ;
+codeItem : statement | expression ;
 
 type : IDENTIFIER QUEST? ((OF | FOR) IDENTIFIER QUEST?)? ;
 // List of Int, Bagel?, List? of Bagel?, FunctionWrapper? for SpecialFunction
@@ -69,11 +69,11 @@ paramList : param (COMMA param)* ;
 param : IDENTIFIER COLON type ;
 
 block : (DO)? newline INDENT blockBody DEDENT ;
-blockBody : (topLevel statementEnd)* ;
+blockBody : (codeItem newline)* ;
 
 accessSpecifier : PRIVATE ; // There may be more
 
-classDecl : CLASS IDENTIFIER typeParam? (IS type)? classBody ;
+classDecl : CLASS IDENTIFIER typeParam? (IS type)? newline INDENT classBody DEDENT ;
 classBody : (companionNamespace newline)? (classItem newline)* ;
 companionNamespace : CN newline INDENT (classItem newline)* DEDENT ;
 classItem : accessSpecifier* (variableDecl | method ) ;
@@ -89,11 +89,11 @@ importItem : IDENTIFIER | IDENTIFIER RIGHT_ARROW IDENTIFIER ;
 
 loopLabel : COLON IDENTIFIER ;
 
-doStatement : DO topLevel ;
+doStatement : DO codeItem ;
 blockOrStatement : block | doStatement ;
 
-ifStmt : IF expression blockOrStatement (ELIF expression blockOrStatement)* (ELSE blockOrStatement)? ;
-whileStmt : WHILE loopLabel? expression blockOrStatement ;
+ifStmt : IF expression blockOrStatement (newline ELIF expression blockOrStatement)* (newline ELSE blockOrStatement)? ;
+whileStmt : WHILE loopLabel? expression blockOrStatement (newline ELSE blockOrStatement)? ; // While-else, but unlike Python's version.
 eachStmt : EACH loopLabel? IDENTIFIER (LEFT_BRACKET IDENTIFIER RIGHT_BRACKET)? IN expression blockOrStatement ;
 forStmt : FOR loopLabel? (variableDecl | expression)? SEMICOLON (expression)? SEMICOLON (expression)? blockOrStatement ;
 breakStmt : BREAK loopLabel? ;
@@ -105,7 +105,7 @@ consoleErrorStmt : PRINT_ERROR expression ;
 passStmt : PASS ;
 
 whenBody : newline INDENT whenContents DEDENT ;
-whenContents : (whenCase statementEnd)+ (elseCase statementEnd)? ;
+whenContents : (whenCase newline)+ (elseCase newline)? ;
 whenCase : expression blockOrStatement ;
 elseCase : ELSE blockOrStatement ;
 
@@ -123,6 +123,7 @@ expression
 	| expression (DOT | QUEST_DOT) IDENTIFIER                               #member
 	| expression LEFT_PAREN (expression (COMMA expression)*)? RIGHT_PAREN   #call
 	| expression LEFT_BRACKET (expression (COMMA expression)*) RIGHT_BRACKET #arrayAccess
+	| expression braceLambda                                                #lambdaCall
 	| expression QUEST_COLON expression                                     #nilCoalescingOp
 	| <assoc=right> expression STAR_STAR expression                         #powerExpr
 	| (MINUS | BANG | TILDE) expression                                     #prefixExpr
@@ -144,7 +145,7 @@ comparisonOperator : EQ_EQ | BANG_EQ | GT | GT_EQ | LT | LT_EQ ;
 
 // There's no reason to have empty interpolation, but it's still allowed.
 // Question: what happens if it tries to consume the next string as its expression?
-interpolationExpr : INTERPOLATION expression? STRING ;
+interpolationExpr : (INTERPOLATION expression?)+ STRING ;
 
 constantExpr : NUMBER | TRUE | FALSE | NIL | STRING ;
 
@@ -158,12 +159,13 @@ mapLiteral : LEFT_BRACKET (RIGHT_ARROW | mapItems) RIGHT_BRACKET ;
 mapItems : mapItem (COMMA mapItem)* (COMMA)? ; // See above.
 mapItem : expression RIGHT_ARROW expression ;
 
-lambdaLiteral : FUN lambdaParams (RIGHT_ARROW lambdaBody | EQ expression) ;
+lambdaLiteral : FUN (braceLambda | blockLambda) ;
 
-lambdaParams : paramList | parenthesizedOptionalParamList | /* No params at all */ ;
-parenthesizedOptionalParamList : (LEFT_PAREN (paramList)? RIGHT_PAREN) ;
+lambdaParams : paramList | parenthesizedOptionalParamList ;
+parenthesizedOptionalParamList : (LEFT_PAREN paramList? RIGHT_PAREN) ;
 
-lambdaBody : braceBody | block ;
+blockLambda : lambdaParams (blockOrStatement | EQ expression) ;
+braceLambda : LEFT_BRACE (statementLambdaBody | exprLambdaBody) RIGHT_BRACE ;
 
-braceBody : LEFT_BRACE (statement terminator+)* statement? terminator* RIGHT_BRACE ;
-terminator : (SEMICOLON | newline) ;
+statementLambdaBody : (lambdaParams RIGHT_ARROW)? (codeItem SEMICOLON)* ; // All must end in semicolon.
+exprLambdaBody : lambdaParams? EQ expression ;

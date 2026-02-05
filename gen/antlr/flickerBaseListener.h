@@ -24,11 +24,8 @@ public:
   virtual void enterNewline(flicker::NewlineContext * /*ctx*/) override { }
   virtual void exitNewline(flicker::NewlineContext * /*ctx*/) override { }
 
-  virtual void enterStatementEnd(flicker::StatementEndContext * /*ctx*/) override { }
-  virtual void exitStatementEnd(flicker::StatementEndContext * /*ctx*/) override { }
-
-  virtual void enterTopLevel(flicker::TopLevelContext * /*ctx*/) override { }
-  virtual void exitTopLevel(flicker::TopLevelContext * /*ctx*/) override { }
+  virtual void enterCodeItem(flicker::CodeItemContext * /*ctx*/) override { }
+  virtual void exitCodeItem(flicker::CodeItemContext * /*ctx*/) override { }
 
   virtual void enterType(flicker::TypeContext * /*ctx*/) override { }
   virtual void exitType(flicker::TypeContext * /*ctx*/) override { }
@@ -159,6 +156,9 @@ public:
   virtual void enterFactorExpr(flicker::FactorExprContext * /*ctx*/) override { }
   virtual void exitFactorExpr(flicker::FactorExprContext * /*ctx*/) override { }
 
+  virtual void enterLambdaCall(flicker::LambdaCallContext * /*ctx*/) override { }
+  virtual void exitLambdaCall(flicker::LambdaCallContext * /*ctx*/) override { }
+
   virtual void enterParenExpr(flicker::ParenExprContext * /*ctx*/) override { }
   virtual void exitParenExpr(flicker::ParenExprContext * /*ctx*/) override { }
 
@@ -258,14 +258,17 @@ public:
   virtual void enterParenthesizedOptionalParamList(flicker::ParenthesizedOptionalParamListContext * /*ctx*/) override { }
   virtual void exitParenthesizedOptionalParamList(flicker::ParenthesizedOptionalParamListContext * /*ctx*/) override { }
 
-  virtual void enterLambdaBody(flicker::LambdaBodyContext * /*ctx*/) override { }
-  virtual void exitLambdaBody(flicker::LambdaBodyContext * /*ctx*/) override { }
+  virtual void enterBlockLambda(flicker::BlockLambdaContext * /*ctx*/) override { }
+  virtual void exitBlockLambda(flicker::BlockLambdaContext * /*ctx*/) override { }
 
-  virtual void enterBraceBody(flicker::BraceBodyContext * /*ctx*/) override { }
-  virtual void exitBraceBody(flicker::BraceBodyContext * /*ctx*/) override { }
+  virtual void enterBraceLambda(flicker::BraceLambdaContext * /*ctx*/) override { }
+  virtual void exitBraceLambda(flicker::BraceLambdaContext * /*ctx*/) override { }
 
-  virtual void enterTerminator(flicker::TerminatorContext * /*ctx*/) override { }
-  virtual void exitTerminator(flicker::TerminatorContext * /*ctx*/) override { }
+  virtual void enterStatementLambdaBody(flicker::StatementLambdaBodyContext * /*ctx*/) override { }
+  virtual void exitStatementLambdaBody(flicker::StatementLambdaBodyContext * /*ctx*/) override { }
+
+  virtual void enterExprLambdaBody(flicker::ExprLambdaBodyContext * /*ctx*/) override { }
+  virtual void exitExprLambdaBody(flicker::ExprLambdaBodyContext * /*ctx*/) override { }
 
 
   virtual void enterEveryRule(antlr4::ParserRuleContext * /*ctx*/) override { }

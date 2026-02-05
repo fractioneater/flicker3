@@ -22,11 +22,8 @@ public:
   virtual void enterNewline(flicker::NewlineContext *ctx) = 0;
   virtual void exitNewline(flicker::NewlineContext *ctx) = 0;
 
-  virtual void enterStatementEnd(flicker::StatementEndContext *ctx) = 0;
-  virtual void exitStatementEnd(flicker::StatementEndContext *ctx) = 0;
-
-  virtual void enterTopLevel(flicker::TopLevelContext *ctx) = 0;
-  virtual void exitTopLevel(flicker::TopLevelContext *ctx) = 0;
+  virtual void enterCodeItem(flicker::CodeItemContext *ctx) = 0;
+  virtual void exitCodeItem(flicker::CodeItemContext *ctx) = 0;
 
   virtual void enterType(flicker::TypeContext *ctx) = 0;
   virtual void exitType(flicker::TypeContext *ctx) = 0;
@@ -157,6 +154,9 @@ public:
   virtual void enterFactorExpr(flicker::FactorExprContext *ctx) = 0;
   virtual void exitFactorExpr(flicker::FactorExprContext *ctx) = 0;
 
+  virtual void enterLambdaCall(flicker::LambdaCallContext *ctx) = 0;
+  virtual void exitLambdaCall(flicker::LambdaCallContext *ctx) = 0;
+
   virtual void enterParenExpr(flicker::ParenExprContext *ctx) = 0;
   virtual void exitParenExpr(flicker::ParenExprContext *ctx) = 0;
 
@@ -256,14 +256,17 @@ public:
   virtual void enterParenthesizedOptionalParamList(flicker::ParenthesizedOptionalParamListContext *ctx) = 0;
   virtual void exitParenthesizedOptionalParamList(flicker::ParenthesizedOptionalParamListContext *ctx) = 0;
 
-  virtual void enterLambdaBody(flicker::LambdaBodyContext *ctx) = 0;
-  virtual void exitLambdaBody(flicker::LambdaBodyContext *ctx) = 0;
+  virtual void enterBlockLambda(flicker::BlockLambdaContext *ctx) = 0;
+  virtual void exitBlockLambda(flicker::BlockLambdaContext *ctx) = 0;
 
-  virtual void enterBraceBody(flicker::BraceBodyContext *ctx) = 0;
-  virtual void exitBraceBody(flicker::BraceBodyContext *ctx) = 0;
+  virtual void enterBraceLambda(flicker::BraceLambdaContext *ctx) = 0;
+  virtual void exitBraceLambda(flicker::BraceLambdaContext *ctx) = 0;
 
-  virtual void enterTerminator(flicker::TerminatorContext *ctx) = 0;
-  virtual void exitTerminator(flicker::TerminatorContext *ctx) = 0;
+  virtual void enterStatementLambdaBody(flicker::StatementLambdaBodyContext *ctx) = 0;
+  virtual void exitStatementLambdaBody(flicker::StatementLambdaBodyContext *ctx) = 0;
+
+  virtual void enterExprLambdaBody(flicker::ExprLambdaBodyContext *ctx) = 0;
+  virtual void exitExprLambdaBody(flicker::ExprLambdaBodyContext *ctx) = 0;
 
 
 };
