@@ -24,9 +24,7 @@ public:
 
     virtual std::any visitNewline(flicker::NewlineContext *context) = 0;
 
-    virtual std::any visitStatementEnd(flicker::StatementEndContext *context) = 0;
-
-    virtual std::any visitTopLevel(flicker::TopLevelContext *context) = 0;
+    virtual std::any visitCodeItem(flicker::CodeItemContext *context) = 0;
 
     virtual std::any visitType(flicker::TypeContext *context) = 0;
 
@@ -114,6 +112,8 @@ public:
 
     virtual std::any visitFactorExpr(flicker::FactorExprContext *context) = 0;
 
+    virtual std::any visitLambdaCall(flicker::LambdaCallContext *context) = 0;
+
     virtual std::any visitParenExpr(flicker::ParenExprContext *context) = 0;
 
     virtual std::any visitLambda(flicker::LambdaContext *context) = 0;
@@ -180,11 +180,13 @@ public:
 
     virtual std::any visitParenthesizedOptionalParamList(flicker::ParenthesizedOptionalParamListContext *context) = 0;
 
-    virtual std::any visitLambdaBody(flicker::LambdaBodyContext *context) = 0;
+    virtual std::any visitBlockLambda(flicker::BlockLambdaContext *context) = 0;
 
-    virtual std::any visitBraceBody(flicker::BraceBodyContext *context) = 0;
+    virtual std::any visitBraceLambda(flicker::BraceLambdaContext *context) = 0;
 
-    virtual std::any visitTerminator(flicker::TerminatorContext *context) = 0;
+    virtual std::any visitStatementLambdaBody(flicker::StatementLambdaBodyContext *context) = 0;
+
+    virtual std::any visitExprLambdaBody(flicker::ExprLambdaBodyContext *context) = 0;
 
 
 };

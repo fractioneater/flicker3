@@ -480,6 +480,9 @@ std::optional<Token> Lexer::indentation() {
 [[nodiscard]] Token Lexer::eof() {
   start_char_ = current_char_;
   start_col_  = col_;
+
+  if (brace_nesting_ > 0) throw LexerError {-1, -1, current_char_, "Unclosed lambda"};
+
   // Create dedents at EOF: emit one now and queue the rest.
   // The indents list should still hold the original 0.
   const int open_blocks {static_cast<int>(indents_.size()) - 1};
@@ -500,6 +503,8 @@ std::optional<Token> Lexer::indentation() {
 [[nodiscard]] Token Lexer::next_token() {
   start_char_ = current_char_;
   start_col_  = col_;
+
+  if (prev_type_ == TOKEN_DEDENT) return make_token(TOKEN_LINE);
 
   // Top priority is to return dedents if more are called for.
   if (dedents_queued_ > 0) {
@@ -542,8 +547,12 @@ std::optional<Token> Lexer::indentation() {
       // Handled easily here.
       case '[': return make_token(TOKEN_LEFT_BRACKET);
       case ']': return make_token(TOKEN_RIGHT_BRACKET);
-      case '{': return make_token(TOKEN_LEFT_BRACE);
-      case '}': return make_token(TOKEN_RIGHT_BRACE);
+      case '{':
+        ++brace_nesting_;
+        return make_token(TOKEN_LEFT_BRACE);
+      case '}':
+        if (--brace_nesting_ < 0) throw LexerError {line_, col_, current_char_, "Extra closing brace"};
+        return make_token(TOKEN_RIGHT_BRACE);
       case ';': return make_token(TOKEN_SEMICOLON);
       case ',': return make_token(TOKEN_COMMA);
       case '+': return make_token(TOKEN_PLUS);
@@ -571,6 +580,7 @@ std::optional<Token> Lexer::indentation() {
         break;
       // Whitespace cases.
       case '\n':
+        if (brace_nesting_ > 0) break;
         check_indent_ = true;
         return make_token(TOKEN_LINE);
       case ' ':
