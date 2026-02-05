@@ -120,6 +120,8 @@ public:
 
     virtual std::any visitBitwisExpr(flicker::BitwisExprContext *context) = 0;
 
+    virtual std::any visitNilCoalescingOp(flicker::NilCoalescingOpContext *context) = 0;
+
     virtual std::any visitMember(flicker::MemberContext *context) = 0;
 
     virtual std::any visitIfExpr(flicker::IfExprContext *context) = 0;
@@ -133,8 +135,6 @@ public:
     virtual std::any visitIdentifier(flicker::IdentifierContext *context) = 0;
 
     virtual std::any visitComparison(flicker::ComparisonContext *context) = 0;
-
-    virtual std::any visitCheckNotNil(flicker::CheckNotNilContext *context) = 0;
 
     virtual std::any visitInExpr(flicker::InExprContext *context) = 0;
 

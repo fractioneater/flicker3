@@ -485,8 +485,11 @@ std::optional<Token> Lexer::indentation() {
   const int open_blocks {static_cast<int>(indents_.size()) - 1};
   if (open_blocks > 0) {
     indents_.resize(1);
-    // Minus one for the one we're creating right now.
-    dedents_queued_ += open_blocks - 1;
+    dedents_queued_ += open_blocks;
+    // A dedent must be preceded by a newline.
+    if (prev_type_ != TOKEN_LINE) return make_token(TOKEN_LINE);
+
+    --dedents_queued_;
     return make_token(TOKEN_DEDENT);
   }
   return make_token(TOKEN_EOF);
@@ -500,6 +503,8 @@ std::optional<Token> Lexer::indentation() {
 
   // Top priority is to return dedents if more are called for.
   if (dedents_queued_ > 0) {
+    // A dedent must be preceded by a newline.
+    if (prev_type_ != TOKEN_LINE) return make_token(TOKEN_LINE);
     --dedents_queued_;
     return make_token(TOKEN_DEDENT);
   }
@@ -549,7 +554,7 @@ std::optional<Token> Lexer::indentation() {
       case '&': return make_token(TOKEN_AMPERSAND);
       case '~': return make_token(TOKEN_TILDE);
       case '.': return make_token(match('.') ? (match('<') ? TOKEN_DOT_DOT_LT : TOKEN_DOT_DOT) : TOKEN_DOT);
-      case '?': return make_token(match('.') ? TOKEN_QUEST_DOT : match('?') ? TOKEN_QUEST_QUEST : TOKEN_QUEST);
+      case '?': return make_token(match('.') ? TOKEN_QUEST_DOT : match(':') ? TOKEN_QUEST_COLON : TOKEN_QUEST);
       case ':': return make_token(match(':') ? TOKEN_COLON_COLON : TOKEN_COLON);
       case '*': return make_token(match('*') ? TOKEN_STAR_STAR : TOKEN_STAR);
       case '-': return make_token(match('>') ? TOKEN_RIGHT_ARROW : TOKEN_MINUS);

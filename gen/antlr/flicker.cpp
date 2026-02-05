@@ -73,7 +73,7 @@ void flickerParserInitialize() {
       "", "LEFT_PAREN", "RIGHT_PAREN", "LEFT_BRACKET", "RIGHT_BRACKET", 
       "LEFT_BRACE", "RIGHT_BRACE", "SEMICOLON", "COMMA", "PLUS", "SLASH", 
       "PERCENT", "PIPE", "CARET", "AMPERSAND", "TILDE", "DOT", "DOT_DOT", 
-      "DOT_DOT_LT", "QUEST", "QUEST_QUEST", "QUEST_DOT", "COLON", "COLON_COLON", 
+      "DOT_DOT_LT", "QUEST", "QUEST_COLON", "QUEST_DOT", "COLON", "COLON_COLON", 
       "STAR", "STAR_STAR", "MINUS", "RIGHT_ARROW", "BANG", "BANG_EQ", "EQ", 
       "EQ_EQ", "GT", "GT_EQ", "LT", "LT_EQ", "IDENTIFIER", "STRING", "INTERPOLATION", 
       "CHAR", "NUMBER", "AND", "BREAK", "CLASS", "CONTINUE", "CN", "DO", 
@@ -84,7 +84,7 @@ void flickerParserInitialize() {
     }
   );
   static const int32_t serializedATNSegment[] = {
-  	4,1,79,645,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,6,2,
+  	4,1,79,646,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,6,2,
   	7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,2,13,7,13,2,14,7,
   	14,2,15,7,15,2,16,7,16,2,17,7,17,2,18,7,18,2,19,7,19,2,20,7,20,2,21,7,
   	21,2,22,7,22,2,23,7,23,2,24,7,24,2,25,7,25,2,26,7,26,2,27,7,27,2,28,7,
@@ -120,26 +120,26 @@ void flickerParserInitialize() {
   	40,1,40,1,40,1,41,1,41,1,41,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,
   	42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,3,42,454,8,42,1,42,1,42,1,
   	42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,
-  	42,1,42,1,42,1,42,1,42,1,42,3,42,478,8,42,1,42,1,42,1,42,1,42,1,42,3,
-  	42,485,8,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,
+  	42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,3,42,481,8,42,1,42,1,42,1,
+  	42,1,42,1,42,3,42,488,8,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,
   	42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,42,1,
-  	42,1,42,1,42,5,42,515,8,42,10,42,12,42,518,9,42,3,42,520,8,42,1,42,1,
-  	42,1,42,1,42,1,42,1,42,5,42,528,8,42,10,42,12,42,531,9,42,1,42,1,42,1,
-  	42,1,42,5,42,537,8,42,10,42,12,42,540,9,42,1,43,1,43,1,44,1,44,3,44,546,
-  	8,44,1,44,1,44,1,45,1,45,1,46,1,46,3,46,554,8,46,1,47,1,47,3,47,558,8,
-  	47,1,47,1,47,1,48,1,48,1,48,5,48,565,8,48,10,48,12,48,568,9,48,1,48,3,
-  	48,571,8,48,1,49,1,49,1,49,3,49,576,8,49,1,49,1,49,1,50,1,50,1,50,5,50,
-  	583,8,50,10,50,12,50,586,9,50,1,50,3,50,589,8,50,1,51,1,51,1,51,1,51,
-  	1,52,1,52,1,52,1,52,1,52,1,52,3,52,601,8,52,1,53,1,53,1,53,3,53,606,8,
-  	53,1,54,1,54,3,54,610,8,54,1,54,1,54,1,55,1,55,3,55,616,8,55,1,56,1,56,
-  	1,56,4,56,621,8,56,11,56,12,56,622,5,56,625,8,56,10,56,12,56,628,9,56,
-  	1,56,3,56,631,8,56,1,56,5,56,634,8,56,10,56,12,56,637,9,56,1,56,1,56,
-  	1,57,1,57,3,57,643,8,57,1,57,0,1,84,58,0,2,4,6,8,10,12,14,16,18,20,22,
-  	24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,
-  	70,72,74,76,78,80,82,84,86,88,90,92,94,96,98,100,102,104,106,108,110,
+  	42,1,42,1,42,1,42,1,42,1,42,5,42,518,8,42,10,42,12,42,521,9,42,3,42,523,
+  	8,42,1,42,1,42,1,42,1,42,1,42,1,42,5,42,531,8,42,10,42,12,42,534,9,42,
+  	1,42,1,42,5,42,538,8,42,10,42,12,42,541,9,42,1,43,1,43,1,44,1,44,3,44,
+  	547,8,44,1,44,1,44,1,45,1,45,1,46,1,46,3,46,555,8,46,1,47,1,47,3,47,559,
+  	8,47,1,47,1,47,1,48,1,48,1,48,5,48,566,8,48,10,48,12,48,569,9,48,1,48,
+  	3,48,572,8,48,1,49,1,49,1,49,3,49,577,8,49,1,49,1,49,1,50,1,50,1,50,5,
+  	50,584,8,50,10,50,12,50,587,9,50,1,50,3,50,590,8,50,1,51,1,51,1,51,1,
+  	51,1,52,1,52,1,52,1,52,1,52,1,52,3,52,602,8,52,1,53,1,53,1,53,3,53,607,
+  	8,53,1,54,1,54,3,54,611,8,54,1,54,1,54,1,55,1,55,3,55,617,8,55,1,56,1,
+  	56,1,56,4,56,622,8,56,11,56,12,56,623,5,56,626,8,56,10,56,12,56,629,9,
+  	56,1,56,3,56,632,8,56,1,56,5,56,635,8,56,10,56,12,56,638,9,56,1,56,1,
+  	56,1,57,1,57,3,57,644,8,57,1,57,0,1,84,58,0,2,4,6,8,10,12,14,16,18,20,
+  	22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,
+  	68,70,72,74,76,78,80,82,84,86,88,90,92,94,96,98,100,102,104,106,108,110,
   	112,114,0,12,2,0,51,51,58,58,1,0,73,74,2,0,22,22,27,27,3,0,15,15,26,26,
   	28,28,1,0,17,18,2,0,10,10,24,24,2,0,9,9,26,26,1,0,66,67,1,0,12,14,2,0,
-  	16,16,21,21,2,0,29,29,31,35,5,0,37,37,40,40,50,50,56,56,71,71,696,0,119,
+  	16,16,21,21,2,0,29,29,31,35,5,0,37,37,40,40,50,50,56,56,71,71,697,0,119,
   	1,0,0,0,2,133,1,0,0,0,4,142,1,0,0,0,6,146,1,0,0,0,8,148,1,0,0,0,10,174,
   	1,0,0,0,12,176,1,0,0,0,14,186,1,0,0,0,16,189,1,0,0,0,18,204,1,0,0,0,20,
   	210,1,0,0,0,22,212,1,0,0,0,24,220,1,0,0,0,26,225,1,0,0,0,28,237,1,0,0,
@@ -149,10 +149,10 @@ void flickerParserInitialize() {
   	0,58,357,1,0,0,0,60,371,1,0,0,0,62,389,1,0,0,0,64,393,1,0,0,0,66,397,
   	1,0,0,0,68,401,1,0,0,0,70,405,1,0,0,0,72,408,1,0,0,0,74,411,1,0,0,0,76,
   	413,1,0,0,0,78,421,1,0,0,0,80,430,1,0,0,0,82,433,1,0,0,0,84,453,1,0,0,
-  	0,86,541,1,0,0,0,88,543,1,0,0,0,90,549,1,0,0,0,92,553,1,0,0,0,94,555,
-  	1,0,0,0,96,561,1,0,0,0,98,572,1,0,0,0,100,579,1,0,0,0,102,590,1,0,0,0,
-  	104,594,1,0,0,0,106,605,1,0,0,0,108,607,1,0,0,0,110,615,1,0,0,0,112,617,
-  	1,0,0,0,114,642,1,0,0,0,116,118,3,2,1,0,117,116,1,0,0,0,118,121,1,0,0,
+  	0,86,542,1,0,0,0,88,544,1,0,0,0,90,550,1,0,0,0,92,554,1,0,0,0,94,556,
+  	1,0,0,0,96,562,1,0,0,0,98,573,1,0,0,0,100,580,1,0,0,0,102,591,1,0,0,0,
+  	104,595,1,0,0,0,106,606,1,0,0,0,108,608,1,0,0,0,110,616,1,0,0,0,112,618,
+  	1,0,0,0,114,643,1,0,0,0,116,118,3,2,1,0,117,116,1,0,0,0,118,121,1,0,0,
   	0,119,117,1,0,0,0,119,120,1,0,0,0,120,127,1,0,0,0,121,119,1,0,0,0,122,
   	123,3,6,3,0,123,124,3,4,2,0,124,126,1,0,0,0,125,122,1,0,0,0,126,129,1,
   	0,0,0,127,125,1,0,0,0,127,128,1,0,0,0,128,130,1,0,0,0,129,127,1,0,0,0,
@@ -247,66 +247,66 @@ void flickerParserInitialize() {
   	5,1,0,0,446,447,3,84,42,0,447,448,5,2,0,0,448,454,1,0,0,0,449,450,7,3,
   	0,0,450,454,3,84,42,13,451,452,5,57,0,0,452,454,3,84,42,3,453,436,1,0,
   	0,0,453,440,1,0,0,0,453,441,1,0,0,0,453,442,1,0,0,0,453,443,1,0,0,0,453,
-  	444,1,0,0,0,453,445,1,0,0,0,453,449,1,0,0,0,453,451,1,0,0,0,454,538,1,
-  	0,0,0,455,456,10,19,0,0,456,457,7,4,0,0,457,537,3,84,42,20,458,459,10,
-  	14,0,0,459,460,5,25,0,0,460,537,3,84,42,14,461,462,10,12,0,0,462,463,
-  	7,5,0,0,463,537,3,84,42,13,464,465,10,11,0,0,465,466,7,6,0,0,466,537,
-  	3,84,42,12,467,468,10,10,0,0,468,469,7,7,0,0,469,537,3,84,42,11,470,471,
-  	10,9,0,0,471,472,7,8,0,0,472,537,3,84,42,10,473,477,10,8,0,0,474,478,
-  	5,55,0,0,475,476,5,55,0,0,476,478,5,57,0,0,477,474,1,0,0,0,477,475,1,
-  	0,0,0,478,479,1,0,0,0,479,537,3,84,42,9,480,484,10,7,0,0,481,485,5,54,
-  	0,0,482,483,5,57,0,0,483,485,5,54,0,0,484,481,1,0,0,0,484,482,1,0,0,0,
-  	485,486,1,0,0,0,486,537,3,84,42,8,487,488,10,6,0,0,488,489,3,86,43,0,
-  	489,490,3,84,42,7,490,537,1,0,0,0,491,492,10,5,0,0,492,493,5,41,0,0,493,
-  	537,3,84,42,6,494,495,10,4,0,0,495,496,5,59,0,0,496,537,3,84,42,5,497,
-  	498,10,2,0,0,498,499,5,53,0,0,499,500,3,84,42,0,500,501,5,49,0,0,501,
-  	502,3,84,42,3,502,537,1,0,0,0,503,504,10,1,0,0,504,505,5,30,0,0,505,537,
-  	3,84,42,1,506,507,10,18,0,0,507,508,7,9,0,0,508,537,5,36,0,0,509,510,
-  	10,17,0,0,510,519,5,1,0,0,511,516,3,84,42,0,512,513,5,8,0,0,513,515,3,
-  	84,42,0,514,512,1,0,0,0,515,518,1,0,0,0,516,514,1,0,0,0,516,517,1,0,0,
-  	0,517,520,1,0,0,0,518,516,1,0,0,0,519,511,1,0,0,0,519,520,1,0,0,0,520,
-  	521,1,0,0,0,521,537,5,2,0,0,522,523,10,16,0,0,523,524,5,3,0,0,524,529,
-  	3,84,42,0,525,526,5,8,0,0,526,528,3,84,42,0,527,525,1,0,0,0,528,531,1,
-  	0,0,0,529,527,1,0,0,0,529,530,1,0,0,0,530,532,1,0,0,0,531,529,1,0,0,0,
-  	532,533,5,4,0,0,533,537,1,0,0,0,534,535,10,15,0,0,535,537,5,20,0,0,536,
-  	455,1,0,0,0,536,458,1,0,0,0,536,461,1,0,0,0,536,464,1,0,0,0,536,467,1,
-  	0,0,0,536,470,1,0,0,0,536,473,1,0,0,0,536,480,1,0,0,0,536,487,1,0,0,0,
-  	536,491,1,0,0,0,536,494,1,0,0,0,536,497,1,0,0,0,536,503,1,0,0,0,536,506,
-  	1,0,0,0,536,509,1,0,0,0,536,522,1,0,0,0,536,534,1,0,0,0,537,540,1,0,0,
-  	0,538,536,1,0,0,0,538,539,1,0,0,0,539,85,1,0,0,0,540,538,1,0,0,0,541,
-  	542,7,10,0,0,542,87,1,0,0,0,543,545,5,38,0,0,544,546,3,84,42,0,545,544,
-  	1,0,0,0,545,546,1,0,0,0,546,547,1,0,0,0,547,548,5,37,0,0,548,89,1,0,0,
-  	0,549,550,7,11,0,0,550,91,1,0,0,0,551,554,3,94,47,0,552,554,3,98,49,0,
-  	553,551,1,0,0,0,553,552,1,0,0,0,554,93,1,0,0,0,555,557,5,3,0,0,556,558,
-  	3,96,48,0,557,556,1,0,0,0,557,558,1,0,0,0,558,559,1,0,0,0,559,560,5,4,
-  	0,0,560,95,1,0,0,0,561,566,3,84,42,0,562,563,5,8,0,0,563,565,3,84,42,
-  	0,564,562,1,0,0,0,565,568,1,0,0,0,566,564,1,0,0,0,566,567,1,0,0,0,567,
-  	570,1,0,0,0,568,566,1,0,0,0,569,571,5,8,0,0,570,569,1,0,0,0,570,571,1,
-  	0,0,0,571,97,1,0,0,0,572,575,5,3,0,0,573,576,5,27,0,0,574,576,3,100,50,
-  	0,575,573,1,0,0,0,575,574,1,0,0,0,576,577,1,0,0,0,577,578,5,4,0,0,578,
-  	99,1,0,0,0,579,584,3,102,51,0,580,581,5,8,0,0,581,583,3,102,51,0,582,
-  	580,1,0,0,0,583,586,1,0,0,0,584,582,1,0,0,0,584,585,1,0,0,0,585,588,1,
-  	0,0,0,586,584,1,0,0,0,587,589,5,8,0,0,588,587,1,0,0,0,588,589,1,0,0,0,
-  	589,101,1,0,0,0,590,591,3,84,42,0,591,592,5,27,0,0,592,593,3,84,42,0,
-  	593,103,1,0,0,0,594,595,5,52,0,0,595,600,3,106,53,0,596,597,5,27,0,0,
-  	597,601,3,110,55,0,598,599,5,30,0,0,599,601,3,84,42,0,600,596,1,0,0,0,
-  	600,598,1,0,0,0,601,105,1,0,0,0,602,606,3,22,11,0,603,606,3,108,54,0,
-  	604,606,1,0,0,0,605,602,1,0,0,0,605,603,1,0,0,0,605,604,1,0,0,0,606,107,
-  	1,0,0,0,607,609,5,1,0,0,608,610,3,22,11,0,609,608,1,0,0,0,609,610,1,0,
-  	0,0,610,611,1,0,0,0,611,612,5,2,0,0,612,109,1,0,0,0,613,616,3,112,56,
-  	0,614,616,3,26,13,0,615,613,1,0,0,0,615,614,1,0,0,0,616,111,1,0,0,0,617,
-  	626,5,5,0,0,618,620,3,10,5,0,619,621,3,114,57,0,620,619,1,0,0,0,621,622,
-  	1,0,0,0,622,620,1,0,0,0,622,623,1,0,0,0,623,625,1,0,0,0,624,618,1,0,0,
-  	0,625,628,1,0,0,0,626,624,1,0,0,0,626,627,1,0,0,0,627,630,1,0,0,0,628,
-  	626,1,0,0,0,629,631,3,10,5,0,630,629,1,0,0,0,630,631,1,0,0,0,631,635,
-  	1,0,0,0,632,634,3,114,57,0,633,632,1,0,0,0,634,637,1,0,0,0,635,633,1,
-  	0,0,0,635,636,1,0,0,0,636,638,1,0,0,0,637,635,1,0,0,0,638,639,5,6,0,0,
-  	639,113,1,0,0,0,640,643,5,7,0,0,641,643,3,2,1,0,642,640,1,0,0,0,642,641,
-  	1,0,0,0,643,115,1,0,0,0,72,119,127,135,139,142,146,150,155,157,174,180,
-  	184,192,196,200,210,217,225,237,245,249,256,263,274,282,287,290,300,302,
-  	308,315,322,332,343,348,352,359,365,373,377,381,385,391,395,403,423,428,
-  	453,477,484,516,519,529,536,538,545,553,557,566,570,575,584,588,600,605,
-  	609,615,622,626,630,635,642
+  	444,1,0,0,0,453,445,1,0,0,0,453,449,1,0,0,0,453,451,1,0,0,0,454,539,1,
+  	0,0,0,455,456,10,19,0,0,456,457,7,4,0,0,457,538,3,84,42,20,458,459,10,
+  	15,0,0,459,460,5,20,0,0,460,538,3,84,42,16,461,462,10,14,0,0,462,463,
+  	5,25,0,0,463,538,3,84,42,14,464,465,10,12,0,0,465,466,7,5,0,0,466,538,
+  	3,84,42,13,467,468,10,11,0,0,468,469,7,6,0,0,469,538,3,84,42,12,470,471,
+  	10,10,0,0,471,472,7,7,0,0,472,538,3,84,42,11,473,474,10,9,0,0,474,475,
+  	7,8,0,0,475,538,3,84,42,10,476,480,10,8,0,0,477,481,5,55,0,0,478,479,
+  	5,55,0,0,479,481,5,57,0,0,480,477,1,0,0,0,480,478,1,0,0,0,481,482,1,0,
+  	0,0,482,538,3,84,42,9,483,487,10,7,0,0,484,488,5,54,0,0,485,486,5,57,
+  	0,0,486,488,5,54,0,0,487,484,1,0,0,0,487,485,1,0,0,0,488,489,1,0,0,0,
+  	489,538,3,84,42,8,490,491,10,6,0,0,491,492,3,86,43,0,492,493,3,84,42,
+  	7,493,538,1,0,0,0,494,495,10,5,0,0,495,496,5,41,0,0,496,538,3,84,42,6,
+  	497,498,10,4,0,0,498,499,5,59,0,0,499,538,3,84,42,5,500,501,10,2,0,0,
+  	501,502,5,53,0,0,502,503,3,84,42,0,503,504,5,49,0,0,504,505,3,84,42,3,
+  	505,538,1,0,0,0,506,507,10,1,0,0,507,508,5,30,0,0,508,538,3,84,42,1,509,
+  	510,10,18,0,0,510,511,7,9,0,0,511,538,5,36,0,0,512,513,10,17,0,0,513,
+  	522,5,1,0,0,514,519,3,84,42,0,515,516,5,8,0,0,516,518,3,84,42,0,517,515,
+  	1,0,0,0,518,521,1,0,0,0,519,517,1,0,0,0,519,520,1,0,0,0,520,523,1,0,0,
+  	0,521,519,1,0,0,0,522,514,1,0,0,0,522,523,1,0,0,0,523,524,1,0,0,0,524,
+  	538,5,2,0,0,525,526,10,16,0,0,526,527,5,3,0,0,527,532,3,84,42,0,528,529,
+  	5,8,0,0,529,531,3,84,42,0,530,528,1,0,0,0,531,534,1,0,0,0,532,530,1,0,
+  	0,0,532,533,1,0,0,0,533,535,1,0,0,0,534,532,1,0,0,0,535,536,5,4,0,0,536,
+  	538,1,0,0,0,537,455,1,0,0,0,537,458,1,0,0,0,537,461,1,0,0,0,537,464,1,
+  	0,0,0,537,467,1,0,0,0,537,470,1,0,0,0,537,473,1,0,0,0,537,476,1,0,0,0,
+  	537,483,1,0,0,0,537,490,1,0,0,0,537,494,1,0,0,0,537,497,1,0,0,0,537,500,
+  	1,0,0,0,537,506,1,0,0,0,537,509,1,0,0,0,537,512,1,0,0,0,537,525,1,0,0,
+  	0,538,541,1,0,0,0,539,537,1,0,0,0,539,540,1,0,0,0,540,85,1,0,0,0,541,
+  	539,1,0,0,0,542,543,7,10,0,0,543,87,1,0,0,0,544,546,5,38,0,0,545,547,
+  	3,84,42,0,546,545,1,0,0,0,546,547,1,0,0,0,547,548,1,0,0,0,548,549,5,37,
+  	0,0,549,89,1,0,0,0,550,551,7,11,0,0,551,91,1,0,0,0,552,555,3,94,47,0,
+  	553,555,3,98,49,0,554,552,1,0,0,0,554,553,1,0,0,0,555,93,1,0,0,0,556,
+  	558,5,3,0,0,557,559,3,96,48,0,558,557,1,0,0,0,558,559,1,0,0,0,559,560,
+  	1,0,0,0,560,561,5,4,0,0,561,95,1,0,0,0,562,567,3,84,42,0,563,564,5,8,
+  	0,0,564,566,3,84,42,0,565,563,1,0,0,0,566,569,1,0,0,0,567,565,1,0,0,0,
+  	567,568,1,0,0,0,568,571,1,0,0,0,569,567,1,0,0,0,570,572,5,8,0,0,571,570,
+  	1,0,0,0,571,572,1,0,0,0,572,97,1,0,0,0,573,576,5,3,0,0,574,577,5,27,0,
+  	0,575,577,3,100,50,0,576,574,1,0,0,0,576,575,1,0,0,0,577,578,1,0,0,0,
+  	578,579,5,4,0,0,579,99,1,0,0,0,580,585,3,102,51,0,581,582,5,8,0,0,582,
+  	584,3,102,51,0,583,581,1,0,0,0,584,587,1,0,0,0,585,583,1,0,0,0,585,586,
+  	1,0,0,0,586,589,1,0,0,0,587,585,1,0,0,0,588,590,5,8,0,0,589,588,1,0,0,
+  	0,589,590,1,0,0,0,590,101,1,0,0,0,591,592,3,84,42,0,592,593,5,27,0,0,
+  	593,594,3,84,42,0,594,103,1,0,0,0,595,596,5,52,0,0,596,601,3,106,53,0,
+  	597,598,5,27,0,0,598,602,3,110,55,0,599,600,5,30,0,0,600,602,3,84,42,
+  	0,601,597,1,0,0,0,601,599,1,0,0,0,602,105,1,0,0,0,603,607,3,22,11,0,604,
+  	607,3,108,54,0,605,607,1,0,0,0,606,603,1,0,0,0,606,604,1,0,0,0,606,605,
+  	1,0,0,0,607,107,1,0,0,0,608,610,5,1,0,0,609,611,3,22,11,0,610,609,1,0,
+  	0,0,610,611,1,0,0,0,611,612,1,0,0,0,612,613,5,2,0,0,613,109,1,0,0,0,614,
+  	617,3,112,56,0,615,617,3,26,13,0,616,614,1,0,0,0,616,615,1,0,0,0,617,
+  	111,1,0,0,0,618,627,5,5,0,0,619,621,3,10,5,0,620,622,3,114,57,0,621,620,
+  	1,0,0,0,622,623,1,0,0,0,623,621,1,0,0,0,623,624,1,0,0,0,624,626,1,0,0,
+  	0,625,619,1,0,0,0,626,629,1,0,0,0,627,625,1,0,0,0,627,628,1,0,0,0,628,
+  	631,1,0,0,0,629,627,1,0,0,0,630,632,3,10,5,0,631,630,1,0,0,0,631,632,
+  	1,0,0,0,632,636,1,0,0,0,633,635,3,114,57,0,634,633,1,0,0,0,635,638,1,
+  	0,0,0,636,634,1,0,0,0,636,637,1,0,0,0,637,639,1,0,0,0,638,636,1,0,0,0,
+  	639,640,5,6,0,0,640,113,1,0,0,0,641,644,5,7,0,0,642,644,3,2,1,0,643,641,
+  	1,0,0,0,643,642,1,0,0,0,644,115,1,0,0,0,72,119,127,135,139,142,146,150,
+  	155,157,174,180,184,192,196,200,210,217,225,237,245,249,256,263,274,282,
+  	287,290,300,302,308,315,322,332,343,348,352,359,365,373,377,381,385,391,
+  	395,403,423,428,453,480,487,519,522,532,537,539,546,554,558,567,571,576,
+  	585,589,601,606,610,616,623,627,631,636,643
   };
   staticData->serializedATN = antlr4::atn::SerializedATNView(serializedATNSegment, sizeof(serializedATNSegment) / sizeof(serializedATNSegment[0]));
 
@@ -4567,6 +4567,39 @@ std::any flicker::BitwisExprContext::accept(tree::ParseTreeVisitor *visitor) {
   else
     return visitor->visitChildren(this);
 }
+//----------------- NilCoalescingOpContext ------------------------------------------------------------------
+
+std::vector<flicker::ExpressionContext *> flicker::NilCoalescingOpContext::expression() {
+  return getRuleContexts<flicker::ExpressionContext>();
+}
+
+flicker::ExpressionContext* flicker::NilCoalescingOpContext::expression(size_t i) {
+  return getRuleContext<flicker::ExpressionContext>(i);
+}
+
+tree::TerminalNode* flicker::NilCoalescingOpContext::QUEST_COLON() {
+  return getToken(flicker::QUEST_COLON, 0);
+}
+
+flicker::NilCoalescingOpContext::NilCoalescingOpContext(ExpressionContext *ctx) { copyFrom(ctx); }
+
+void flicker::NilCoalescingOpContext::enterRule(tree::ParseTreeListener *listener) {
+  auto parserListener = dynamic_cast<flickerListener *>(listener);
+  if (parserListener != nullptr)
+    parserListener->enterNilCoalescingOp(this);
+}
+void flicker::NilCoalescingOpContext::exitRule(tree::ParseTreeListener *listener) {
+  auto parserListener = dynamic_cast<flickerListener *>(listener);
+  if (parserListener != nullptr)
+    parserListener->exitNilCoalescingOp(this);
+}
+
+std::any flicker::NilCoalescingOpContext::accept(tree::ParseTreeVisitor *visitor) {
+  if (auto parserVisitor = dynamic_cast<flickerVisitor*>(visitor))
+    return parserVisitor->visitNilCoalescingOp(this);
+  else
+    return visitor->visitChildren(this);
+}
 //----------------- MemberContext ------------------------------------------------------------------
 
 flicker::ExpressionContext* flicker::MemberContext::expression() {
@@ -4803,35 +4836,6 @@ void flicker::ComparisonContext::exitRule(tree::ParseTreeListener *listener) {
 std::any flicker::ComparisonContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<flickerVisitor*>(visitor))
     return parserVisitor->visitComparison(this);
-  else
-    return visitor->visitChildren(this);
-}
-//----------------- CheckNotNilContext ------------------------------------------------------------------
-
-flicker::ExpressionContext* flicker::CheckNotNilContext::expression() {
-  return getRuleContext<flicker::ExpressionContext>(0);
-}
-
-tree::TerminalNode* flicker::CheckNotNilContext::QUEST_QUEST() {
-  return getToken(flicker::QUEST_QUEST, 0);
-}
-
-flicker::CheckNotNilContext::CheckNotNilContext(ExpressionContext *ctx) { copyFrom(ctx); }
-
-void flicker::CheckNotNilContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<flickerListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterCheckNotNil(this);
-}
-void flicker::CheckNotNilContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<flickerListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitCheckNotNil(this);
-}
-
-std::any flicker::CheckNotNilContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<flickerVisitor*>(visitor))
-    return parserVisitor->visitCheckNotNil(this);
   else
     return visitor->visitChildren(this);
 }
@@ -5312,7 +5316,7 @@ flicker::ExpressionContext* flicker::expression(int precedence) {
       break;
     }
     _ctx->stop = _input->LT(-1);
-    setState(538);
+    setState(539);
     _errHandler->sync(this);
     alt = getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 54, _ctx);
     while (alt != 2 && alt != atn::ATN::INVALID_ALT_NUMBER) {
@@ -5320,7 +5324,7 @@ flicker::ExpressionContext* flicker::expression(int precedence) {
         if (!_parseListeners.empty())
           triggerExitRuleEvent();
         previousContext = _localctx;
-        setState(536);
+        setState(537);
         _errHandler->sync(this);
         switch (getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 53, _ctx)) {
         case 1: {
@@ -5347,27 +5351,41 @@ flicker::ExpressionContext* flicker::expression(int precedence) {
         }
 
         case 2: {
-          auto newContext = _tracker.createInstance<PowerExprContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
+          auto newContext = _tracker.createInstance<NilCoalescingOpContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpression);
           setState(458);
 
-          if (!(precpred(_ctx, 14))) throw FailedPredicateException(this, "precpred(_ctx, 14)");
+          if (!(precpred(_ctx, 15))) throw FailedPredicateException(this, "precpred(_ctx, 15)");
           setState(459);
-          match(flicker::STAR_STAR);
+          match(flicker::QUEST_COLON);
           setState(460);
-          expression(14);
+          expression(16);
           break;
         }
 
         case 3: {
-          auto newContext = _tracker.createInstance<FactorExprContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
+          auto newContext = _tracker.createInstance<PowerExprContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpression);
           setState(461);
 
-          if (!(precpred(_ctx, 12))) throw FailedPredicateException(this, "precpred(_ctx, 12)");
+          if (!(precpred(_ctx, 14))) throw FailedPredicateException(this, "precpred(_ctx, 14)");
           setState(462);
+          match(flicker::STAR_STAR);
+          setState(463);
+          expression(14);
+          break;
+        }
+
+        case 4: {
+          auto newContext = _tracker.createInstance<FactorExprContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
+          _localctx = newContext;
+          pushNewRecursionContext(newContext, startState, RuleExpression);
+          setState(464);
+
+          if (!(precpred(_ctx, 12))) throw FailedPredicateException(this, "precpred(_ctx, 12)");
+          setState(465);
           _la = _input->LA(1);
           if (!(_la == flicker::SLASH
 
@@ -5378,19 +5396,19 @@ flicker::ExpressionContext* flicker::expression(int precedence) {
             _errHandler->reportMatch(this);
             consume();
           }
-          setState(463);
+          setState(466);
           expression(13);
           break;
         }
 
-        case 4: {
+        case 5: {
           auto newContext = _tracker.createInstance<TermExprContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpression);
-          setState(464);
+          setState(467);
 
           if (!(precpred(_ctx, 11))) throw FailedPredicateException(this, "precpred(_ctx, 11)");
-          setState(465);
+          setState(468);
           _la = _input->LA(1);
           if (!(_la == flicker::PLUS
 
@@ -5401,19 +5419,19 @@ flicker::ExpressionContext* flicker::expression(int precedence) {
             _errHandler->reportMatch(this);
             consume();
           }
-          setState(466);
+          setState(469);
           expression(12);
           break;
         }
 
-        case 5: {
+        case 6: {
           auto newContext = _tracker.createInstance<BitShiftExprContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpression);
-          setState(467);
+          setState(470);
 
           if (!(precpred(_ctx, 10))) throw FailedPredicateException(this, "precpred(_ctx, 10)");
-          setState(468);
+          setState(471);
           _la = _input->LA(1);
           if (!(_la == flicker::SHL
 
@@ -5424,19 +5442,19 @@ flicker::ExpressionContext* flicker::expression(int precedence) {
             _errHandler->reportMatch(this);
             consume();
           }
-          setState(469);
+          setState(472);
           expression(11);
           break;
         }
 
-        case 6: {
+        case 7: {
           auto newContext = _tracker.createInstance<BitwisExprContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpression);
-          setState(470);
+          setState(473);
 
           if (!(precpred(_ctx, 9))) throw FailedPredicateException(this, "precpred(_ctx, 9)");
-          setState(471);
+          setState(474);
           _la = _input->LA(1);
           if (!((((_la & ~ 0x3fULL) == 0) &&
             ((1ULL << _la) & 28672) != 0))) {
@@ -5446,31 +5464,31 @@ flicker::ExpressionContext* flicker::expression(int precedence) {
             _errHandler->reportMatch(this);
             consume();
           }
-          setState(472);
+          setState(475);
           expression(10);
           break;
         }
 
-        case 7: {
+        case 8: {
           auto newContext = _tracker.createInstance<IsExprContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpression);
-          setState(473);
+          setState(476);
 
           if (!(precpred(_ctx, 8))) throw FailedPredicateException(this, "precpred(_ctx, 8)");
-          setState(477);
+          setState(480);
           _errHandler->sync(this);
           switch (getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 48, _ctx)) {
           case 1: {
-            setState(474);
+            setState(477);
             match(flicker::IS);
             break;
           }
 
           case 2: {
-            setState(475);
+            setState(478);
             match(flicker::IS);
-            setState(476);
+            setState(479);
             match(flicker::NOT);
             break;
           }
@@ -5478,31 +5496,31 @@ flicker::ExpressionContext* flicker::expression(int precedence) {
           default:
             break;
           }
-          setState(479);
+          setState(482);
           expression(9);
           break;
         }
 
-        case 8: {
+        case 9: {
           auto newContext = _tracker.createInstance<InExprContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpression);
-          setState(480);
+          setState(483);
 
           if (!(precpred(_ctx, 7))) throw FailedPredicateException(this, "precpred(_ctx, 7)");
-          setState(484);
+          setState(487);
           _errHandler->sync(this);
           switch (_input->LA(1)) {
             case flicker::IN: {
-              setState(481);
+              setState(484);
               match(flicker::IN);
               break;
             }
 
             case flicker::NOT: {
-              setState(482);
+              setState(485);
               match(flicker::NOT);
-              setState(483);
+              setState(486);
               match(flicker::IN);
               break;
             }
@@ -5510,93 +5528,93 @@ flicker::ExpressionContext* flicker::expression(int precedence) {
           default:
             throw NoViableAltException(this);
           }
-          setState(486);
+          setState(489);
           expression(8);
           break;
         }
 
-        case 9: {
+        case 10: {
           auto newContext = _tracker.createInstance<ComparisonContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpression);
-          setState(487);
+          setState(490);
 
           if (!(precpred(_ctx, 6))) throw FailedPredicateException(this, "precpred(_ctx, 6)");
-          setState(488);
+          setState(491);
           comparisonOperator();
-          setState(489);
+          setState(492);
           expression(7);
           break;
         }
 
-        case 10: {
-          auto newContext = _tracker.createInstance<AndExprContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
-          _localctx = newContext;
-          pushNewRecursionContext(newContext, startState, RuleExpression);
-          setState(491);
-
-          if (!(precpred(_ctx, 5))) throw FailedPredicateException(this, "precpred(_ctx, 5)");
-          setState(492);
-          match(flicker::AND);
-          setState(493);
-          expression(6);
-          break;
-        }
-
         case 11: {
-          auto newContext = _tracker.createInstance<OrExprContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
+          auto newContext = _tracker.createInstance<AndExprContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpression);
           setState(494);
 
-          if (!(precpred(_ctx, 4))) throw FailedPredicateException(this, "precpred(_ctx, 4)");
+          if (!(precpred(_ctx, 5))) throw FailedPredicateException(this, "precpred(_ctx, 5)");
           setState(495);
-          match(flicker::OR);
+          match(flicker::AND);
           setState(496);
-          expression(5);
+          expression(6);
           break;
         }
 
         case 12: {
-          auto newContext = _tracker.createInstance<IfExprContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
+          auto newContext = _tracker.createInstance<OrExprContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpression);
           setState(497);
 
-          if (!(precpred(_ctx, 2))) throw FailedPredicateException(this, "precpred(_ctx, 2)");
+          if (!(precpred(_ctx, 4))) throw FailedPredicateException(this, "precpred(_ctx, 4)");
           setState(498);
-          match(flicker::IF);
+          match(flicker::OR);
           setState(499);
-          expression(0);
-          setState(500);
-          match(flicker::ELSE);
-          setState(501);
-          expression(3);
+          expression(5);
           break;
         }
 
         case 13: {
-          auto newContext = _tracker.createInstance<AssignmentContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
+          auto newContext = _tracker.createInstance<IfExprContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpression);
-          setState(503);
+          setState(500);
 
-          if (!(precpred(_ctx, 1))) throw FailedPredicateException(this, "precpred(_ctx, 1)");
+          if (!(precpred(_ctx, 2))) throw FailedPredicateException(this, "precpred(_ctx, 2)");
+          setState(501);
+          match(flicker::IF);
+          setState(502);
+          expression(0);
+          setState(503);
+          match(flicker::ELSE);
           setState(504);
-          match(flicker::EQ);
-          setState(505);
-          expression(1);
+          expression(3);
           break;
         }
 
         case 14: {
-          auto newContext = _tracker.createInstance<MemberContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
+          auto newContext = _tracker.createInstance<AssignmentContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpression);
           setState(506);
 
-          if (!(precpred(_ctx, 18))) throw FailedPredicateException(this, "precpred(_ctx, 18)");
+          if (!(precpred(_ctx, 1))) throw FailedPredicateException(this, "precpred(_ctx, 1)");
           setState(507);
+          match(flicker::EQ);
+          setState(508);
+          expression(1);
+          break;
+        }
+
+        case 15: {
+          auto newContext = _tracker.createInstance<MemberContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
+          _localctx = newContext;
+          pushNewRecursionContext(newContext, startState, RuleExpression);
+          setState(509);
+
+          if (!(precpred(_ctx, 18))) throw FailedPredicateException(this, "precpred(_ctx, 18)");
+          setState(510);
           _la = _input->LA(1);
           if (!(_la == flicker::DOT
 
@@ -5607,84 +5625,72 @@ flicker::ExpressionContext* flicker::expression(int precedence) {
             _errHandler->reportMatch(this);
             consume();
           }
-          setState(508);
+          setState(511);
           match(flicker::IDENTIFIER);
           break;
         }
 
-        case 15: {
+        case 16: {
           auto newContext = _tracker.createInstance<CallContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpression);
-          setState(509);
+          setState(512);
 
           if (!(precpred(_ctx, 17))) throw FailedPredicateException(this, "precpred(_ctx, 17)");
-          setState(510);
+          setState(513);
           match(flicker::LEFT_PAREN);
-          setState(519);
+          setState(522);
           _errHandler->sync(this);
 
           _la = _input->LA(1);
           if ((((_la & ~ 0x3fULL) == 0) &&
             ((1ULL << _la) & 221803862531538954) != 0) || _la == flicker::TRUE) {
-            setState(511);
+            setState(514);
             expression(0);
-            setState(516);
+            setState(519);
             _errHandler->sync(this);
             _la = _input->LA(1);
             while (_la == flicker::COMMA) {
-              setState(512);
+              setState(515);
               match(flicker::COMMA);
-              setState(513);
+              setState(516);
               expression(0);
-              setState(518);
+              setState(521);
               _errHandler->sync(this);
               _la = _input->LA(1);
             }
           }
-          setState(521);
+          setState(524);
           match(flicker::RIGHT_PAREN);
           break;
         }
 
-        case 16: {
+        case 17: {
           auto newContext = _tracker.createInstance<ArrayAccessContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpression);
-          setState(522);
+          setState(525);
 
           if (!(precpred(_ctx, 16))) throw FailedPredicateException(this, "precpred(_ctx, 16)");
-          setState(523);
+          setState(526);
           match(flicker::LEFT_BRACKET);
 
-          setState(524);
+          setState(527);
           expression(0);
-          setState(529);
+          setState(532);
           _errHandler->sync(this);
           _la = _input->LA(1);
           while (_la == flicker::COMMA) {
-            setState(525);
+            setState(528);
             match(flicker::COMMA);
-            setState(526);
+            setState(529);
             expression(0);
-            setState(531);
+            setState(534);
             _errHandler->sync(this);
             _la = _input->LA(1);
           }
-          setState(532);
-          match(flicker::RIGHT_BRACKET);
-          break;
-        }
-
-        case 17: {
-          auto newContext = _tracker.createInstance<CheckNotNilContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
-          _localctx = newContext;
-          pushNewRecursionContext(newContext, startState, RuleExpression);
-          setState(534);
-
-          if (!(precpred(_ctx, 15))) throw FailedPredicateException(this, "precpred(_ctx, 15)");
           setState(535);
-          match(flicker::QUEST_QUEST);
+          match(flicker::RIGHT_BRACKET);
           break;
         }
 
@@ -5692,7 +5698,7 @@ flicker::ExpressionContext* flicker::expression(int precedence) {
           break;
         } 
       }
-      setState(540);
+      setState(541);
       _errHandler->sync(this);
       alt = getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 54, _ctx);
     }
@@ -5774,7 +5780,7 @@ flicker::ComparisonOperatorContext* flicker::comparisonOperator() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(541);
+    setState(542);
     _la = _input->LA(1);
     if (!((((_la & ~ 0x3fULL) == 0) &&
       ((1ULL << _la) & 67108864000) != 0))) {
@@ -5851,14 +5857,14 @@ flicker::InterpolationExprContext* flicker::interpolationExpr() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(543);
+    setState(544);
     match(flicker::INTERPOLATION);
-    setState(545);
+    setState(546);
     _errHandler->sync(this);
 
     switch (getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 55, _ctx)) {
     case 1: {
-      setState(544);
+      setState(545);
       expression(0);
       break;
     }
@@ -5866,7 +5872,7 @@ flicker::InterpolationExprContext* flicker::interpolationExpr() {
     default:
       break;
     }
-    setState(547);
+    setState(548);
     match(flicker::STRING);
    
   }
@@ -5944,7 +5950,7 @@ flicker::ConstantExprContext* flicker::constantExpr() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(549);
+    setState(550);
     _la = _input->LA(1);
     if (!(((((_la - 37) & ~ 0x3fULL) == 0) &&
       ((1ULL << (_la - 37)) & 17180401673) != 0))) {
@@ -6016,19 +6022,19 @@ flicker::ListOrMapLiteralContext* flicker::listOrMapLiteral() {
     exitRule();
   });
   try {
-    setState(553);
+    setState(554);
     _errHandler->sync(this);
     switch (getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 56, _ctx)) {
     case 1: {
       enterOuterAlt(_localctx, 1);
-      setState(551);
+      setState(552);
       listLiteral();
       break;
     }
 
     case 2: {
       enterOuterAlt(_localctx, 2);
-      setState(552);
+      setState(553);
       mapLiteral();
       break;
     }
@@ -6104,18 +6110,18 @@ flicker::ListLiteralContext* flicker::listLiteral() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(555);
+    setState(556);
     match(flicker::LEFT_BRACKET);
-    setState(557);
+    setState(558);
     _errHandler->sync(this);
 
     _la = _input->LA(1);
     if ((((_la & ~ 0x3fULL) == 0) &&
       ((1ULL << _la) & 221803862531538954) != 0) || _la == flicker::TRUE) {
-      setState(556);
+      setState(557);
       listItems();
     }
-    setState(559);
+    setState(560);
     match(flicker::RIGHT_BRACKET);
    
   }
@@ -6190,28 +6196,28 @@ flicker::ListItemsContext* flicker::listItems() {
   try {
     size_t alt;
     enterOuterAlt(_localctx, 1);
-    setState(561);
+    setState(562);
     expression(0);
-    setState(566);
+    setState(567);
     _errHandler->sync(this);
     alt = getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 58, _ctx);
     while (alt != 2 && alt != atn::ATN::INVALID_ALT_NUMBER) {
       if (alt == 1) {
-        setState(562);
-        match(flicker::COMMA);
         setState(563);
+        match(flicker::COMMA);
+        setState(564);
         expression(0); 
       }
-      setState(568);
+      setState(569);
       _errHandler->sync(this);
       alt = getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 58, _ctx);
     }
-    setState(570);
+    setState(571);
     _errHandler->sync(this);
 
     _la = _input->LA(1);
     if (_la == flicker::COMMA) {
-      setState(569);
+      setState(570);
       match(flicker::COMMA);
     }
    
@@ -6285,13 +6291,13 @@ flicker::MapLiteralContext* flicker::mapLiteral() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(572);
+    setState(573);
     match(flicker::LEFT_BRACKET);
-    setState(575);
+    setState(576);
     _errHandler->sync(this);
     switch (_input->LA(1)) {
       case flicker::RIGHT_ARROW: {
-        setState(573);
+        setState(574);
         match(flicker::RIGHT_ARROW);
         break;
       }
@@ -6310,7 +6316,7 @@ flicker::MapLiteralContext* flicker::mapLiteral() {
       case flicker::NIL:
       case flicker::NOT:
       case flicker::TRUE: {
-        setState(574);
+        setState(575);
         mapItems();
         break;
       }
@@ -6318,7 +6324,7 @@ flicker::MapLiteralContext* flicker::mapLiteral() {
     default:
       throw NoViableAltException(this);
     }
-    setState(577);
+    setState(578);
     match(flicker::RIGHT_BRACKET);
    
   }
@@ -6393,28 +6399,28 @@ flicker::MapItemsContext* flicker::mapItems() {
   try {
     size_t alt;
     enterOuterAlt(_localctx, 1);
-    setState(579);
+    setState(580);
     mapItem();
-    setState(584);
+    setState(585);
     _errHandler->sync(this);
     alt = getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 61, _ctx);
     while (alt != 2 && alt != atn::ATN::INVALID_ALT_NUMBER) {
       if (alt == 1) {
-        setState(580);
-        match(flicker::COMMA);
         setState(581);
+        match(flicker::COMMA);
+        setState(582);
         mapItem(); 
       }
-      setState(586);
+      setState(587);
       _errHandler->sync(this);
       alt = getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 61, _ctx);
     }
-    setState(588);
+    setState(589);
     _errHandler->sync(this);
 
     _la = _input->LA(1);
     if (_la == flicker::COMMA) {
-      setState(587);
+      setState(588);
       match(flicker::COMMA);
     }
    
@@ -6484,11 +6490,11 @@ flicker::MapItemContext* flicker::mapItem() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(590);
-    expression(0);
     setState(591);
-    match(flicker::RIGHT_ARROW);
+    expression(0);
     setState(592);
+    match(flicker::RIGHT_ARROW);
+    setState(593);
     expression(0);
    
   }
@@ -6569,25 +6575,25 @@ flicker::LambdaLiteralContext* flicker::lambdaLiteral() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(594);
-    match(flicker::FUN);
     setState(595);
+    match(flicker::FUN);
+    setState(596);
     lambdaParams();
-    setState(600);
+    setState(601);
     _errHandler->sync(this);
     switch (_input->LA(1)) {
       case flicker::RIGHT_ARROW: {
-        setState(596);
-        match(flicker::RIGHT_ARROW);
         setState(597);
+        match(flicker::RIGHT_ARROW);
+        setState(598);
         lambdaBody();
         break;
       }
 
       case flicker::EQ: {
-        setState(598);
-        match(flicker::EQ);
         setState(599);
+        match(flicker::EQ);
+        setState(600);
         expression(0);
         break;
       }
@@ -6657,19 +6663,19 @@ flicker::LambdaParamsContext* flicker::lambdaParams() {
     exitRule();
   });
   try {
-    setState(605);
+    setState(606);
     _errHandler->sync(this);
     switch (_input->LA(1)) {
       case flicker::IDENTIFIER: {
         enterOuterAlt(_localctx, 1);
-        setState(602);
+        setState(603);
         paramList();
         break;
       }
 
       case flicker::LEFT_PAREN: {
         enterOuterAlt(_localctx, 2);
-        setState(603);
+        setState(604);
         parenthesizedOptionalParamList();
         break;
       }
@@ -6752,17 +6758,17 @@ flicker::ParenthesizedOptionalParamListContext* flicker::parenthesizedOptionalPa
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(607);
+    setState(608);
     match(flicker::LEFT_PAREN);
-    setState(609);
+    setState(610);
     _errHandler->sync(this);
 
     _la = _input->LA(1);
     if (_la == flicker::IDENTIFIER) {
-      setState(608);
+      setState(609);
       paramList();
     }
-    setState(611);
+    setState(612);
     match(flicker::RIGHT_PAREN);
    
   }
@@ -6826,12 +6832,12 @@ flicker::LambdaBodyContext* flicker::lambdaBody() {
     exitRule();
   });
   try {
-    setState(615);
+    setState(616);
     _errHandler->sync(this);
     switch (_input->LA(1)) {
       case flicker::LEFT_BRACE: {
         enterOuterAlt(_localctx, 1);
-        setState(613);
+        setState(614);
         braceBody();
         break;
       }
@@ -6839,7 +6845,7 @@ flicker::LambdaBodyContext* flicker::lambdaBody() {
       case flicker::DO:
       case flicker::LINE: {
         enterOuterAlt(_localctx, 2);
-        setState(614);
+        setState(615);
         block();
         break;
       }
@@ -6928,22 +6934,22 @@ flicker::BraceBodyContext* flicker::braceBody() {
   try {
     size_t alt;
     enterOuterAlt(_localctx, 1);
-    setState(617);
+    setState(618);
     match(flicker::LEFT_BRACE);
-    setState(626);
+    setState(627);
     _errHandler->sync(this);
     alt = getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 68, _ctx);
     while (alt != 2 && alt != atn::ATN::INVALID_ALT_NUMBER) {
       if (alt == 1) {
-        setState(618);
+        setState(619);
         statement();
-        setState(620); 
+        setState(621); 
         _errHandler->sync(this);
         alt = 1;
         do {
           switch (alt) {
             case 1: {
-                  setState(619);
+                  setState(620);
                   terminator();
                   break;
                 }
@@ -6951,35 +6957,35 @@ flicker::BraceBodyContext* flicker::braceBody() {
           default:
             throw NoViableAltException(this);
           }
-          setState(622); 
+          setState(623); 
           _errHandler->sync(this);
           alt = getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 67, _ctx);
         } while (alt != 2 && alt != atn::ATN::INVALID_ALT_NUMBER); 
       }
-      setState(628);
+      setState(629);
       _errHandler->sync(this);
       alt = getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 68, _ctx);
     }
-    setState(630);
+    setState(631);
     _errHandler->sync(this);
 
     _la = _input->LA(1);
     if (((((_la - 42) & ~ 0x3fULL) == 0) &&
       ((1ULL << (_la - 42)) & 33298058791) != 0)) {
-      setState(629);
+      setState(630);
       statement();
     }
-    setState(635);
+    setState(636);
     _errHandler->sync(this);
     _la = _input->LA(1);
     while (_la == flicker::SEMICOLON || _la == flicker::LINE) {
-      setState(632);
+      setState(633);
       terminator();
-      setState(637);
+      setState(638);
       _errHandler->sync(this);
       _la = _input->LA(1);
     }
-    setState(638);
+    setState(639);
     match(flicker::RIGHT_BRACE);
    
   }
@@ -7044,17 +7050,17 @@ flicker::TerminatorContext* flicker::terminator() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(642);
+    setState(643);
     _errHandler->sync(this);
     switch (_input->LA(1)) {
       case flicker::SEMICOLON: {
-        setState(640);
+        setState(641);
         match(flicker::SEMICOLON);
         break;
       }
 
       case flicker::LINE: {
-        setState(641);
+        setState(642);
         newline();
         break;
       }
@@ -7086,22 +7092,22 @@ bool flicker::sempred(RuleContext *context, size_t ruleIndex, size_t predicateIn
 bool flicker::expressionSempred(ExpressionContext *_localctx, size_t predicateIndex) {
   switch (predicateIndex) {
     case 0: return precpred(_ctx, 19);
-    case 1: return precpred(_ctx, 14);
-    case 2: return precpred(_ctx, 12);
-    case 3: return precpred(_ctx, 11);
-    case 4: return precpred(_ctx, 10);
-    case 5: return precpred(_ctx, 9);
-    case 6: return precpred(_ctx, 8);
-    case 7: return precpred(_ctx, 7);
-    case 8: return precpred(_ctx, 6);
-    case 9: return precpred(_ctx, 5);
-    case 10: return precpred(_ctx, 4);
-    case 11: return precpred(_ctx, 2);
-    case 12: return precpred(_ctx, 1);
-    case 13: return precpred(_ctx, 18);
-    case 14: return precpred(_ctx, 17);
-    case 15: return precpred(_ctx, 16);
-    case 16: return precpred(_ctx, 15);
+    case 1: return precpred(_ctx, 15);
+    case 2: return precpred(_ctx, 14);
+    case 3: return precpred(_ctx, 12);
+    case 4: return precpred(_ctx, 11);
+    case 5: return precpred(_ctx, 10);
+    case 6: return precpred(_ctx, 9);
+    case 7: return precpred(_ctx, 8);
+    case 8: return precpred(_ctx, 7);
+    case 9: return precpred(_ctx, 6);
+    case 10: return precpred(_ctx, 5);
+    case 11: return precpred(_ctx, 4);
+    case 12: return precpred(_ctx, 2);
+    case 13: return precpred(_ctx, 1);
+    case 14: return precpred(_ctx, 18);
+    case 15: return precpred(_ctx, 17);
+    case 16: return precpred(_ctx, 16);
 
   default:
     break;

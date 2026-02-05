@@ -1,4 +1,5 @@
-# This has nothing to do with polymorphism anymore...
-
-if a = true do
-  print b
+each item[persnicket] in tree
+  val a = fun g: Container for Things?, t: String ->
+    print persnicket - g / t
+    item = 3
+    say("item")
