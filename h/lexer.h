@@ -15,8 +15,6 @@ public:
   int col {-1};
   long char_index {};
   std::string message {};
-  // This is set in interpret() because the lexer doesn't have module information.
-  std::string module {};
 
   // CONSIDER! Removing EOF errors, modifying string buffer reserve() to not complain if closing quote isn't found and let the error be reported at the
   //   correct column
@@ -26,11 +24,6 @@ public:
   LexerError(int line, int col, long char_index, std::string&& message) : line {line}, col {col}, char_index {char_index}, message {std::move(message)} {}
 
   [[nodiscard]] const char* what() const noexcept { return message.c_str(); }
-};
-
-class LexerWarning : public LexerError {
-public:
-  LexerWarning(int line, int col, long char_index, std::string&& message) : LexerError {line, col, char_index, std::move(message)} {}
 };
 
 enum TokenType {
@@ -45,14 +38,15 @@ enum TokenType {
   TOKEN_MINUS, TOKEN_RIGHT_ARROW,
   TOKEN_BANG, TOKEN_BANG_EQ,
   TOKEN_EQ, TOKEN_EQ_EQ,
-  TOKEN_GT, TOKEN_GT_EQ,
-  TOKEN_LT, TOKEN_LT_EQ,
-  // Literals (35 - 39)
+  TOKEN_GT, TOKEN_GT_GT, TOKEN_GT_EQ,
+  TOKEN_LT, TOKEN_LT_LT, TOKEN_LT_EQ,
+  // Literals (37 - 41)
   TOKEN_IDENTIFIER, TOKEN_STRING, TOKEN_INTERPOLATION, TOKEN_CHAR, TOKEN_NUMBER,
-  // Keywords (40 - 75)
-  TOKEN_AND, TOKEN_BREAK, TOKEN_CLASS, TOKEN_CONTINUE, TOKEN_CN, TOKEN_DO, TOKEN_EACH, TOKEN_ELIF, TOKEN_ELSE, TOKEN_FALSE, TOKEN_FOR, TOKEN_FUN, TOKEN_IF, // 52
-  TOKEN_IN, TOKEN_IS, TOKEN_NIL, TOKEN_NOT, TOKEN_OF, TOKEN_OR, TOKEN_OVERRIDE, TOKEN_PASS, TOKEN_PRINT, TOKEN_PRINT_ERROR, TOKEN_PRIVATE, TOKEN_RETURN, // 64
-  TOKEN_SHL, TOKEN_SHR, TOKEN_STATIC, TOKEN_SUPER, TOKEN_THIS, TOKEN_TRUE, TOKEN_USING, TOKEN_VAL, TOKEN_VAR, TOKEN_WHEN, TOKEN_WHILE,
+  // Keywords (42 - 77)
+  TOKEN_AND, TOKEN_BREAK, TOKEN_CLASS, TOKEN_CONTINUE, TOKEN_CN, TOKEN_DO, TOKEN_EACH, TOKEN_ELIF, TOKEN_ELSE, TOKEN_FALSE, TOKEN_FOR, TOKEN_FUN, TOKEN_IF,
+  // 54
+  TOKEN_IN, TOKEN_IS, TOKEN_NIL, TOKEN_NOT, TOKEN_OF, TOKEN_OR, TOKEN_OVERRIDE, TOKEN_PASS, TOKEN_PRINT, TOKEN_PRINT_ERROR, TOKEN_PRIVATE, TOKEN_RETURN, // 66
+  TOKEN_STATIC, TOKEN_SUPER, TOKEN_THIS, TOKEN_TRUE, TOKEN_USING, TOKEN_VAL, TOKEN_VAR, TOKEN_WHEN, TOKEN_WHILE,
   // Whitespace (76 - 78)
   TOKEN_INDENT, TOKEN_DEDENT, TOKEN_LINE,
   // Misc (79)
@@ -90,7 +84,7 @@ class Lexer {
   std::vector<int> indents_ {}; // A list of past indentation levels, to determine how many dedents are created.
 
   std::vector<LexerError> errors_ {};
-  std::vector<LexerWarning> warnings_ {};
+  std::vector<LexerError> warnings_ {};
 
   [[nodiscard]] bool at_eof() const;
   [[nodiscard]] char peek() const;
@@ -152,7 +146,7 @@ class Lexer {
    * @param code_point The Unicode code point to be encoded and added to the buffer
    *                   Must be a valid code point in the Unicode range (0x0 to 0x10FFFF) and not a surrogate (0xD800 to 0xDFFF)
    */
-  void append_utf8(std::string& buffer, uint32_t code_point) const;
+  void append_utf8(std::string& buffer, uint32_t code_point);
 
   /**
    * Scans a double-quote delineated string, allowing newlines and the following escape codes:
@@ -229,6 +223,6 @@ public:
 
   [[nodiscard]] const std::string& get_src() const { return src_; }
 
-  // TODO NEXT: Store errors and warnings in a list, display them in a useful way.
-  const std::vector<LexerWarning>& get_warnings() { return warnings_; }
+  [[nodiscard]] const std::vector<LexerError>& get_errors() const { return errors_; }
+  [[nodiscard]] const std::vector<LexerError>& get_warnings() const { return warnings_; }
 };
