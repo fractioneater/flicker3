@@ -19,13 +19,13 @@ public:
     DOT = 16, DOT_DOT = 17, DOT_DOT_LT = 18, QUEST = 19, QUEST_COLON = 20, 
     QUEST_DOT = 21, COLON = 22, COLON_COLON = 23, STAR = 24, STAR_STAR = 25, 
     MINUS = 26, RIGHT_ARROW = 27, BANG = 28, BANG_EQ = 29, EQ = 30, EQ_EQ = 31, 
-    GT = 32, GT_EQ = 33, LT = 34, LT_EQ = 35, IDENTIFIER = 36, STRING = 37, 
-    INTERPOLATION = 38, CHAR = 39, NUMBER = 40, AND = 41, BREAK = 42, CLASS = 43, 
-    CONTINUE = 44, CN = 45, DO = 46, EACH = 47, ELIF = 48, ELSE = 49, FALSE = 50, 
-    FOR = 51, FUN = 52, IF = 53, IN = 54, IS = 55, NIL = 56, NOT = 57, OF = 58, 
-    OR = 59, OVERRIDE = 60, PASS = 61, PRINT = 62, PRINT_ERROR = 63, PRIVATE = 64, 
-    RETURN = 65, SHL = 66, SHR = 67, STATIC = 68, SUPER = 69, THIS = 70, 
-    TRUE = 71, USING = 72, VAL = 73, VAR = 74, WHEN = 75, WHILE = 76, INDENT = 77, 
+    GT = 32, GT_GT = 33, GT_EQ = 34, LT = 35, LT_LT = 36, LT_EQ = 37, IDENTIFIER = 38, 
+    STRING = 39, INTERPOLATION = 40, CHAR = 41, NUMBER = 42, AND = 43, BREAK = 44, 
+    CLASS = 45, CONTINUE = 46, CN = 47, DO = 48, EACH = 49, ELIF = 50, ELSE = 51, 
+    FALSE = 52, FOR = 53, FUN = 54, IF = 55, IN = 56, IS = 57, NIL = 58, 
+    NOT = 59, OF = 60, OR = 61, OVERRIDE = 62, PASS = 63, PRINT = 64, PRINT_ERROR = 65, 
+    PRIVATE = 66, RETURN = 67, STATIC = 68, SUPER = 69, THIS = 70, TRUE = 71, 
+    USING = 72, VAL = 73, VAR = 74, WHEN = 75, WHILE = 76, INDENT = 77, 
     DEDENT = 78, LINE = 79
   };
 
@@ -936,8 +936,8 @@ public:
 
     std::vector<ExpressionContext *> expression();
     ExpressionContext* expression(size_t i);
-    antlr4::tree::TerminalNode *SHL();
-    antlr4::tree::TerminalNode *SHR();
+    antlr4::tree::TerminalNode *LT_LT();
+    antlr4::tree::TerminalNode *GT_GT();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 
@@ -1298,6 +1298,7 @@ public:
     antlr4::tree::TerminalNode *FALSE();
     antlr4::tree::TerminalNode *NIL();
     antlr4::tree::TerminalNode *STRING();
+    antlr4::tree::TerminalNode *CHAR();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;

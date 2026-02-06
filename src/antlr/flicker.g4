@@ -12,14 +12,14 @@ tokens {
   MINUS, RIGHT_ARROW,
   BANG, BANG_EQ,
   EQ, EQ_EQ,
-  GT, GT_EQ,
-  LT, LT_EQ,
+  GT, GT_GT, GT_EQ,
+  LT, LT_LT, LT_EQ,
   // Literals
   IDENTIFIER, STRING, INTERPOLATION, CHAR, NUMBER,
   // Keywords
   AND, BREAK, CLASS, CONTINUE, CN, DO, EACH, ELIF, ELSE, FALSE, FOR, FUN, IF,
   IN, IS, NIL, NOT, OF, OR, OVERRIDE, PASS, PRINT, PRINT_ERROR, PRIVATE, RETURN,
-  SHL, SHR, STATIC, SUPER, THIS, TRUE, USING, VAL, VAR, WHEN, WHILE,
+  STATIC, SUPER, THIS, TRUE, USING, VAL, VAR, WHEN, WHILE,
   // Whitespace
   INDENT, DEDENT, LINE
 }
@@ -128,7 +128,7 @@ expression
 	| (MINUS | BANG | TILDE) expression                                     #prefixExpr
 	| expression (SLASH | STAR) expression                                  #factorExpr
 	| expression (PLUS | MINUS) expression                                  #termExpr
-	| expression (SHL | SHR) expression                                     #bitShiftExpr
+	| expression (LT_LT | GT_GT) expression                                 #bitShiftExpr
 	| expression (PIPE | AMPERSAND | CARET) expression                      #bitwisExpr
 	| expression (IS | IS NOT) expression                                   #isExpr
 	| expression (IN | NOT IN) expression                                   #inExpr
@@ -147,7 +147,7 @@ comparisonOperator : EQ_EQ | BANG_EQ | GT | GT_EQ | LT | LT_EQ ;
 // Answer: it doesn't. Not with ANTLR at least.
 interpolationExpr : (INTERPOLATION expression?)+ STRING ;
 
-constantExpr : NUMBER | TRUE | FALSE | NIL | STRING ;
+constantExpr : NUMBER | TRUE | FALSE | NIL | STRING | CHAR ;
 
 listOrMapLiteral : listLiteral | mapLiteral ;
 listLiteral : LEFT_BRACKET (listItems)? RIGHT_BRACKET ;
