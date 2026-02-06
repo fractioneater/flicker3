@@ -47,6 +47,10 @@ each item in [1, 2, 3]
 
 each:loop value[index] in ["a", "b", "c"]
   print "=(index): =(value)"
+  if (index > warningThreshold)
+    break:loop
+
+error "Uh-oh."
 
 # When statement
 when x

@@ -1,0 +1,20 @@
+digraph ParseTree {
+  rankdir=TB;
+  node [fontname="Courier New"];
+  n0 [label="program", shape=box, color=blue, fontcolor=blue];
+  n1 [label="codeItem", shape=box, color=blue, fontcolor=blue];
+  n0 -> n1;
+  n2 [label="statement", shape=box, color=blue, fontcolor=blue];
+  n1 -> n2;
+  n3 [label="printStmt", shape=box, color=blue, fontcolor=blue];
+  n2 -> n3;
+  n4 [label="print", shape=ellipse, color=green, fontcolor=darkgreen];
+  n3 -> n4;
+  n5 [label="expression", shape=box, color=blue, fontcolor=blue];
+  n3 -> n5;
+  n6 [label="a", shape=ellipse, color=green, fontcolor=darkgreen];
+  n5 -> n6;
+  n7 [label="EOF", shape=ellipse, color=green, fontcolor=darkgreen];
+  n0 -> n7;
+}
+

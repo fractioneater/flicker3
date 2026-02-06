@@ -78,7 +78,7 @@ class Lexer {
   long start_char_ {}; // Current token's starting index.
   long current_char_ {};
 
-  TokenType prev_type_ {TOKEN_EOF}; // I feel like this may come in handy. EDIT: And when I needed to emit newlines as well as dedents at EOF, it did!
+  TokenType prev_type_ {TOKEN_EOF}; // I feel like this may come in handy. EDIT: And when I needed to emit newlines after dedents, it did!
 
   int brace_nesting_ {}; // Because no whitespace is significant when we're inside a lambda.
 
