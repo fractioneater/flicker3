@@ -24,9 +24,8 @@ tokens {
   INDENT, DEDENT, LINE
 }
 
-// TODO: Currently, a dedent looks like this: LINE DEDENT LINE. Both are there for convenience of this grammar file. There's a way to deal with both of them.
-//       The first, however, is much easier to remove. In fact, 'program' already shows how we can take an EOF without a line, so why don't we just take a
-//       DEDENT without a line?
+// RULES (important):
+// If a grammar rule involves a block, it must work WITH OR WITHOUT a newline before the closing dedent.
 
 program : newline? (codeItem newline)* codeItem? EOF ;
 
@@ -69,14 +68,14 @@ paramList : param (COMMA param)* ;
 param : IDENTIFIER COLON type ;
 
 block : (DO)? newline INDENT blockBody DEDENT ;
-blockBody : (codeItem newline)* ;
+blockBody : (codeItem newline)* codeItem? ;
 
-accessSpecifier : PRIVATE ; // There may be more
+accessSpecifier : PRIVATE ; // There may be more.
 
 classDecl : CLASS IDENTIFIER typeParam? (IS type)? newline INDENT classBody DEDENT ;
-classBody : (companionNamespace newline)? (classItem newline)* ;
-companionNamespace : CN newline INDENT (classItem newline)* DEDENT ;
-classItem : accessSpecifier* (variableDecl | method ) ;
+classBody : (companionNamespace newline)? (classItem newline)* classItem? ;
+companionNamespace : CN newline INDENT (classItem newline)* classItem? DEDENT ;
+classItem : accessSpecifier* (variableDecl | method) ;
 method: OVERRIDE? functionDecl ;
 
 usingStatement
@@ -105,7 +104,7 @@ consoleErrorStmt : PRINT_ERROR expression ;
 passStmt : PASS ;
 
 whenBody : newline INDENT whenContents DEDENT ;
-whenContents : (whenCase newline)+ (elseCase newline)? ;
+whenContents : (whenCase newline)+ (whenCase | elseCase)? newline? ;
 whenCase : expression blockOrStatement ;
 elseCase : ELSE blockOrStatement ;
 
@@ -145,6 +144,7 @@ comparisonOperator : EQ_EQ | BANG_EQ | GT | GT_EQ | LT | LT_EQ ;
 
 // There's no reason to have empty interpolation, but it's still allowed.
 // Question: what happens if it tries to consume the next string as its expression?
+// Answer: it doesn't. Not with ANTLR at least.
 interpolationExpr : (INTERPOLATION expression?)+ STRING ;
 
 constantExpr : NUMBER | TRUE | FALSE | NIL | STRING ;

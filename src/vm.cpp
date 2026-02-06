@@ -2,11 +2,13 @@
 
 #include "common.h"
 
+#include <fstream>
 #include <iostream>
 
 #include "flicker.h"
 #include "lexer-adapter.h"
 #include "lexer.h"
+#include "tree-export.h"
 
 void print_error_prefix(const LexerError& err) {
   // module@line:col (and it's all bold)
@@ -74,7 +76,7 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
     token_stream.fill();
     for (auto token : token_stream.getTokens()) {
       if (token->getType() == antlr4::Token::EOF) { // EOF:
-        std::cout << "EOF: col " << token->getCharPositionInLine() << ", length 0\n";
+        std::cout << "EOF: col " << token->getCharPositionInLine() << "\n";
         continue;
       }
 
@@ -101,7 +103,18 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
     }
 
     // Temporarily print things out in a Lisp-like tree.
-    std::cout << tree->toStringTree(&parser) << '\n';
+    // std::cout << tree->toStringTree(&parser) << '\n';
+
+    #if DEBUG_PRINT_DOT
+    std::ofstream out {DEBUG_DOT_FILENAME};
+    if (out) {
+      out << flicker::to_dot(tree, &parser) << '\n';
+      out.close();
+      std::cout << "Parse tree exported to " << DEBUG_DOT_FILENAME << '\n';
+    } else {
+      std::cerr << "Could not open " << DEBUG_DOT_FILENAME << " for writing\n";
+    }
+    #endif
   } catch (LexerError& err) {
     err.module = module;
     print_error(source, err);

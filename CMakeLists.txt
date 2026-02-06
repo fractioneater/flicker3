@@ -12,6 +12,7 @@ add_library(flicker_lib
     src/vm.cpp
     src/compiler.cpp
     src/lexer.cpp
+    src/tree-export.cpp
     gen/antlr/flicker.cpp
     gen/antlr/flickerBaseVisitor.cpp
     gen/antlr/flickerVisitor.cpp

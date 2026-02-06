@@ -489,8 +489,6 @@ std::optional<Token> Lexer::indentation() {
   if (open_blocks > 0) {
     indents_.resize(1);
     dedents_queued_ += open_blocks;
-    // A dedent must be preceded by a newline.
-    if (prev_type_ != TOKEN_LINE) return make_token(TOKEN_LINE);
 
     --dedents_queued_;
     return make_token(TOKEN_DEDENT);
@@ -508,8 +506,6 @@ std::optional<Token> Lexer::indentation() {
 
   // Top priority is to return dedents if more are called for.
   if (dedents_queued_ > 0) {
-    // A dedent must be preceded by a newline.
-    if (prev_type_ != TOKEN_LINE) return make_token(TOKEN_LINE);
     --dedents_queued_;
     return make_token(TOKEN_DEDENT);
   }
