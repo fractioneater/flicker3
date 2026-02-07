@@ -4,7 +4,15 @@
 #include <iostream>
 #include <utility>
 
-// TODO: Store all error strings in one file for easy access.
+/** TODO in the lexer:
+ *    Error recovery
+ *    Store all error strings in one file
+ *    Use getter and setter methods inside the class, everything else OUTSIDE!
+ *    Optimize with pointer indexing and better keyword lookup
+ *    Inline peek(), advance(), etc
+ *    Add context for errors to show the start of an unclosed brace, for example
+ *    Parse numbers in the number() function
+ */
 
 namespace Keywords {
   // The string on the left represents how these keywords should show up in USER CODE.
@@ -56,8 +64,6 @@ Lexer::Lexer(std::string src) : src_ {std::move(src)}, src_length_ {std::ssize(s
 
 Lexer::~Lexer() = default;
 
-// TODO NEXT: Error recovery! The goal is to consume THE SAME LENGTH that the correct token would take.
-
 // PRIVATE -------------------------------------------------------------------------------
 
 // CONSIDER! Use only basic methods as part of the lexer class, turn others into public functions that use the lexer's basic functionality.
@@ -101,26 +107,27 @@ bool Lexer::match(char expected) {
 
 void Lexer::block_comment() {
   // Keep consuming until the closing comment or EOF.
-  for (int nest_depth = 1; nest_depth > 0; advance()) {
+  char prev {};
+  for (int nest_depth = 1; nest_depth > 0; prev = advance()) {
     if (at_eof()) {
       errors_.emplace_back("Unclosed block comment");
       return;
     }
 
     if (peek() == '#') {
-      if (peek_next() == ':') {
+      if (peek_next() == '-') {
         advance();
         if (nest_depth++ == MAX_COMMENT_NEST) {
           errors_.emplace_back(line_, col_, current_char_, "Too many nested comments");
           return;
         }
-      } else --nest_depth;
+      } else if (prev == '-') --nest_depth;
     }
   }
 }
 
 void Lexer::line_comment() {
-  if (peek() == ':') block_comment();
+  if (peek() == '-') block_comment();
   else {
     while (peek() != '\n' && !at_eof()) advance();
   }
@@ -190,12 +197,12 @@ int hex_value(char c) {
       return 0;
     }
 
-    const char c {advance()};
-    const int digit = hex_value(c);
+    const int digit = hex_value(peek());
     if (digit == -1) {
       errors_.emplace_back(line_, col_, current_char_, std::format("Invalid hex character—sequence should be {} chars", length));
       return 0;
     }
+    advance(); // The char that was just peeked at.
 
     value = (value << 4) | static_cast<std::uint32_t>(digit);
   }
@@ -303,7 +310,6 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
         }
         default:
           errors_.emplace_back(line_, col_ - 1, current_char_ - 1, "Invalid escape character");
-          return make_token(TOKEN_STRING);
       }
     } else {
       buffer.push_back(c);
@@ -341,13 +347,18 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
       case 'x': value = static_cast<char>(read_hex(2)); break;
       default:
         errors_.emplace_back(line_, col_ - 1, current_char_ - 1, "Invalid escape character");
-        return make_token(TOKEN_CHAR);
     }
   } else value = c;
   // @formatter:on
 
   if (!match('\'')) {
-    errors_.emplace_back(line_, col_, current_char_, "Character is unterminated or more than one char");
+    while (!at_eof() && peek() != '\'') { advance(); }
+    if (at_eof())
+      errors_.emplace_back(line_, col_, current_char_, "Character is unterminated");
+    else {
+      errors_.emplace_back(line_, col_, current_char_, "Use double-quotes for strings; single-quotes are for single characters");
+      advance(); // Closing quote.
+    }
     return make_token(TOKEN_CHAR);
   }
 
@@ -439,12 +450,14 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
     warnings_.emplace_back(line_, col_, current_char_, "Character appears to be part of the number, but is actually not");
   }
 
-  // TODO: Parse it inside the lexer for coolness.
   return make_token(TOKEN_NUMBER);
 }
 
 // This function will only be called at the start of a line.
 std::optional<Token> Lexer::indentation() {
+  std::optional<LexerError> block_comment_warning {};
+  int block_comment_end_line {-1};
+
   // Loop through characters until something significant (not whitespace or comment) is found.
   while (true) {
     switch (peek()) {
@@ -460,9 +473,15 @@ std::optional<Token> Lexer::indentation() {
 
       case '#': {
         advance();
-        if (peek() == ':') {
-          warnings_.emplace_back(line_, col_ - 1, current_char_ - 1, "Consider moving this comment to the end of the line");
+        if (peek() == '-') {
+          block_comment_warning = LexerError {
+            line_,
+            col_ - 1,
+            current_char_ - 1,
+            "Consider moving this comment to the end of the line to make indentation clearer"
+          };
           block_comment(); // May cross lines; the ending column is what matters.
+          block_comment_end_line = line_;
         } else {
           while (peek() != '\n' && !at_eof()) advance();
         }
@@ -472,6 +491,12 @@ std::optional<Token> Lexer::indentation() {
       default: ; // Break from here, which in turn breaks from the loop.
     }
     break;
+  }
+
+  if (line_ == block_comment_end_line) {
+    // By this point, we know that the block comment is in front of some piece of code.
+    if (block_comment_warning)
+      warnings_.emplace_back(block_comment_warning.value());
   }
 
   const int indent {col_ - 1};
@@ -515,7 +540,7 @@ std::optional<Token> Lexer::indentation() {
   start_char_ = current_char_;
   start_col_  = col_;
 
-  if (brace_nesting_ > 0) errors_.emplace_back(-1, -1, current_char_, "Unclosed lambda"); // TODO: Now show the opening brace that wasn't closed.
+  if (brace_nesting_ > 0) errors_.emplace_back(-1, -1, current_char_, "Unclosed lambda");
 
   // Create dedents at EOF: emit one now and queue the rest.
   // The indents list should still hold the original 0.
