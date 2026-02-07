@@ -24,7 +24,7 @@ std::string_view get_line_containing_index(std::string_view source, long char_in
 }
 
 void print_error(std::string_view source, const LexerError& err, const std::string_view module, bool is_error) {
-  std::cout << "\033[38;5;" << (is_error ? COLOR_ERROR : COLOR_WARNING)  << "m\033[1m " << module << "@";
+  std::cout << "\033[38;5;" << (is_error ? COLOR_ERROR : COLOR_WARNING)  << "m\033[1m" << module << "@";
   if (err.line == -1)
     std::cout << "EOF\033[0m " << err.what() << '\n';
   else {
