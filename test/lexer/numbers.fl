@@ -1,6 +1,6 @@
 # This is a line comment.
-#: This is a
-   block comment. #
+#- This is a
+   block comment. -#
 
 # Numbers
 val integer = 123
