@@ -6,21 +6,9 @@ digraph ParseTree {
   n0 -> n1;
   n2 [label="expression", shape=box, color=blue, fontcolor=blue];
   n1 -> n2;
-  n3 [label="expression", shape=box, color=blue, fontcolor=blue];
+  n3 [label="three", shape=ellipse, color=green, fontcolor=darkgreen];
   n2 -> n3;
-  n4 [label="constantExpr", shape=box, color=blue, fontcolor=blue];
-  n3 -> n4;
-  n5 [label="30", shape=ellipse, color=green, fontcolor=darkgreen];
-  n4 -> n5;
-  n6 [label="/", shape=ellipse, color=green, fontcolor=darkgreen];
-  n2 -> n6;
-  n7 [label="expression", shape=box, color=blue, fontcolor=blue];
-  n2 -> n7;
-  n8 [label="constantExpr", shape=box, color=blue, fontcolor=blue];
-  n7 -> n8;
-  n9 [label="2", shape=ellipse, color=green, fontcolor=darkgreen];
-  n8 -> n9;
-  n10 [label="EOF", shape=ellipse, color=green, fontcolor=darkgreen];
-  n0 -> n10;
+  n4 [label="EOF", shape=ellipse, color=green, fontcolor=darkgreen];
+  n0 -> n4;
 }
 

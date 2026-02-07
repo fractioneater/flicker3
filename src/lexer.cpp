@@ -157,7 +157,7 @@ TokenType word_type(std::string_view word) {
 [[nodiscard]] Token Lexer::backtick_identifier() {
   while (peek() != '`' && !at_eof()) {
     if (peek() == '\n') {
-      errors_.emplace_back(line_, col_, current_char_, "Unclosed identifier—even these can't have newlines");
+      errors_.emplace_back(line_, col_, current_char_, "Unclosed identifier; even these can't have newlines");
       return make_token(TOKEN_IDENTIFIER);
     }
     advance();
@@ -199,7 +199,7 @@ int hex_value(char c) {
 
     const int digit = hex_value(peek());
     if (digit == -1) {
-      errors_.emplace_back(line_, col_, current_char_, std::format("Invalid hex character—sequence should be {} chars", length));
+      errors_.emplace_back(line_, col_, current_char_, std::format("Invalid hex character; sequence should be {} chars", length));
       return 0;
     }
     advance(); // The char that was just peeked at.
