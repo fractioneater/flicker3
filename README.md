@@ -8,7 +8,7 @@ Flicker 3 will be...
 - implemented in C++
 - turned into an AST, then _optimized,_ converted into bytecode, and run in a VM
 - **statically typed**
-- (hopefully) faster from all these changes
+- (hopefully) faster in runtime
 - and, above all, it will be...<details><summary>click to end the suspense...</summary><details><summary>sorry, I needed a bit more suspense...</summary>
   **It will be FUN! Both to implement and to use!**</details></details>
 
@@ -25,3 +25,6 @@ To _test_ flicker:
    with a file path as an argument.
 5. Chances are, you'll want to mess around with debug flags in `h/common.h`. For example, if you'd rather just print tokens instead of exporting as a DOT 
    tree for GraphViz. Change whatever, but remember to rebuild.
+
+Of course, you can build with `clang++` or `g++` if you prefer.
+CMake can make your life easier, but if you don't have it installed already, it may be unnecessary.

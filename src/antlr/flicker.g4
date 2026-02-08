@@ -2,24 +2,29 @@ parser grammar flicker;
 
 tokens {
   // Single-character tokens
-  LEFT_PAREN, RIGHT_PAREN, LEFT_BRACKET, RIGHT_BRACKET, LEFT_BRACE, RIGHT_BRACE, SEMICOLON, COMMA,
-  PLUS, SLASH, PERCENT, PIPE, CARET, AMPERSAND, TILDE,
-  // 1-3 character tokens
+  LEFT_PAREN, RIGHT_PAREN, LEFT_BRACKET, RIGHT_BRACKET, LEFT_BRACE, RIGHT_BRACE, SEMICOLON, COMMA, TILDE,
+  // Single or multi-character tokens
+  STAR, STAR_STAR, STAR_EQ, STAR_STAR_EQ,
+  MINUS, MINUS_MINUS, RIGHT_ARROW, MINUS_EQ,
+  PLUS, PLUS_PLUS, PLUS_EQ,
   DOT, DOT_DOT, DOT_DOT_LT,
   QUEST, QUEST_COLON, QUEST_DOT,
-  COLON, COLON_COLON,
-  STAR, STAR_STAR,
-  MINUS, RIGHT_ARROW,
-  BANG, BANG_EQ,
-  EQ, EQ_EQ,
   GT, GT_GT, GT_EQ,
   LT, LT_LT, LT_EQ,
+  COLON, COLON_COLON,
+  SLASH, SLASH_EQ,
+  PERCENT, PERCENT_EQ,
+  PIPE, PIPE_EQ,
+  CARET, CARET_EQ,
+  AMPERSAND, AMPERSAND_EQ,
+  BANG, BANG_EQ,
+  EQ, EQ_EQ,
   // Literals
   IDENTIFIER, STRING, INTERPOLATION, CHAR, NUMBER,
   // Keywords
-  AND, BREAK, CLASS, CONTINUE, CN, DO, EACH, ELIF, ELSE, FALSE, FOR, FUN, IF,
-  IN, IS, NIL, NOT, OF, OR, OVERRIDE, PASS, PRINT, PRINT_ERROR, PRIVATE, RETURN,
-  STATIC, SUPER, THIS, TRUE, USING, VAL, VAR, WHEN, WHILE,
+  AND, BREAK, CLASS, CONTINUE, CN, DO, EACH, ELIF, ELSE, FALSE, FOR, FUN,
+  IF, IN, IS, NIL, NOT, OF, OR, OVERRIDE, PASS, PRINT, PRINT_ERROR, PRIVATE,
+  RETURN, STATIC, SUPER, THIS, TRUE, USING, VAL, VAR, WHEN, WHILE,
   // Whitespace
   INDENT, DEDENT, LINE
 }
@@ -123,9 +128,10 @@ expression
 	| expression LEFT_PAREN (expression (COMMA expression)*)? RIGHT_PAREN   #call
 	| expression LEFT_BRACKET (expression (COMMA expression)*) RIGHT_BRACKET #arrayAccess
 	| expression braceLambda                                                #lambdaCall
+	| expression (PLUS_PLUS | MINUS_MINUS)                                  #postfixExpr
 	| expression QUEST_COLON expression                                     #nilCoalescingOp
 	| <assoc=right> expression STAR_STAR expression                         #powerExpr
-	| (MINUS | BANG | TILDE) expression                                     #prefixExpr
+	| (MINUS | BANG | TILDE | PLUS_PLUS | MINUS_MINUS) expression           #prefixExpr
 	| expression (SLASH | STAR) expression                                  #factorExpr
 	| expression (PLUS | MINUS) expression                                  #termExpr
 	| expression (LT_LT | GT_GT) expression                                 #bitShiftExpr
@@ -137,10 +143,11 @@ expression
 	| expression OR expression                                              #orExpr
 	| NOT expression                                                        #notExpr
 	| expression IF expression ELSE expression                              #ifExpr
-	| <assoc=right> expression EQ expression                                #assignment
+	| <assoc=right> expression assignOperator expression                    #assignment
 	;
 
 comparisonOperator : EQ_EQ | BANG_EQ | GT | GT_EQ | LT | LT_EQ ;
+assignOperator : EQ | MINUS_EQ | PLUS_EQ | STAR_EQ | SLASH_EQ | STAR_STAR_EQ | PIPE_EQ | AMPERSAND_EQ | CARET_EQ | PERCENT_EQ ;
 
 // There's no reason to have empty interpolation, but it's still allowed.
 // Question: what happens if it tries to consume the next string as its expression?

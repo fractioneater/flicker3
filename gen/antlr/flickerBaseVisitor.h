@@ -233,6 +233,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitPostfixExpr(flicker::PostfixExprContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitListOrMap(flicker::ListOrMapContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -290,6 +294,10 @@ public:
   }
 
   virtual std::any visitComparisonOperator(flicker::ComparisonOperatorContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitAssignOperator(flicker::AssignOperatorContext *ctx) override {
     return visitChildren(ctx);
   }
 

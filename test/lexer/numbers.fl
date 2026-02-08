@@ -95,6 +95,18 @@ val isCheck = x is Int
 val inCheck = 1 in list
 val ternary = 1 if x > 0 else false
 
+var n = 4
+n++
+n--
+n += 2
+n -= 2
+n *= 2
+n /= 2
+n |= 1
+n &= 4
+n ^= 3
+n %= 5
+
 # Lambdas
 val lam1 = fun (a: Int, b: Int) = a + b
 val lam2 = fun { (a: Int, b: Int) -> print a; print b; }
