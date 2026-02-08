@@ -5,22 +5,20 @@
 #include <utility>
 
 /** TODO in the lexer:
- *    Error recovery
- *    Store all error strings in one file
- *    Use getter and setter methods inside the class, everything else OUTSIDE!
  *    Optimize with pointer indexing and better keyword lookup
  *    Inline peek(), advance(), etc
  *    Add context for errors to show the start of an unclosed brace, for example
+ *    Add values for chars + strings
  *    Parse numbers in the number() function
  */
 
-namespace Keywords {
+namespace Helpers {
   // The string on the left represents how these keywords should show up in USER CODE.
   // So, for example, if I wanted the "nil" keyword to become "NIL" or "Nil", I'd change it here.
   // I believe keywords should be lowercase because that's what most programmers are used to.
   // Constants (nil, true, false) are usually lowercase, and because they aren't classes, I don't believe they should be Capitalized,
   //   although CAPITALIZED would be okay.
-  const std::unordered_map<std::string_view, TokenType> map {
+  const std::unordered_map<std::string_view, TokenType> keywords {
     {"and", TOKEN_AND},
     {"break", TOKEN_BREAK},
     {"class", TOKEN_CLASS},
@@ -56,6 +54,28 @@ namespace Keywords {
     {"when", TOKEN_WHEN},
     {"while", TOKEN_WHILE},
   };
+
+  TokenType word_type(std::string_view word) {
+    // This namespace that holds the map is in lexer.h.
+    const auto found {keywords.find(word)};
+    if (found != keywords.end())
+      return found->second; // Return the associated TokenType.
+
+    // Then return IDENTIFIER if it's not a reserved word.
+    return TOKEN_IDENTIFIER;
+  }
+
+  bool is_alphanumeric(char c) {
+    // Apparently it's good to cast it to unsigned char because isalnum() assumes it can go up to 255.
+    return std::isalnum(static_cast<unsigned char>(c)) != 0 || c == '_';
+  }
+
+  int hex_value(char c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+  }
 }
 
 Lexer::Lexer(std::string src) : src_ {std::move(src)}, src_length_ {std::ssize(src_)} {
@@ -133,25 +153,10 @@ void Lexer::line_comment() {
   }
 }
 
-bool is_alphanumeric(char c) {
-  // Apparently it's good to cast it to unsigned char because isalnum() assumes it can go up to 255.
-  return std::isalnum(static_cast<unsigned char>(c)) != 0 || c == '_';
-}
-
-TokenType word_type(std::string_view word) {
-  // This namespace that holds the map is in lexer.h.
-  const auto found {Keywords::map.find(word)};
-  if (found != Keywords::map.end())
-    return found->second; // Return the associated TokenType.
-
-  // Then return IDENTIFIER if it's not a reserved word.
-  return TOKEN_IDENTIFIER;
-}
-
 [[nodiscard]] Token Lexer::word() {
-  while (is_alphanumeric(peek())) advance();
+  while (Helpers::is_alphanumeric(peek())) advance();
   const std::string_view word {static_cast<std::string_view>(src_).substr(start_char_, current_char_ - start_char_)};
-  return make_token(word_type(word));
+  return make_token(Helpers::word_type(word));
 }
 
 [[nodiscard]] Token Lexer::backtick_identifier() {
@@ -176,30 +181,23 @@ TokenType word_type(std::string_view word) {
 
   if (token.length == 0) {
     errors_.emplace_back(line_, col_, current_char_, "Empty identifier");
-    return make_token(TOKEN_IDENTIFIER); // Instead of returning 'token', let's just do this.
+    return make_token(TOKEN_IDENTIFIER); // Instead of returning the var 'token', let's just do this.
   }
 
   return token;
-}
-
-int hex_value(char c) {
-  if (c >= '0' && c <= '9') return c - '0';
-  if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-  if (c >= 'A' && c <= 'F') return c - 'A' + 10;
-  return -1;
 }
 
 [[nodiscard]] std::uint32_t Lexer::read_hex(int length) {
   std::uint32_t value = 0;
   for (int i = 0; i < length; ++i) {
     if (at_eof()) {
-      errors_.emplace_back("Unterminated escape sequence");
+      errors_.emplace_back(std::format("Escape sequence cut short by EOF (should be {} digits)", length));
       return 0;
     }
 
-    const int digit = hex_value(peek());
+    const int digit = Helpers::hex_value(peek());
     if (digit == -1) {
-      errors_.emplace_back(line_, col_, current_char_, std::format("Invalid hex character; sequence should be {} chars", length));
+      errors_.emplace_back(line_, col_, current_char_, std::format("Invalid hex character; sequence should be {} digits", length));
       return 0;
     }
     advance(); // The char that was just peeked at.
@@ -245,20 +243,14 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
   // The type is a string unless interpolation is found.
   TokenType type {TOKEN_STRING};
   std::string buffer {};
-  // This estimate will usually create one more than the estimate value, but that's okay.
-  const auto found_index {src_.find('"', current_char_)};
-  if (found_index == std::string::npos) {
-    errors_.emplace_back("Unterminated string");
-    return make_token(TOKEN_STRING);
-  }
-  buffer.reserve(found_index - start_char_);
+  buffer.reserve(12); // CONSIDER! Is this a good default?
 
   while (true) {
     const char c {advance()};
     if (c == '"') break;
     if (c == '\r') continue; // TODO: Why am I removing these?
     if (at_eof()) {
-      errors_.emplace_back("Unterminated string");
+      errors_.emplace_back("Unclosed string");
       return make_token(TOKEN_STRING);
     }
 
@@ -354,7 +346,7 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
   if (!match('\'')) {
     while (!at_eof() && peek() != '\'') { advance(); }
     if (at_eof())
-      errors_.emplace_back(line_, col_, current_char_, "Character is unterminated");
+      errors_.emplace_back("Unclosed character literal");
     else {
       errors_.emplace_back(line_, col_, current_char_, "Use double-quotes for strings; single-quotes are for single characters");
       advance(); // Closing quote.
@@ -447,7 +439,10 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
   }
 
   if (!is_digit(peek()) && std::isalpha(static_cast<unsigned char>(peek())) != 0) {
-    warnings_.emplace_back(line_, col_, current_char_, "Character appears to be part of the number, but is actually not");
+    if (peek() == 'e')
+      warnings_.emplace_back(line_, col_, current_char_, "Use uppercase E for an exponent part");
+    else
+      warnings_.emplace_back(line_, col_, current_char_, "Character appears to be part of the number, but is actually not");
   }
 
   return make_token(TOKEN_NUMBER);
@@ -526,6 +521,7 @@ std::optional<Token> Lexer::indentation() {
     if (indent != indents_.back()) {
       dedents_queued_ = 0;
       errors_.emplace_back(line_, col_, current_char_, "Indentation does not match any previous line");
+      return std::nullopt; // CONSIDER! What is best to return here?
     }
     --dedents_queued_;
     return make_token(TOKEN_DEDENT);
@@ -540,7 +536,7 @@ std::optional<Token> Lexer::indentation() {
   start_char_ = current_char_;
   start_col_  = col_;
 
-  if (brace_nesting_ > 0) errors_.emplace_back(-1, -1, current_char_, "Unclosed lambda");
+  if (brace_nesting_ > 0) errors_.emplace_back("Unclosed lambda");
 
   // Create dedents at EOF: emit one now and queue the rest.
   // The indents list should still hold the original 0.
@@ -606,10 +602,8 @@ std::optional<Token> Lexer::indentation() {
         ++brace_nesting_;
         return make_token(TOKEN_LEFT_BRACE);
       case '}':
-        if (--brace_nesting_ < 0) {
+        if (--brace_nesting_ < 0)
           errors_.emplace_back(line_, col_, current_char_, "Extra closing brace");
-          break;
-        }
         return make_token(TOKEN_RIGHT_BRACE);
       case ';': return make_token(TOKEN_SEMICOLON);
       case ',': return make_token(TOKEN_COMMA);
