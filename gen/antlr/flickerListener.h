@@ -178,6 +178,9 @@ public:
   virtual void enterArrayAccess(flicker::ArrayAccessContext *ctx) = 0;
   virtual void exitArrayAccess(flicker::ArrayAccessContext *ctx) = 0;
 
+  virtual void enterPostfixExpr(flicker::PostfixExprContext *ctx) = 0;
+  virtual void exitPostfixExpr(flicker::PostfixExprContext *ctx) = 0;
+
   virtual void enterListOrMap(flicker::ListOrMapContext *ctx) = 0;
   virtual void exitListOrMap(flicker::ListOrMapContext *ctx) = 0;
 
@@ -222,6 +225,9 @@ public:
 
   virtual void enterComparisonOperator(flicker::ComparisonOperatorContext *ctx) = 0;
   virtual void exitComparisonOperator(flicker::ComparisonOperatorContext *ctx) = 0;
+
+  virtual void enterAssignOperator(flicker::AssignOperatorContext *ctx) = 0;
+  virtual void exitAssignOperator(flicker::AssignOperatorContext *ctx) = 0;
 
   virtual void enterInterpolationExpr(flicker::InterpolationExprContext *ctx) = 0;
   virtual void exitInterpolationExpr(flicker::InterpolationExprContext *ctx) = 0;

@@ -128,6 +128,8 @@ public:
 
     virtual std::any visitArrayAccess(flicker::ArrayAccessContext *context) = 0;
 
+    virtual std::any visitPostfixExpr(flicker::PostfixExprContext *context) = 0;
+
     virtual std::any visitListOrMap(flicker::ListOrMapContext *context) = 0;
 
     virtual std::any visitIsExpr(flicker::IsExprContext *context) = 0;
@@ -157,6 +159,8 @@ public:
     virtual std::any visitAndExpr(flicker::AndExprContext *context) = 0;
 
     virtual std::any visitComparisonOperator(flicker::ComparisonOperatorContext *context) = 0;
+
+    virtual std::any visitAssignOperator(flicker::AssignOperatorContext *context) = 0;
 
     virtual std::any visitInterpolationExpr(flicker::InterpolationExprContext *context) = 0;
 

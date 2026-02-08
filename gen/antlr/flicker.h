@@ -14,19 +14,22 @@ class  flicker : public antlr4::Parser {
 public:
   enum {
     LEFT_PAREN = 1, RIGHT_PAREN = 2, LEFT_BRACKET = 3, RIGHT_BRACKET = 4, 
-    LEFT_BRACE = 5, RIGHT_BRACE = 6, SEMICOLON = 7, COMMA = 8, PLUS = 9, 
-    SLASH = 10, PERCENT = 11, PIPE = 12, CARET = 13, AMPERSAND = 14, TILDE = 15, 
-    DOT = 16, DOT_DOT = 17, DOT_DOT_LT = 18, QUEST = 19, QUEST_COLON = 20, 
-    QUEST_DOT = 21, COLON = 22, COLON_COLON = 23, STAR = 24, STAR_STAR = 25, 
-    MINUS = 26, RIGHT_ARROW = 27, BANG = 28, BANG_EQ = 29, EQ = 30, EQ_EQ = 31, 
-    GT = 32, GT_GT = 33, GT_EQ = 34, LT = 35, LT_LT = 36, LT_EQ = 37, IDENTIFIER = 38, 
-    STRING = 39, INTERPOLATION = 40, CHAR = 41, NUMBER = 42, AND = 43, BREAK = 44, 
-    CLASS = 45, CONTINUE = 46, CN = 47, DO = 48, EACH = 49, ELIF = 50, ELSE = 51, 
-    FALSE = 52, FOR = 53, FUN = 54, IF = 55, IN = 56, IS = 57, NIL = 58, 
-    NOT = 59, OF = 60, OR = 61, OVERRIDE = 62, PASS = 63, PRINT = 64, PRINT_ERROR = 65, 
-    PRIVATE = 66, RETURN = 67, STATIC = 68, SUPER = 69, THIS = 70, TRUE = 71, 
-    USING = 72, VAL = 73, VAR = 74, WHEN = 75, WHILE = 76, INDENT = 77, 
-    DEDENT = 78, LINE = 79
+    LEFT_BRACE = 5, RIGHT_BRACE = 6, SEMICOLON = 7, COMMA = 8, TILDE = 9, 
+    STAR = 10, STAR_STAR = 11, STAR_EQ = 12, STAR_STAR_EQ = 13, MINUS = 14, 
+    MINUS_MINUS = 15, RIGHT_ARROW = 16, MINUS_EQ = 17, PLUS = 18, PLUS_PLUS = 19, 
+    PLUS_EQ = 20, DOT = 21, DOT_DOT = 22, DOT_DOT_LT = 23, QUEST = 24, QUEST_COLON = 25, 
+    QUEST_DOT = 26, GT = 27, GT_GT = 28, GT_EQ = 29, LT = 30, LT_LT = 31, 
+    LT_EQ = 32, COLON = 33, COLON_COLON = 34, SLASH = 35, SLASH_EQ = 36, 
+    PERCENT = 37, PERCENT_EQ = 38, PIPE = 39, PIPE_EQ = 40, CARET = 41, 
+    CARET_EQ = 42, AMPERSAND = 43, AMPERSAND_EQ = 44, BANG = 45, BANG_EQ = 46, 
+    EQ = 47, EQ_EQ = 48, IDENTIFIER = 49, STRING = 50, INTERPOLATION = 51, 
+    CHAR = 52, NUMBER = 53, AND = 54, BREAK = 55, CLASS = 56, CONTINUE = 57, 
+    CN = 58, DO = 59, EACH = 60, ELIF = 61, ELSE = 62, FALSE = 63, FOR = 64, 
+    FUN = 65, IF = 66, IN = 67, IS = 68, NIL = 69, NOT = 70, OF = 71, OR = 72, 
+    OVERRIDE = 73, PASS = 74, PRINT = 75, PRINT_ERROR = 76, PRIVATE = 77, 
+    RETURN = 78, STATIC = 79, SUPER = 80, THIS = 81, TRUE = 82, USING = 83, 
+    VAL = 84, VAR = 85, WHEN = 86, WHILE = 87, INDENT = 88, DEDENT = 89, 
+    LINE = 90
   };
 
   enum {
@@ -41,11 +44,11 @@ public:
     RuleReturnStmt = 33, RulePrintStmt = 34, RuleConsoleErrorStmt = 35, 
     RulePassStmt = 36, RuleWhenBody = 37, RuleWhenContents = 38, RuleWhenCase = 39, 
     RuleElseCase = 40, RuleExpression = 41, RuleComparisonOperator = 42, 
-    RuleInterpolationExpr = 43, RuleConstantExpr = 44, RuleListOrMapLiteral = 45, 
-    RuleListLiteral = 46, RuleListItems = 47, RuleMapLiteral = 48, RuleMapItems = 49, 
-    RuleMapItem = 50, RuleLambdaLiteral = 51, RuleLambdaParams = 52, RuleParenthesizedOptionalParamList = 53, 
-    RuleBlockLambda = 54, RuleBraceLambda = 55, RuleStatementLambdaBody = 56, 
-    RuleExprLambdaBody = 57
+    RuleAssignOperator = 43, RuleInterpolationExpr = 44, RuleConstantExpr = 45, 
+    RuleListOrMapLiteral = 46, RuleListLiteral = 47, RuleListItems = 48, 
+    RuleMapLiteral = 49, RuleMapItems = 50, RuleMapItem = 51, RuleLambdaLiteral = 52, 
+    RuleLambdaParams = 53, RuleParenthesizedOptionalParamList = 54, RuleBlockLambda = 55, 
+    RuleBraceLambda = 56, RuleStatementLambdaBody = 57, RuleExprLambdaBody = 58
   };
 
   explicit flicker(antlr4::TokenStream *input);
@@ -108,6 +111,7 @@ public:
   class ElseCaseContext;
   class ExpressionContext;
   class ComparisonOperatorContext;
+  class AssignOperatorContext;
   class InterpolationExprContext;
   class ConstantExprContext;
   class ListOrMapLiteralContext;
@@ -1066,6 +1070,19 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
+  class  PostfixExprContext : public ExpressionContext {
+  public:
+    PostfixExprContext(ExpressionContext *ctx);
+
+    ExpressionContext *expression();
+    antlr4::tree::TerminalNode *PLUS_PLUS();
+    antlr4::tree::TerminalNode *MINUS_MINUS();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
   class  ListOrMapContext : public ExpressionContext {
   public:
     ListOrMapContext(ExpressionContext *ctx);
@@ -1135,7 +1152,7 @@ public:
 
     std::vector<ExpressionContext *> expression();
     ExpressionContext* expression(size_t i);
-    antlr4::tree::TerminalNode *EQ();
+    AssignOperatorContext *assignOperator();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 
@@ -1179,6 +1196,8 @@ public:
     antlr4::tree::TerminalNode *MINUS();
     antlr4::tree::TerminalNode *BANG();
     antlr4::tree::TerminalNode *TILDE();
+    antlr4::tree::TerminalNode *PLUS_PLUS();
+    antlr4::tree::TerminalNode *MINUS_MINUS();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 
@@ -1269,6 +1288,30 @@ public:
   };
 
   ComparisonOperatorContext* comparisonOperator();
+
+  class  AssignOperatorContext : public antlr4::ParserRuleContext {
+  public:
+    AssignOperatorContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *EQ();
+    antlr4::tree::TerminalNode *MINUS_EQ();
+    antlr4::tree::TerminalNode *PLUS_EQ();
+    antlr4::tree::TerminalNode *STAR_EQ();
+    antlr4::tree::TerminalNode *SLASH_EQ();
+    antlr4::tree::TerminalNode *STAR_STAR_EQ();
+    antlr4::tree::TerminalNode *PIPE_EQ();
+    antlr4::tree::TerminalNode *AMPERSAND_EQ();
+    antlr4::tree::TerminalNode *CARET_EQ();
+    antlr4::tree::TerminalNode *PERCENT_EQ();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  AssignOperatorContext* assignOperator();
 
   class  InterpolationExprContext : public antlr4::ParserRuleContext {
   public:
