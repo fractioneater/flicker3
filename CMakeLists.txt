@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 4.0)
 project(flicker_3)
 
 set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED on)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
@@ -19,7 +19,7 @@ add_library(flicker_lib
 )
 
 # ANTLR4 Setup
-target_include_directories(flicker_lib PUBLIC /usr/local/include/antlr4-runtime gen/antlr)
+target_include_directories(flicker_lib SYSTEM PUBLIC /usr/local/include/antlr4-runtime gen/antlr)
 target_link_libraries(flicker_lib PRIVATE /usr/local/lib/libantlr4-runtime.a)
 
 target_compile_options(flicker_lib PRIVATE -Wall -Werror)

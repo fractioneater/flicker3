@@ -1,6 +1,7 @@
 #include "lexer.h"
 #include "common.h"
 
+#include <format>
 #include <iostream>
 #include <utility>
 

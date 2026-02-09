@@ -5,7 +5,7 @@
 			"name": "debug",
 			"displayName": "Debug",
 			"generator": "Ninja",
-			"binaryDir": "${sourceDir}/cmake-build-debug",
+			"binaryDir": "${sourceDir}/build",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Debug"
 			}
@@ -14,7 +14,7 @@
 			"name": "release",
 			"displayName": "Release",
 			"generator": "Ninja",
-			"binaryDir": "${sourceDir}/cmake-build-release",
+			"binaryDir": "${sourceDir}/build",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Release"
 			}
