@@ -81,13 +81,21 @@ param : IDENTIFIER COLON type ;
 block : (DO)? newline INDENT blockBody DEDENT ;
 blockBody : (codeItem newline)* codeItem? ;
 
-accessSpecifier : PRIVATE ; // There may be more.
+accessSpecifier : PRIVATE | OVERRIDE ;
 
 classDecl : CLASS IDENTIFIER typeParam? (IS type)? newline INDENT classBody DEDENT ;
 classBody : (companionNamespace newline)? (classItem newline)* classItem? ;
 companionNamespace : CN newline INDENT (classItem newline)* classItem? DEDENT ;
-classItem : accessSpecifier* (variableDecl | method) ;
-method: OVERRIDE? functionDecl ;
+classItem
+  : initializer
+  | accessSpecifier* (variableDecl | method)
+  ;
+// CONSIDER: Identifiers can't have type params this way (no init for T())
+initializer: IDENTIFIER LEFT_PAREN initParamList? RIGHT_PAREN superInitParams? blockOrStatement ;
+initParamList: initParam (COMMA initParam)* ;
+initParam: (VAR | VAL)? IDENTIFIER COLON type ;
+superInitParams: LEFT_BRACE (expression (COMMA expression)*)? RIGHT_BRACE ;
+method: functionDecl ;
 
 usingStatement
 	: USING STRING (FOR (DOT | STAR | importList))? // Import
@@ -142,13 +150,13 @@ expression
 	| expression (PLUS | MINUS) expression                                  #termExpr
 	| expression (LT_LT | GT_GT) expression                                 #bitShiftExpr
 	| expression (PIPE | AMPERSAND | CARET) expression                      #bitwisExpr
+	| expression IF expression ELSE expression                              #ifExpr
 	| expression (IS | IS NOT) expression                                   #isExpr
 	| expression (IN | NOT IN) expression                                   #inExpr
 	| expression comparisonOperator expression                              #comparison
 	| expression AND expression                                             #andExpr
 	| expression OR expression                                              #orExpr
 	| NOT expression                                                        #notExpr
-	| expression IF expression ELSE expression                              #ifExpr
 	| <assoc=right> expression assignOperator expression                    #assignment
 	;
 

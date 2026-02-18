@@ -58,5 +58,18 @@ The day I created this log file. You can see I've switched to present tense.
 For the past couple of days, I've been modifying Flicker's grammar. Today I wrote the outline for classes.
 I still haven't finished the [learncpp] tutorials, by the way.
 
+## February 9, 2026
+
+The repository is now public, licensed under the MPL 2.0.
+I've done two main things since the last entry:
+
+* Lots of tokens have been shuffled around, and I've added new helpful ones like `?:` (Elvis or Nil Coalescing Operator), `++`, `--`, and all the modifying 
+  assignment operators (`+=`, `/=`, `^=`, and the rest).
+
+* Error recovery in the lexer. Now, instead of stopping at the first error, it will print a list of all that it finds. It won't continue to parse after 
+  finding a lexer error, so I don't need too sophisticated error recovery, but I do still need to consume the right number of characters to continue lexing 
+  after an error.
+
+`CMakePresets.json` now stores two presets: debug and release. A build guide is in the README.
 
 [learncpp]: https://learncpp.com

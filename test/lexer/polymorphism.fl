@@ -1,11 +1,7 @@
-var n = 4
-n++
-n--
-n += 2
-n -= 2
-n *= 2
-n /= 2
-n |= 1
-n &= 4
-n ^= 3
-n %= 5
+class Bacon
+  init(val a: String, var b: Int, c: Bool)
+    print a
+
+class Envelope is Utility
+  init(thing: List of String) {thing}
+    print 20

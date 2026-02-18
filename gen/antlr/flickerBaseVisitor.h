@@ -93,6 +93,22 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitInitializer(flicker::InitializerContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitInitParamList(flicker::InitParamListContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitInitParam(flicker::InitParamContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitSuperInitParams(flicker::SuperInitParamsContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitMethod(flicker::MethodContext *ctx) override {
     return visitChildren(ctx);
   }
