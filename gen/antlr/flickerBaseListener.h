@@ -75,6 +75,18 @@ public:
   virtual void enterClassItem(flicker::ClassItemContext * /*ctx*/) override { }
   virtual void exitClassItem(flicker::ClassItemContext * /*ctx*/) override { }
 
+  virtual void enterInitializer(flicker::InitializerContext * /*ctx*/) override { }
+  virtual void exitInitializer(flicker::InitializerContext * /*ctx*/) override { }
+
+  virtual void enterInitParamList(flicker::InitParamListContext * /*ctx*/) override { }
+  virtual void exitInitParamList(flicker::InitParamListContext * /*ctx*/) override { }
+
+  virtual void enterInitParam(flicker::InitParamContext * /*ctx*/) override { }
+  virtual void exitInitParam(flicker::InitParamContext * /*ctx*/) override { }
+
+  virtual void enterSuperInitParams(flicker::SuperInitParamsContext * /*ctx*/) override { }
+  virtual void exitSuperInitParams(flicker::SuperInitParamsContext * /*ctx*/) override { }
+
   virtual void enterMethod(flicker::MethodContext * /*ctx*/) override { }
   virtual void exitMethod(flicker::MethodContext * /*ctx*/) override { }
 

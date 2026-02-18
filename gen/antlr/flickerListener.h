@@ -73,6 +73,18 @@ public:
   virtual void enterClassItem(flicker::ClassItemContext *ctx) = 0;
   virtual void exitClassItem(flicker::ClassItemContext *ctx) = 0;
 
+  virtual void enterInitializer(flicker::InitializerContext *ctx) = 0;
+  virtual void exitInitializer(flicker::InitializerContext *ctx) = 0;
+
+  virtual void enterInitParamList(flicker::InitParamListContext *ctx) = 0;
+  virtual void exitInitParamList(flicker::InitParamListContext *ctx) = 0;
+
+  virtual void enterInitParam(flicker::InitParamContext *ctx) = 0;
+  virtual void exitInitParam(flicker::InitParamContext *ctx) = 0;
+
+  virtual void enterSuperInitParams(flicker::SuperInitParamsContext *ctx) = 0;
+  virtual void exitSuperInitParams(flicker::SuperInitParamsContext *ctx) = 0;
+
   virtual void enterMethod(flicker::MethodContext *ctx) = 0;
   virtual void exitMethod(flicker::MethodContext *ctx) = 0;
 

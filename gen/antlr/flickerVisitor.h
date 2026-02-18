@@ -58,6 +58,14 @@ public:
 
     virtual std::any visitClassItem(flicker::ClassItemContext *context) = 0;
 
+    virtual std::any visitInitializer(flicker::InitializerContext *context) = 0;
+
+    virtual std::any visitInitParamList(flicker::InitParamListContext *context) = 0;
+
+    virtual std::any visitInitParam(flicker::InitParamContext *context) = 0;
+
+    virtual std::any visitSuperInitParams(flicker::SuperInitParamsContext *context) = 0;
+
     virtual std::any visitMethod(flicker::MethodContext *context) = 0;
 
     virtual std::any visitUsingStatement(flicker::UsingStatementContext *context) = 0;
