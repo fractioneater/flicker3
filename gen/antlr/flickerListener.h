@@ -31,6 +31,12 @@ public:
   virtual void enterStatement(flicker::StatementContext *ctx) = 0;
   virtual void exitStatement(flicker::StatementContext *ctx) = 0;
 
+  virtual void enterDeclaration(flicker::DeclarationContext *ctx) = 0;
+  virtual void exitDeclaration(flicker::DeclarationContext *ctx) = 0;
+
+  virtual void enterNamespace(flicker::NamespaceContext *ctx) = 0;
+  virtual void exitNamespace(flicker::NamespaceContext *ctx) = 0;
+
   virtual void enterVariableDecl(flicker::VariableDeclContext *ctx) = 0;
   virtual void exitVariableDecl(flicker::VariableDeclContext *ctx) = 0;
 

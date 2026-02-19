@@ -24,9 +24,9 @@ public:
     CARET_EQ = 42, AMPERSAND = 43, AMPERSAND_EQ = 44, BANG = 45, BANG_EQ = 46, 
     EQ = 47, EQ_EQ = 48, IDENTIFIER = 49, STRING = 50, INTERPOLATION = 51, 
     CHAR = 52, NUMBER = 53, AND = 54, BREAK = 55, CLASS = 56, CONTINUE = 57, 
-    CN = 58, DO = 59, EACH = 60, ELIF = 61, ELSE = 62, FALSE = 63, FOR = 64, 
-    FUN = 65, IF = 66, IN = 67, IS = 68, NIL = 69, NOT = 70, OF = 71, OR = 72, 
-    OVERRIDE = 73, PASS = 74, PRINT = 75, PRINT_ERROR = 76, PRIVATE = 77, 
+    DO = 58, EACH = 59, ELIF = 60, ELSE = 61, FALSE = 62, FOR = 63, FUN = 64, 
+    IF = 65, IN = 66, IS = 67, NAMESPACE = 68, NIL = 69, NOT = 70, OF = 71, 
+    OR = 72, OVERRIDE = 73, PASS = 74, PRINT = 75, PRINT_ERROR = 76, PRIVATE = 77, 
     RETURN = 78, STATIC = 79, SUPER = 80, THIS = 81, TRUE = 82, USING = 83, 
     VAL = 84, VAR = 85, WHEN = 86, WHILE = 87, INDENT = 88, DEDENT = 89, 
     LINE = 90
@@ -34,23 +34,23 @@ public:
 
   enum {
     RuleProgram = 0, RuleNewline = 1, RuleCodeItem = 2, RuleType = 3, RuleStatement = 4, 
-    RuleVariableDecl = 5, RuleTypeParam = 6, RuleFunctionDecl = 7, RuleFuncReturnType = 8, 
-    RuleFunctionContents = 9, RuleParamList = 10, RuleParam = 11, RuleBlock = 12, 
-    RuleBlockBody = 13, RuleAccessSpecifier = 14, RuleClassDecl = 15, RuleClassBody = 16, 
-    RuleCompanionNamespace = 17, RuleClassItem = 18, RuleInitializer = 19, 
-    RuleInitParamList = 20, RuleInitParam = 21, RuleSuperInitParams = 22, 
-    RuleMethod = 23, RuleUsingStatement = 24, RuleImportList = 25, RuleImportItem = 26, 
-    RuleLoopLabel = 27, RuleDoStatement = 28, RuleBlockOrStatement = 29, 
-    RuleIfStmt = 30, RuleWhileStmt = 31, RuleEachStmt = 32, RuleForStmt = 33, 
-    RuleBreakStmt = 34, RuleContinueStmt = 35, RuleWhenStmt = 36, RuleReturnStmt = 37, 
-    RulePrintStmt = 38, RuleConsoleErrorStmt = 39, RulePassStmt = 40, RuleWhenBody = 41, 
-    RuleWhenContents = 42, RuleWhenCase = 43, RuleElseCase = 44, RuleExpression = 45, 
-    RuleComparisonOperator = 46, RuleAssignOperator = 47, RuleInterpolationExpr = 48, 
-    RuleConstantExpr = 49, RuleListOrMapLiteral = 50, RuleListLiteral = 51, 
-    RuleListItems = 52, RuleMapLiteral = 53, RuleMapItems = 54, RuleMapItem = 55, 
-    RuleLambdaLiteral = 56, RuleLambdaParams = 57, RuleParenthesizedOptionalParamList = 58, 
-    RuleBlockLambda = 59, RuleBraceLambda = 60, RuleStatementLambdaBody = 61, 
-    RuleExprLambdaBody = 62
+    RuleDeclaration = 5, RuleNamespace = 6, RuleVariableDecl = 7, RuleTypeParam = 8, 
+    RuleFunctionDecl = 9, RuleFuncReturnType = 10, RuleFunctionContents = 11, 
+    RuleParamList = 12, RuleParam = 13, RuleBlock = 14, RuleBlockBody = 15, 
+    RuleAccessSpecifier = 16, RuleClassDecl = 17, RuleClassBody = 18, RuleCompanionNamespace = 19, 
+    RuleClassItem = 20, RuleInitializer = 21, RuleInitParamList = 22, RuleInitParam = 23, 
+    RuleSuperInitParams = 24, RuleMethod = 25, RuleUsingStatement = 26, 
+    RuleImportList = 27, RuleImportItem = 28, RuleLoopLabel = 29, RuleDoStatement = 30, 
+    RuleBlockOrStatement = 31, RuleIfStmt = 32, RuleWhileStmt = 33, RuleEachStmt = 34, 
+    RuleForStmt = 35, RuleBreakStmt = 36, RuleContinueStmt = 37, RuleWhenStmt = 38, 
+    RuleReturnStmt = 39, RulePrintStmt = 40, RuleConsoleErrorStmt = 41, 
+    RulePassStmt = 42, RuleWhenBody = 43, RuleWhenContents = 44, RuleWhenCase = 45, 
+    RuleElseCase = 46, RuleExpression = 47, RuleComparisonOperator = 48, 
+    RuleAssignOperator = 49, RuleInterpolationExpr = 50, RuleConstantExpr = 51, 
+    RuleListOrMapLiteral = 52, RuleListLiteral = 53, RuleListItems = 54, 
+    RuleMapLiteral = 55, RuleMapItems = 56, RuleMapItem = 57, RuleLambdaLiteral = 58, 
+    RuleLambdaParams = 59, RuleParenthesizedOptionalParamList = 60, RuleBlockLambda = 61, 
+    RuleBraceLambda = 62, RuleStatementLambdaBody = 63, RuleExprLambdaBody = 64
   };
 
   explicit flicker(antlr4::TokenStream *input);
@@ -75,6 +75,8 @@ public:
   class CodeItemContext;
   class TypeContext;
   class StatementContext;
+  class DeclarationContext;
+  class NamespaceContext;
   class VariableDeclContext;
   class TypeParamContext;
   class FunctionDeclContext;
@@ -209,10 +211,7 @@ public:
   public:
     StatementContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    VariableDeclContext *variableDecl();
-    FunctionDeclContext *functionDecl();
-    ClassDeclContext *classDecl();
-    UsingStatementContext *usingStatement();
+    DeclarationContext *declaration();
     IfStmtContext *ifStmt();
     WhileStmtContext *whileStmt();
     EachStmtContext *eachStmt();
@@ -233,6 +232,47 @@ public:
   };
 
   StatementContext* statement();
+
+  class  DeclarationContext : public antlr4::ParserRuleContext {
+  public:
+    DeclarationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    VariableDeclContext *variableDecl();
+    FunctionDeclContext *functionDecl();
+    ClassDeclContext *classDecl();
+    UsingStatementContext *usingStatement();
+    NamespaceContext *namespace_();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  DeclarationContext* declaration();
+
+  class  NamespaceContext : public antlr4::ParserRuleContext {
+  public:
+    NamespaceContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *NAMESPACE();
+    antlr4::tree::TerminalNode *IDENTIFIER();
+    std::vector<NewlineContext *> newline();
+    NewlineContext* newline(size_t i);
+    antlr4::tree::TerminalNode *INDENT();
+    antlr4::tree::TerminalNode *DEDENT();
+    std::vector<DeclarationContext *> declaration();
+    DeclarationContext* declaration(size_t i);
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  NamespaceContext* namespace_();
 
   class  VariableDeclContext : public antlr4::ParserRuleContext {
   public:
@@ -462,7 +502,7 @@ public:
   public:
     CompanionNamespaceContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *CN();
+    antlr4::tree::TerminalNode *NAMESPACE();
     std::vector<NewlineContext *> newline();
     NewlineContext* newline(size_t i);
     antlr4::tree::TerminalNode *INDENT();

@@ -1,7 +1,13 @@
-class Bacon
-  init(val a: String, var b: Int, c: Bool)
-    print a
+namespace Truth
 
-class Envelope is Utility
-  init(thing: List of String) {thing}
-    print 20
+  class Bacon
+    namespace
+      val thing = 4
+
+    init(val a: String, var b: Int, c: Bool)
+      print a
+
+    fun say_hello() = fun () do print "hello"
+
+namespace Burger
+  using a = Fish of Linuxes

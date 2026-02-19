@@ -28,8 +28,8 @@ tokens {
   // Literals
   IDENTIFIER, STRING, INTERPOLATION, CHAR, NUMBER,
   // Keywords
-  AND, BREAK, CLASS, CONTINUE, CN, DO, EACH, ELIF, ELSE, FALSE, FOR, FUN,
-  IF, IN, IS, NIL, NOT, OF, OR, OVERRIDE, PASS, PRINT, PRINT_ERROR, PRIVATE,
+  AND, BREAK, CLASS, CONTINUE, DO, EACH, ELIF, ELSE, FALSE, FOR, FUN, IF,
+  IN, IS, NAMESPACE, NIL, NOT, OF, OR, OVERRIDE, PASS, PRINT, PRINT_ERROR, PRIVATE,
   RETURN, STATIC, SUPER, THIS, TRUE, USING, VAL, VAR, WHEN, WHILE,
   // Whitespace
   INDENT, DEDENT, LINE
@@ -50,10 +50,7 @@ type : IDENTIFIER QUEST? ((OF | FOR) IDENTIFIER QUEST?)? ;
 // Statement ------------------------------
 
 statement
-	: variableDecl
-	| functionDecl
-	| classDecl
-	| usingStatement
+	: declaration
 	| ifStmt
 	| whileStmt
 	| eachStmt
@@ -67,6 +64,15 @@ statement
 	| passStmt
 	;
 
+declaration
+  : variableDecl
+  | functionDecl
+  | classDecl
+  | usingStatement
+  | namespace
+  ;
+
+namespace : NAMESPACE IDENTIFIER newline INDENT (declaration newline)* declaration? DEDENT ;
 variableDecl : (VAR | VAL) IDENTIFIER (COLON type)? (EQ expression)?;
 
 typeParam : (OF | FOR) IDENTIFIER ;
@@ -85,17 +91,17 @@ accessSpecifier : PRIVATE | OVERRIDE ;
 
 classDecl : CLASS IDENTIFIER typeParam? (IS type)? newline INDENT classBody DEDENT ;
 classBody : (companionNamespace newline)? (classItem newline)* classItem? ;
-companionNamespace : CN newline INDENT (classItem newline)* classItem? DEDENT ;
+companionNamespace : NAMESPACE newline INDENT (classItem newline)* classItem? DEDENT ;
 classItem
   : initializer
   | accessSpecifier* (variableDecl | method)
   ;
 // CONSIDER: Identifiers can't have type params this way (no init for T())
-initializer: IDENTIFIER LEFT_PAREN initParamList? RIGHT_PAREN superInitParams? blockOrStatement ;
-initParamList: initParam (COMMA initParam)* ;
-initParam: (VAR | VAL)? IDENTIFIER COLON type ;
-superInitParams: LEFT_BRACE (expression (COMMA expression)*)? RIGHT_BRACE ;
-method: functionDecl ;
+initializer : IDENTIFIER LEFT_PAREN initParamList? RIGHT_PAREN superInitParams? blockOrStatement ;
+initParamList : initParam (COMMA initParam)* ;
+initParam : (VAR | VAL)? IDENTIFIER COLON type ;
+superInitParams : LEFT_BRACE (expression (COMMA expression)*)? RIGHT_BRACE ;
+method : functionDecl ;
 
 usingStatement
 	: USING STRING (FOR (DOT | STAR | importList))? // Import
