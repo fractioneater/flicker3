@@ -33,6 +33,12 @@ public:
   virtual void enterStatement(flicker::StatementContext * /*ctx*/) override { }
   virtual void exitStatement(flicker::StatementContext * /*ctx*/) override { }
 
+  virtual void enterDeclaration(flicker::DeclarationContext * /*ctx*/) override { }
+  virtual void exitDeclaration(flicker::DeclarationContext * /*ctx*/) override { }
+
+  virtual void enterNamespace(flicker::NamespaceContext * /*ctx*/) override { }
+  virtual void exitNamespace(flicker::NamespaceContext * /*ctx*/) override { }
+
   virtual void enterVariableDecl(flicker::VariableDeclContext * /*ctx*/) override { }
   virtual void exitVariableDecl(flicker::VariableDeclContext * /*ctx*/) override { }
 

@@ -4,44 +4,54 @@
 #include <iomanip>
 
 namespace flicker {
-  static std::string escape(const std::string& s) {
+  static std::pair<std::string, bool> escape(const std::string& s) {
     std::ostringstream oss;
+    bool whitespace = true;
     for (const auto c : s) {
       switch (c) {
         case '"': oss << "\\\"";
           break;
         case '\\': oss << "\\\\";
           break;
-        case '\n': oss << "\\n";
+        case '\n': oss << "\\\\n";
           break;
-        case '\r': oss << "\\r";
+        case '\r': oss << "\\\\r";
           break;
-        case '\t': oss << "\\t";
+        case '\t': oss << "\\\\t";
           break;
+        case ' ': break;
         default: oss << c;
+          whitespace = false;
           break;
       }
     }
-    return oss.str();
+    return {oss.str(), whitespace};
   }
 
   static void walk(antlr4::tree::ParseTree* node, antlr4::Parser* parser, std::ostringstream& out, int& id_counter, int parent_id) {
     const int my_id = id_counter++;
     std::string label;
 
+    while (node->children.size() == 1) {
+      node = node->children[0];
+    }
+
     if (const auto* ctx = dynamic_cast<antlr4::ParserRuleContext*>(node)) {
       label = parser->getRuleNames()[ctx->getRuleIndex()];
-      out << "  n" << my_id << " [label=\"" << escape(label) << "\", shape=box, color=blue, fontcolor=blue];\n";
+      out << "  n" << my_id << " [label=\"" << escape(label).first<< "\", shape=box, color=cornflowerblue, fontcolor=blue];\n";
     } else if (const auto* terminal = dynamic_cast<antlr4::tree::TerminalNode*>(node)) {
       const auto* token = terminal->getSymbol();
-      label       = token->getText();
+      label             = token->getText();
       if (token->getType() == antlr4::Token::EOF) {
         label = "EOF";
       }
-      out << "  n" << my_id << " [label=\"" << escape(label) << "\", shape=ellipse, color=green, fontcolor=darkgreen];\n";
+      const auto [txt,whitespace] {escape(label)};
+      out << "  n" << my_id << " [label=\"" << txt << "\", shape=ellipse, ";
+      if (!whitespace) out << "color=red, fontcolor=maroon];\n";
+      else out << "color=black, fontcolor=black];\n";
     } else {
       label = "Unknown";
-      out << "  n" << my_id << " [label=\"" << escape(label) << "\"];\n";
+      out << "  n" << my_id << " [label=\"" << escape(label).first << "\"];\n";
     }
 
     if (parent_id != -1) {

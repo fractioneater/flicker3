@@ -37,6 +37,14 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitDeclaration(flicker::DeclarationContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitNamespace(flicker::NamespaceContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitVariableDecl(flicker::VariableDeclContext *ctx) override {
     return visitChildren(ctx);
   }

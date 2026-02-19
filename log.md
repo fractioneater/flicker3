@@ -72,4 +72,8 @@ I've done two main things since the last entry:
 
 `CMakePresets.json` now stores two presets: debug and release. A build guide is in the README.
 
+## February 18, 2026
+
+After not working on this project for a long time, I realized I'd forgotten about initializers in the grammar. Now that's fixed.
+
 [learncpp]: https://learncpp.com

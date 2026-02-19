@@ -30,6 +30,10 @@ public:
 
     virtual std::any visitStatement(flicker::StatementContext *context) = 0;
 
+    virtual std::any visitDeclaration(flicker::DeclarationContext *context) = 0;
+
+    virtual std::any visitNamespace(flicker::NamespaceContext *context) = 0;
+
     virtual std::any visitVariableDecl(flicker::VariableDeclContext *context) = 0;
 
     virtual std::any visitTypeParam(flicker::TypeParamContext *context) = 0;
