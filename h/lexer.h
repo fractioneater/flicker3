@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -19,13 +20,15 @@ class LexerError {
 public:
   size_t offset {};
   std::string message {};
+  std::unique_ptr<LexerError> context {};
 
-  // CONSIDER! Removing EOF errors, modifying string buffer reserve() to not complain if closing quote isn't found and let the error be reported at the
-  //   correct column
-
-  // For EOF errors that don't need a position.
-  explicit LexerError(std::string&& message) : message {std::move(message)} {}
   LexerError(size_t offset, std::string&& message) : offset {offset}, message {std::move(message)} {}
+  LexerError(size_t offset, std::string&& message, LexerError&& context) : offset {offset}, message {std::move(message)},
+    context {std::make_unique<LexerError>(std::move(context))} {}
+
+  void add_context(LexerError&& c) {
+    this->context = std::make_unique<LexerError>(std::move(c));
+  }
 
   [[nodiscard]] const char* what() const noexcept { return message.c_str(); }
 };

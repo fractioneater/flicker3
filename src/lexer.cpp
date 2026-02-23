@@ -134,7 +134,7 @@ void Lexer::block_comment() {
   char prev {};
   for (int nest_depth = 1; nest_depth > 0; prev = advance()) {
     if (at_eof()) {
-      errors_.emplace_back("Unclosed block comment");
+      errors_.emplace_back(offset_, "Unclosed block comment");
       return;
     }
 
@@ -173,7 +173,7 @@ void Lexer::line_comment() {
   }
 
   if (at_eof()) {
-    errors_.emplace_back("Unclosed identifier");
+    errors_.emplace_back(offset_, "Unclosed identifier");
     return make_token(TOKEN_IDENTIFIER);
   }
 
@@ -195,7 +195,7 @@ void Lexer::line_comment() {
   std::uint32_t value = 0;
   for (int i = 0; i < length; ++i) {
     if (at_eof()) {
-      errors_.emplace_back(std::format("Escape sequence cut short by EOF (should be {} digits)", length));
+      errors_.emplace_back(offset_, std::format("Escape sequence cut short by EOF (should be {} digits)", length));
       return 0;
     }
 
@@ -254,7 +254,7 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
     if (c == '"') break;
     if (c == '\r') continue; // TODO: Why am I removing these?
     if (at_eof()) {
-      errors_.emplace_back("Unclosed string");
+      errors_.emplace_back(offset_, "Unclosed string");
       return make_token(TOKEN_STRING);
     }
 
@@ -350,7 +350,7 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
   if (!match('\'')) {
     while (!at_eof() && peek() != '\'') { advance(); }
     if (at_eof())
-      errors_.emplace_back("Unclosed character literal");
+      errors_.emplace_back(offset_, "Unclosed character literal");
     else {
       errors_.emplace_back(offset_, "Use double-quotes for strings; single-quotes are for single characters");
       advance(); // Closing quote.
@@ -403,13 +403,13 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
   const auto is_binary_digit = [](char c) { return c == '0' || c == '1'; };
 
   if (!is_binary_digit(peek())) {
-    errors_.emplace_back("Expected a binary digit after 0b");
+    errors_.emplace_back(offset_, "Expected a binary digit after 0b");
     return make_token(TOKEN_NUMBER);
   }
   consume_digit_chunk(is_binary_digit);
 
   if (!is_binary_digit(peek()) && std::isalnum(static_cast<unsigned char>(peek())) != 0) {
-    warnings_.emplace_back("Character appears to be part of the number, but is actually not");
+    warnings_.emplace_back(offset_, "Character appears to be part of the number, but is actually not");
   }
 
   return make_token(TOKEN_NUMBER);
@@ -487,10 +487,10 @@ std::optional<Token> Lexer::indentation() {
     break;
   }
 
-  if (line_offsets_.size() == block_comment_end_line) {
+  if (line_offsets_.size() == block_comment_end_line && block_comment_warning) {
     // By this point, we know that the block comment is in front of some piece of code.
-    if (block_comment_warning)
-      warnings_.emplace_back(block_comment_warning.value());
+    block_comment_warning->add_context({offset_, "Code after the end of a block comment"});
+    warnings_.emplace_back(std::move(*block_comment_warning));
   }
 
   const auto col {static_cast<int>(offset_ - line_offsets_.back() + 1)}; // 1-based indexing.
@@ -535,7 +535,7 @@ std::optional<Token> Lexer::indentation() {
 [[nodiscard]] Token Lexer::eof() {
   start_offset_ = offset_;
 
-  if (brace_nesting_ > 0) errors_.emplace_back("Unclosed lambda");
+  if (brace_nesting_ > 0) errors_.emplace_back(offset_, "Unclosed lambda");
 
   // Create dedents at EOF: emit one now and queue the rest.
   // The indents list should still hold the original 0.
@@ -652,7 +652,7 @@ std::optional<Token> Lexer::indentation() {
   return eof();
 }
 
-// Util ----------------------------------------------------------------------------------
+// Utilities (private) -------------------------------------------------------------------
 
 [[nodiscard]] std::pair<size_t, size_t> Lexer::offset_to_line_col(size_t offset) const {
   const auto subrange {std::ranges::find_last_if(line_offsets_, [offset](size_t it) { return it <= offset; })};
