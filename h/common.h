@@ -6,7 +6,7 @@
 
 #pragma once
 
-// DEBUG FLAGS
+// DEBUG FLAGS ---------------------------------------------------------------------------
 
 // For the three following flags: 0 to disable, 1 to print user code, 2 to print everything (includes core module)
 // Don't compile; just print the tokens straight from the lexer.
@@ -25,7 +25,12 @@
 #define DEBUG_PRINT_DOT 1
 #define DEBUG_DOT_FILENAME "./tree.dot"
 
-// COMPILER AND VM VALUES
+// OTHER FLAGS ---------------------------------------------------------------------------
+
+// This should be disabled for use in a terminal that doesn't support color.
+#define PRINT_ERROR_COLORS 1
+
+// COMPILER AND VM VALUES ----------------------------------------------------------------
 
 #define MAX_PARAMETERS 16
 #define MAX_METHOD_NAME 64

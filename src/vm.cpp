@@ -18,22 +18,44 @@
 
 #define COLOR_ERROR 211
 #define COLOR_WARNING 221
+#define COLOR_NOTE 74
 
-void print_error(const Lexer& lexer, const LexerError& err, const std::string_view module, bool is_error) {
+void formatting(int type) {
+  #if PRINT_ERROR_COLORS
+  if (type == 0) { // Error.
+    std::cout << "\033[38;5;" << COLOR_ERROR << "m\033[1m";
+  } else if (type == 1) { // Warning.
+    std::cout << "\033[38;5;" << COLOR_WARNING << "m\033[1m";
+  } else { // Note.
+    std::cout << "\033[38;5;" << COLOR_NOTE << "m\033[1mnote: ";
+  }
+  #else
+  if (type == 0) { // Error.
+    std::cout << "ERROR ";
+  } else if (type == 1) { // Warning.
+    std::cout << "WARNING ";
+  } else { // Note.
+    std::cout << "NOTE ";
+  }
+  #endif
+}
+
+void print_error(const Lexer& lexer, const LexerError& err, const std::string_view module, int type) {
   const auto [line, col] {lexer.offset_to_line_col(err.offset)};
 
-  std::cout << "\033[38;5;" << (is_error ? COLOR_ERROR : COLOR_WARNING) << "m\033[1m" << module << "@";
-  if (line == -1)
-    std::cout << "EOF\033[0m " << err.what() << '\n';
-  else {
-    std::cout << line << ":" << col << "\033[0m " << err.what() << '\n';
-    size_t counter {line};
-    for (const std::string_view line_str : lexer.offset_range_to_line_strings(err.offset, err.offset + 1)) {
-      std::cout << " │ " << line_str << '\n';
-      if (counter == line) std::cout << " \u00B7 " << std::string(col - 1, ' ') << "^\n";
-      ++counter;
-    }
+  // moduleName@39:14 Unclosed block comment
+  // ^^^^^^^^^^^^^^^^ (this part is colored and bold.)
+  formatting(type);
+  std::cout << module << "@" << line << ":" << col << "\033[0m " << err.what() << '\n';
+
+  size_t counter {line};
+  for (const std::string_view line_str : lexer.offset_range_to_line_strings(err.offset, err.offset + 1)) {
+    std::cout << " │ " << line_str << '\n';
+    if (counter == line) std::cout << " \u00B7 " << std::string(col - 1, ' ') << "^\n";
+    ++counter;
   }
+
+  if (err.context) print_error(lexer, *err.context, module, 2);
 }
 
 class FlickerErrorListener : public antlr4::BaseErrorListener {
@@ -48,7 +70,7 @@ public:
     antlr4::Recognizer* recognizer, antlr4::Token* offending_symbol, size_t line, size_t char_position_in_line, const std::string& msg, std::exception_ptr e
   ) override {
     const LexerError err {offending_symbol->getStartIndex(), std::string(msg)};
-    print_error(lexer_, err, module_, true);
+    print_error(lexer_, err, module_, 0);
   }
 };
 
@@ -65,9 +87,9 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
 
   token_stream.fill();
   for (const auto& err : lexer.get_errors())
-    print_error(lexer, err, module, true);
+    print_error(lexer, err, module, 0);
   for (const auto& err : lexer.get_warnings())
-    print_error(lexer, err, module, false);
+    print_error(lexer, err, module, 1);
 
   if (!lexer.get_errors().empty()) {
     std::cout << "Lexer error, compiling halted\n";
