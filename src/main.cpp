@@ -6,6 +6,7 @@
 
 #include "vm.h"
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 
@@ -59,8 +60,13 @@ void repl() {
 }
 
 void run_file(const char* path) {
+  // Module name
+  const std::filesystem::path p {path};
+  const std::string module_name {p.stem().string()};
+  // Source
   const std::string source {read_entire_file(path)};
-  const InterpretResult result {interpret(source, path)};
+  // Blastoff!
+  const InterpretResult result {interpret(source, module_name)};
 
   if (result == INTERPRET_COMPILE_ERROR) throw std::system_error(65, std::generic_category()); // Exit code 65: data format error (compile error).
   if (result == INTERPRET_RUNTIME_ERROR) throw std::system_error(70, std::generic_category()); // Exit code 70: internal software error (runtime error).

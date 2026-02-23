@@ -104,7 +104,8 @@ n *= 2
 n /= 2
 n |= 1
 n &= 4
-n ^= 3
+#- things
+ -# n ^= 3
 n %= 5
 
 # Lambdas

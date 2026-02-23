@@ -9,6 +9,7 @@
 #include "common.h"
 
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 
 #include "flicker.h"
@@ -27,7 +28,7 @@ void formatting(int type) {
   } else if (type == 1) { // Warning.
     std::cout << "\033[38;5;" << COLOR_WARNING << "m\033[1m";
   } else { // Note.
-    std::cout << "\033[38;5;" << COLOR_NOTE << "m\033[1mnote: ";
+    std::cout << "\033[38;5;" << COLOR_NOTE << "m\033[1m  note: ";
   }
   #else
   if (type == 0) { // Error.
@@ -48,11 +49,16 @@ void print_error(const Lexer& lexer, const LexerError& err, const std::string_vi
   formatting(type);
   std::cout << module << "@" << line << ":" << col << "\033[0m " << err.what() << '\n';
 
-  size_t counter {line};
+  // TODO NEXT: There's so much work that's being done on the first line only, double-check whether I actually need multiple lines, or if contexts can suffice.
+  size_t i {line};
   for (const std::string_view line_str : lexer.offset_range_to_line_strings(err.offset, err.offset + 1)) {
+    if (i == line)
+      std::cout << std::setw(5) << line;
+    else
+      std::cout << "     ";
     std::cout << " │ " << line_str << '\n';
-    if (counter == line) std::cout << " \u00B7 " << std::string(col - 1, ' ') << "^\n";
-    ++counter;
+    if (i == line) std::cout << "        " << std::string(col - 1, ' ') << "^\n";
+    ++i;
   }
 
   if (err.context) print_error(lexer, *err.context, module, 2);
