@@ -12,7 +12,7 @@
 #include <utility>
 
 /** TODO in the lexer:
- *    Optimize with pointer indexing and better keyword lookup
+ *    Optimize keyword lookup?
  *    Inline peek(), advance(), etc
  *    Add context for errors to show the start of an unclosed brace, for example
  *    Add values for chars + strings
@@ -95,41 +95,38 @@ Lexer::~Lexer() = default;
 
 // CONSIDER! Use only basic methods as part of the lexer class, turn others into public functions that use the lexer's basic functionality.
 
-[[nodiscard]] bool Lexer::at_eof() const { return current_char_ >= src_length_; }
+[[nodiscard]] bool Lexer::at_eof() const { return offset_ >= src_length_; }
 
 [[nodiscard]] char Lexer::peek() const {
   if (at_eof()) return '\0';
-  return src_[current_char_];
+  return src_[offset_];
 }
 
 [[nodiscard]] char Lexer::peek_next() const {
-  if (current_char_ + 1 >= src_length_) return '\0';
-  return src_[current_char_ + 1];
+  if (offset_ + 1 >= src_length_) return '\0';
+  return src_[offset_ + 1];
 }
 
 char Lexer::advance() {
-  ++current_char_;
-  ++col_;
-  if (src_[current_char_ - 1] == '\n') {
+  ++offset_;
+  if (src_[offset_ - 1] == '\n') {
     // Hopefully, when this is called, we shouldn't be at the point where we need to check for indentation again.
-    ++line_;
-    col_ = 1;
+    line_offsets_.emplace_back(offset_);
   }
-  return src_[current_char_ - 1];
+  return src_[offset_ - 1];
 }
 
 bool Lexer::match(char expected) {
   if (at_eof()) return false;
-  if (src_[current_char_] != expected) return false;
+  if (src_[offset_] != expected) return false;
   advance();
   return true;
 }
 
 [[nodiscard]] Token Lexer::make_token(TokenType type) {
-  prev_type_       = type;
-  const int line   = type == TOKEN_LINE ? line_ - 1 : line_;
-  const int length = static_cast<int>(current_char_ - start_char_);
-  return Token {type, line, start_char_, start_col_, length};
+  prev_type_        = type;
+  const auto length = offset_ - start_offset_;
+  return Token {type, start_offset_, length};
 }
 
 void Lexer::block_comment() {
@@ -145,7 +142,7 @@ void Lexer::block_comment() {
       if (peek_next() == '-') {
         advance();
         if (nest_depth++ == MAX_COMMENT_NEST) {
-          errors_.emplace_back(line_, col_, current_char_, "Too many nested comments");
+          errors_.emplace_back(offset_, "Too many nested comments");
           return;
         }
       } else if (prev == '-') --nest_depth;
@@ -162,14 +159,14 @@ void Lexer::line_comment() {
 
 [[nodiscard]] Token Lexer::word() {
   while (Helpers::is_alphanumeric(peek())) advance();
-  const std::string_view word {static_cast<std::string_view>(src_).substr(start_char_, current_char_ - start_char_)};
+  const std::string_view word {static_cast<std::string_view>(src_).substr(start_offset_, offset_ - start_offset_)};
   return make_token(Helpers::word_type(word));
 }
 
 [[nodiscard]] Token Lexer::backtick_identifier() {
   while (peek() != '`' && !at_eof()) {
     if (peek() == '\n') {
-      errors_.emplace_back(line_, col_, current_char_, "Unclosed identifier; even these can't have newlines");
+      errors_.emplace_back(offset_, "Unclosed identifier; even these can't have newlines");
       return make_token(TOKEN_IDENTIFIER);
     }
     advance();
@@ -183,11 +180,11 @@ void Lexer::line_comment() {
   advance(); // The closing backtick.
   auto token = make_token(TOKEN_IDENTIFIER);
   // Only the stuff within backticks is needed.
-  token.start_char++;
+  token.start_offset++;
   token.length -= 2;
 
   if (token.length == 0) {
-    errors_.emplace_back(line_, col_, current_char_, "Empty identifier");
+    errors_.emplace_back(offset_, "Empty identifier");
     return make_token(TOKEN_IDENTIFIER); // Instead of returning the var 'token', let's just do this.
   }
 
@@ -204,7 +201,7 @@ void Lexer::line_comment() {
 
     const int digit = Helpers::hex_value(peek());
     if (digit == -1) {
-      errors_.emplace_back(line_, col_, current_char_, std::format("Invalid hex character; sequence should be {} digits", length));
+      errors_.emplace_back(offset_, std::format("Invalid hex character; sequence should be {} digits", length));
       return 0;
     }
     advance(); // The char that was just peeked at.
@@ -216,11 +213,11 @@ void Lexer::line_comment() {
 
 void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
   if (code_point > 0x10FFFFu) {
-    errors_.emplace_back(line_, col_, current_char_, "Invalid Unicode code point");
+    errors_.emplace_back(offset_, "Invalid Unicode code point");
     return;
   }
   if (code_point >= 0xD800u && code_point <= 0xDFFFu) {
-    errors_.emplace_back(line_, col_, current_char_, "Invalid Unicode surrogate");
+    errors_.emplace_back(offset_, "Invalid Unicode surrogate");
     return;
   }
 
@@ -273,7 +270,7 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
         break;
       }
 
-      errors_.emplace_back(line_, col_, current_char_, "Too many nested strings");
+      errors_.emplace_back(offset_, "Too many nested strings");
       return make_token(TOKEN_STRING);
     }
 
@@ -308,7 +305,7 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
           break;
         }
         default:
-          errors_.emplace_back(line_, col_ - 1, current_char_ - 1, "Invalid escape character");
+          errors_.emplace_back(offset_ - 1, "Invalid escape character");
       }
     } else {
       buffer.push_back(c);
@@ -324,7 +321,7 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
   const char c {advance()};
 
   if (c == '\'') {
-    errors_.emplace_back(line_, col_, current_char_, "Empty characters are not allowed");
+    errors_.emplace_back(offset_, "Empty characters are not allowed");
     return make_token(TOKEN_CHAR);
   }
 
@@ -345,7 +342,7 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
       // CONSIDER! Store a character as a char32_t, allowing longer Unicode code points.
       case 'x': value = static_cast<char>(read_hex(2)); break;
       default:
-        errors_.emplace_back(line_, col_ - 1, current_char_ - 1, "Invalid escape character");
+        errors_.emplace_back(offset_ - 1, "Invalid escape character");
     }
   } else value = c;
   // @formatter:on
@@ -355,7 +352,7 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
     if (at_eof())
       errors_.emplace_back("Unclosed character literal");
     else {
-      errors_.emplace_back(line_, col_, current_char_, "Use double-quotes for strings; single-quotes are for single characters");
+      errors_.emplace_back(offset_, "Use double-quotes for strings; single-quotes are for single characters");
       advance(); // Closing quote.
     }
     return make_token(TOKEN_CHAR);
@@ -375,7 +372,7 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
 
     if (c == '_') {
       if (!is_digit(peek_next()))
-        errors_.emplace_back(line_, col_, current_char_, "Underscores must be followed by digits");
+        errors_.emplace_back(offset_, "Underscores must be followed by digits");
       advance(); // The underscore.
       continue;
     }
@@ -390,13 +387,13 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
   };
 
   if (!is_hex_digit(peek())) {
-    errors_.emplace_back(line_, col_, current_char_, "Expected a hex digit after 0x");
+    errors_.emplace_back(offset_, "Expected a hex digit after 0x");
     return make_token(TOKEN_NUMBER);
   }
   consume_digit_chunk(is_hex_digit);
 
   if (!is_hex_digit(peek()) && std::isalpha(static_cast<unsigned char>(peek())) != 0) {
-    warnings_.emplace_back(line_, col_, current_char_, "Character appears to be part of the number, but is actually not");
+    warnings_.emplace_back(offset_, "Character appears to be part of the number, but is actually not");
   }
 
   return make_token(TOKEN_NUMBER);
@@ -406,13 +403,13 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
   const auto is_binary_digit = [](char c) { return c == '0' || c == '1'; };
 
   if (!is_binary_digit(peek())) {
-    errors_.emplace_back(line_, col_, current_char_, "Expected a binary digit after 0b");
+    errors_.emplace_back("Expected a binary digit after 0b");
     return make_token(TOKEN_NUMBER);
   }
   consume_digit_chunk(is_binary_digit);
 
   if (!is_binary_digit(peek()) && std::isalnum(static_cast<unsigned char>(peek())) != 0) {
-    warnings_.emplace_back(line_, col_, current_char_, "Character appears to be part of the number, but is actually not");
+    warnings_.emplace_back("Character appears to be part of the number, but is actually not");
   }
 
   return make_token(TOKEN_NUMBER);
@@ -438,7 +435,7 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
     if (peek() == '+' || peek() == '-') advance();
 
     if (!is_digit(peek())) {
-      errors_.emplace_back(line_, col_, current_char_, "Exponent requires a digit");
+      errors_.emplace_back(offset_, "Exponent requires a digit");
       return make_token(TOKEN_NUMBER);
     }
 
@@ -447,9 +444,9 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
 
   if (!is_digit(peek()) && std::isalpha(static_cast<unsigned char>(peek())) != 0) {
     if (peek() == 'e')
-      warnings_.emplace_back(line_, col_, current_char_, "Use uppercase E for an exponent part");
+      warnings_.emplace_back(offset_, "Use uppercase E for an exponent part");
     else
-      warnings_.emplace_back(line_, col_, current_char_, "Character appears to be part of the number, but is actually not");
+      warnings_.emplace_back(offset_, "Character appears to be part of the number, but is actually not");
   }
 
   return make_token(TOKEN_NUMBER);
@@ -458,7 +455,7 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
 // This function will only be called at the start of a line.
 std::optional<Token> Lexer::indentation() {
   std::optional<LexerError> block_comment_warning {};
-  int block_comment_end_line {-1};
+  size_t block_comment_end_line {};
 
   // Loop through characters until something significant (not whitespace or comment) is found.
   while (true) {
@@ -471,19 +468,14 @@ std::optional<Token> Lexer::indentation() {
         advance();
         continue;
 
-      case '\t': errors_.emplace_back(line_, col_, current_char_, "Tabs are not allowed in indentation");
+      case '\t': errors_.emplace_back(offset_, "Tabs are not allowed in indentation");
 
       case '#': {
         advance();
         if (peek() == '-') {
-          block_comment_warning = LexerError {
-            line_,
-            col_ - 1,
-            current_char_ - 1,
-            "Consider moving this comment to the end of the line to make indentation clearer"
-          };
+          block_comment_warning = LexerError {offset_ - 1, "Consider moving this comment to the end of the line to make indentation clearer"};
           block_comment(); // May cross lines; the ending column is what matters.
-          block_comment_end_line = line_;
+          block_comment_end_line = line_offsets_.size();
         } else {
           while (peek() != '\n' && !at_eof()) advance();
         }
@@ -495,13 +487,14 @@ std::optional<Token> Lexer::indentation() {
     break;
   }
 
-  if (line_ == block_comment_end_line) {
+  if (line_offsets_.size() == block_comment_end_line) {
     // By this point, we know that the block comment is in front of some piece of code.
     if (block_comment_warning)
       warnings_.emplace_back(block_comment_warning.value());
   }
 
-  const int indent {col_ - 1};
+  const auto col {static_cast<int>(offset_ - line_offsets_.back() + 1)}; // 1-based indexing.
+  const int indent {col - 1};
 
   if (indent > indents_.back()) { // If it's an indentation...
     // We'll return an indent token, so we don't need to keep looking.
@@ -521,13 +514,13 @@ std::optional<Token> Lexer::indentation() {
 
     // So, um, this really shouldn't be happening. Because, you know, it would mean... it would mean the indentation level was less than zero.
     if (indents_.empty())
-      errors_.emplace_back(line_, col_, current_char_, "AAAAH");
+      errors_.emplace_back(offset_, "AAAAH");
   }
 
   if (had_a_dedent) {
     if (indent != indents_.back()) {
       dedents_queued_ = 0;
-      errors_.emplace_back(line_, col_, current_char_, "Indentation does not match any previous line");
+      errors_.emplace_back(offset_, "Indentation does not match any previous line");
       return std::nullopt; // CONSIDER! What is best to return here?
     }
     --dedents_queued_;
@@ -540,8 +533,7 @@ std::optional<Token> Lexer::indentation() {
 }
 
 [[nodiscard]] Token Lexer::eof() {
-  start_char_ = current_char_;
-  start_col_  = col_;
+  start_offset_ = offset_;
 
   if (brace_nesting_ > 0) errors_.emplace_back("Unclosed lambda");
 
@@ -561,8 +553,7 @@ std::optional<Token> Lexer::indentation() {
 // PUBLIC --------------------------------------------------------------------------------
 
 [[nodiscard]] Token Lexer::next_token() {
-  start_char_ = current_char_;
-  start_col_  = col_;
+  start_offset_ = offset_;
 
   if (prev_type_ == TOKEN_DEDENT) return make_token(TOKEN_LINE);
 
@@ -584,8 +575,7 @@ std::optional<Token> Lexer::indentation() {
   // The main loop, which will really only need to repeat once in most cases. Whitespace (including comments) is the only thing that will fail to produce a
   // token or an error.
   do {
-    start_char_ = current_char_;
-    start_col_  = col_;
+    start_offset_ = offset_;
 
     switch (const char c {advance()}) {
       // Special rules because of string interpolation.
@@ -610,7 +600,7 @@ std::optional<Token> Lexer::indentation() {
         return make_token(TOKEN_LEFT_BRACE);
       case '}':
         if (--brace_nesting_ < 0)
-          errors_.emplace_back(line_, col_, current_char_, "Extra closing brace");
+          errors_.emplace_back(offset_, "Extra closing brace");
         return make_token(TOKEN_RIGHT_BRACE);
       case ';': return make_token(TOKEN_SEMICOLON);
       case ',': return make_token(TOKEN_COMMA);
@@ -654,10 +644,52 @@ std::optional<Token> Lexer::indentation() {
       default:
         if (std::isalpha(static_cast<unsigned char>(c)) != 0) return word();
         if (std::isdigit(static_cast<unsigned char>(c)) != 0) return number();
-        errors_.emplace_back(line_, col_ - 1, current_char_ - 1, "Unexpected character");
+        errors_.emplace_back(offset_ - 1, "Unexpected character");
     }
   } while (!at_eof());
 
   // It has to be EOF by this point
   return eof();
+}
+
+// Util ----------------------------------------------------------------------------------
+
+[[nodiscard]] std::pair<size_t, size_t> Lexer::offset_to_line_col(size_t offset) const {
+  const auto subrange {std::ranges::find_last_if(line_offsets_, [offset](size_t it) { return it <= offset; })};
+
+  if (subrange.begin() == subrange.end())
+    return {0, 0};
+
+  const auto before {subrange.begin()};
+
+  // 1-based indexing for both.
+  const auto line {before - line_offsets_.begin() + 1};
+  const auto col {offset - *before + 1};
+
+  return {line, col};
+}
+
+[[nodiscard]] std::vector<std::string_view> Lexer::offset_range_to_line_strings(size_t start, size_t end) const {
+  std::vector<std::string_view> strs {};
+  if (start >= end || line_offsets_.empty()) return strs;
+
+  const std::string_view src_view {src_};
+
+  // Find the first line whose start offset is > start, then step back one.
+  const auto upper {std::ranges::upper_bound(line_offsets_, start)};
+  if (upper == line_offsets_.begin()) return strs;
+  size_t line_index {static_cast<size_t>(std::distance(line_offsets_.begin(), upper)) - 1};
+
+  // Emit all lines that intersect [start, end).
+  for (; line_index < line_offsets_.size(); ++line_index) {
+    const size_t line_start = line_offsets_[line_index];
+    const size_t next_start = (line_index + 1 < line_offsets_.size()) ? line_offsets_[line_index + 1] - 1 : src_view.size();
+
+    if (line_start >= end) break; // Past the requested range.
+    const size_t len = next_start - line_start;
+    strs.emplace_back(src_view.substr(line_start, len));
+    if (next_start >= end) break; // Covered the range.
+  }
+
+  return strs;
 }

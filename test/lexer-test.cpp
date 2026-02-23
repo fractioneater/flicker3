@@ -524,7 +524,7 @@ TEST(LexerTest, TokenLength) {
 
 TEST(LexerTest, TokenStartChar) {
   Token token = scan_single("hello");
-  EXPECT_EQ(token.start_char, 0);
+  EXPECT_EQ(token.start_offset, 0);
 }
 
 // Complex expressions

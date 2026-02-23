@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <functional>
 #include <optional>
 #include <string>
@@ -16,18 +17,15 @@
 
 class LexerError {
 public:
-  // If the line number is -1, it's an error at EOF.
-  int line {-1};
-  int col {-1};
-  long char_index {};
+  size_t offset {};
   std::string message {};
 
   // CONSIDER! Removing EOF errors, modifying string buffer reserve() to not complain if closing quote isn't found and let the error be reported at the
   //   correct column
 
-  // For EOF errors that don't need a line.
+  // For EOF errors that don't need a position.
   explicit LexerError(std::string&& message) : message {std::move(message)} {}
-  LexerError(int line, int col, long char_index, std::string&& message) : line {line}, col {col}, char_index {char_index}, message {std::move(message)} {}
+  LexerError(size_t offset, std::string&& message) : offset {offset}, message {std::move(message)} {}
 
   [[nodiscard]] const char* what() const noexcept { return message.c_str(); }
 };
@@ -65,10 +63,8 @@ enum TokenType {
 
 struct Token {
   TokenType type {TOKEN_EOF};
-  int line {};
-  long start_char {};
-  int col {};    // Start column.
-  int length {}; // Number of chars that belong to this token.
+  size_t start_offset {};
+  size_t length {}; // Number of chars that belong to this token.
   // End column can be computed with (col + length). End char can be computed with (start_char + length)
 };
 
@@ -76,11 +72,9 @@ class Lexer {
   const std::string src_ {};
   const long src_length_ {};
 
-  int line_ {1};
-  int col_ {1};
-  int start_col_ {1};
-  long start_char_ {}; // Current token's starting index.
-  long current_char_ {};
+  size_t start_offset_ {};               // Current token's start position — char index in src.
+  size_t offset_ {};                     // Current position — char index in src.
+  std::vector<size_t> line_offsets_ {0}; // Positions of the first character in each line.
 
   TokenType prev_type_ {TOKEN_EOF}; // I feel like this may come in handy. EDIT: And when I needed to emit newlines after dedents, it did!
 
@@ -232,6 +226,25 @@ public:
   [[nodiscard]] Token next_token();
 
   [[nodiscard]] const std::string& get_src() const { return src_; }
+
+  /**
+   * @return A vector of the starting char indices of each line in the source file
+   */
+  [[nodiscard]] const std::vector<size_t>& get_line_offsets() const { return line_offsets_; }
+  /**
+   * Returns the human-readable position in code of a character index in the source file.
+   * @param offset The char index to convert to line and column
+   * @return A pair of [line, col], 1-based indexing, from the offset given
+   */
+  [[nodiscard]] std::pair<size_t, size_t> offset_to_line_col(size_t offset) const;
+  /**
+   * Returns an array of strings, each covering a whole line, such that the start offset (char index) and end offset's lines will be included, as well as
+   * any in between.
+   * @param start The beginning of the range, as a char index in the source file
+   * @param end The end of the range, also a char index in the source file
+   * @return A vector of string_views split by newlines, viewing the source
+   */
+  [[nodiscard]] std::vector<std::string_view> offset_range_to_line_strings(size_t start, size_t end) const;
 
   [[nodiscard]] const std::vector<LexerError>& get_errors() const { return errors_; }
   [[nodiscard]] const std::vector<LexerError>& get_warnings() const { return warnings_; }

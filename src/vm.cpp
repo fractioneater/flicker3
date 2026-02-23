@@ -19,45 +19,36 @@
 #define COLOR_ERROR 211
 #define COLOR_WARNING 221
 
-// Returns a string_view without newlines on either end.
-std::string_view get_line_containing_index(std::string_view source, long char_index) {
-  // TODO: Keep thinking how to make errors better. Multi-line errors aren't handled well right now.
-  //   And I'd like to have info on the span of the error (start to end instead of just one char).
-  //   Of course, I also need color!
-  const auto line_start {source.find_last_of('\n', char_index - 1)};
-  const auto line_end {source.find('\n', char_index)};
-  return source.substr(line_start + 1, line_end - line_start - 1);
-}
+void print_error(const Lexer& lexer, const LexerError& err, const std::string_view module, bool is_error) {
+  const auto [line, col] {lexer.offset_to_line_col(err.offset)};
 
-void print_error(std::string_view source, const LexerError& err, const std::string_view module, bool is_error) {
-  std::cout << "\033[38;5;" << (is_error ? COLOR_ERROR : COLOR_WARNING)  << "m\033[1m" << module << "@";
-  if (err.line == -1)
+  std::cout << "\033[38;5;" << (is_error ? COLOR_ERROR : COLOR_WARNING) << "m\033[1m" << module << "@";
+  if (line == -1)
     std::cout << "EOF\033[0m " << err.what() << '\n';
   else {
-    std::cout << err.line << ":" << err.col << "\033[0m " << err.what() << '\n';
-    // CONSIDER! See the thing in lexer.h, in the LexerError class, about this.
-    std::cout << " | " << get_line_containing_index(source, err.char_index) << '\n';
-    std::cout << " | " << std::string(err.col - 1, ' ') << "^\n";
+    std::cout << line << ":" << col << "\033[0m " << err.what() << '\n';
+    size_t counter {line};
+    for (const std::string_view line_str : lexer.offset_range_to_line_strings(err.offset, err.offset + 1)) {
+      std::cout << " │ " << line_str << '\n';
+      if (counter == line) std::cout << " \u00B7 " << std::string(col - 1, ' ') << "^\n";
+      ++counter;
+    }
   }
 }
 
 class FlickerErrorListener : public antlr4::BaseErrorListener {
+  const Lexer& lexer_;
   std::string_view source_ {};
   std::string module_ {};
 
 public:
-  FlickerErrorListener(std::string_view source, std::string module) : source_ {source}, module_ {std::move(module)} {}
+  FlickerErrorListener(const Lexer& lexer, std::string_view source, std::string module) : lexer_ {lexer}, source_ {source}, module_ {std::move(module)} {}
 
   void syntaxError(
     antlr4::Recognizer* recognizer, antlr4::Token* offending_symbol, size_t line, size_t char_position_in_line, const std::string& msg, std::exception_ptr e
   ) override {
-    const LexerError err {
-      static_cast<int>(line),
-      static_cast<int>(char_position_in_line),
-      offending_symbol ? static_cast<long>(offending_symbol->getStartIndex()) : -1L,
-      std::string(msg)
-    };
-    print_error(source_, err, module_, true);
+    const LexerError err {offending_symbol->getStartIndex(), std::string(msg)};
+    print_error(lexer_, err, module_, true);
   }
 };
 
@@ -68,15 +59,15 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
   antlr4::CommonTokenStream token_stream {&adapter};
   antlr::flicker parser {&token_stream};
 
-  FlickerErrorListener error_listener {source, std::string(module)};
+  FlickerErrorListener error_listener {lexer, source, std::string(module)};
   parser.removeErrorListeners();
   parser.addErrorListener(&error_listener);
 
   token_stream.fill();
   for (const auto& err : lexer.get_errors())
-    print_error(source, err, module, true);
+    print_error(lexer, err, module, true);
   for (const auto& err : lexer.get_warnings())
-    print_error(source, err, module, false);
+    print_error(lexer, err, module, false);
 
   if (!lexer.get_errors().empty()) {
     std::cout << "Lexer error, compiling halted\n";

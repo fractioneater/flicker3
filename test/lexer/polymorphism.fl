@@ -3,6 +3,8 @@ namespace Truth
   class Bacon
     namespace
       val thing = 4
+#- yes this is a nice comment
+  -#  val cheese = 222
 
     init(val a: String, var b: Int, c: Bool)
       print a

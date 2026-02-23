@@ -34,16 +34,13 @@ namespace antlr {
         // flickerToken.start_char is the start. flickerToken.length is the length.
         // stop index in ANTLR is inclusive.
 
-        const auto start = static_cast<size_t>(flicker_token.start_char);
+        const auto start = static_cast<size_t>(flicker_token.start_offset);
         size_t stop;
         if (type == antlr4::Token::EOF) {
           stop = start;
         } else {
           stop = start + static_cast<size_t>(flicker_token.length) - 1;
         }
-
-        last_line_ = static_cast<size_t>(flicker_token.line);
-        last_col_ = static_cast<size_t>(flicker_token.col);
 
         // Extract text from the lexer source
         std::string text;
@@ -58,8 +55,7 @@ namespace antlr {
           antlr4::Token::DEFAULT_CHANNEL,
           start,
           stop,
-          static_cast<size_t>(flicker_token.line),
-          static_cast<size_t>(flicker_token.col) // ANTLR uses 0-based column, but I DON'T!
+          1, 1
         );
 
         return token;
