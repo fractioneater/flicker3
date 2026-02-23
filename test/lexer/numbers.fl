@@ -71,7 +71,7 @@ fun generic_func for T(item: T)
 
 # Classes
 class Person
-  companion_namespace
+  namespace
     fun create() = Person()
 
   var name: String = ""
