@@ -488,6 +488,7 @@ std::optional<Token> Lexer::indentation() {
   }
 
   if (line_offsets_.size() == block_comment_end_line && block_comment_warning) {
+    // TODO: This warning only shows up when the block comment is at the start of a line.
     // By this point, we know that the block comment is in front of some piece of code.
     block_comment_warning->add_context({offset_, "Code after the end of a block comment"});
     warnings_.emplace_back(std::move(*block_comment_warning));

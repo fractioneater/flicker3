@@ -63,11 +63,11 @@ I still haven't finished the [learncpp] tutorials, by the way.
 The repository is now public, licensed under the MPL 2.0.
 I've done two main things since the last entry:
 
-* Lots of tokens have been shuffled around, and I've added new helpful ones like `?:` (Elvis or Nil Coalescing Operator), `++`, `--`, and all the modifying 
+* Lots of tokens have been shuffled around, and I've added new helpful ones like `?:` (Elvis or Nil Coalescing Operator), `++`, `--`, and all the modifying
   assignment operators (`+=`, `/=`, `^=`, and the rest).
 
-* Error recovery in the lexer. Now, instead of stopping at the first error, it will print a list of all that it finds. It won't continue to parse after 
-  finding a lexer error, so I don't need too sophisticated error recovery, but I do still need to consume the right number of characters to continue lexing 
+* Error recovery in the lexer. Now, instead of stopping at the first error, it will print a list of all that it finds. It won't continue to parse after
+  finding a lexer error, so I don't need too sophisticated error recovery, but I do still need to consume the right number of characters to continue lexing
   after an error.
 
 `CMakePresets.json` now stores two presets: debug and release. A build guide is in the README.
@@ -75,5 +75,25 @@ I've done two main things since the last entry:
 ## February 18, 2026
 
 After not working on this project for a long time, I realized I'd forgotten about initializers in the grammar. Now that's fixed.
+
+## February 22 and 23, 2026
+
+I've shifted the data structure of things around; now, instead of storing lines and columns for tokens, errors, lexer state, everything is now done in
+"offsets": absolute character positions within the source string. The lexer keeps track of the offset of the start of each line, allowing me to compute line
+and column without difficulty, but only when they're necessary (in case of an error).
+
+Errors can now have "contexts" attached to them, which show an additional note when needed (exactly like most C/C++ compilers). In fact, errors are just nicer in general. They went from this:
+```ansi
+/test/lexer/numbers.fl@107:6 Unexpected character
+ | bx + $3
+ |      ^
+```
+to this:
+```ansi
+numbers@107:6 Unexpected character
+  107 │ bx + $3
+             ^
+```
+And, of course, the module name and position are bold and colored.
 
 [learncpp]: https://learncpp.com
