@@ -241,13 +241,11 @@ public:
    */
   [[nodiscard]] std::pair<size_t, size_t> offset_to_line_col(size_t offset) const;
   /**
-   * Returns an array of strings, each covering a whole line, such that the start offset (char index) and end offset's lines will be included, as well as
-   * any in between.
-   * @param start The beginning of the range, as a char index in the source file
-   * @param end The end of the range, also a char index in the source file
-   * @return A vector of string_views split by newlines, viewing the source
+   * Returns a string of the whole line that contains a given offset.
+   * @param offset The beginning of the range, as a char index in the source file
+   * @return A string_view WITHOUT a trailing newline, viewing the source
    */
-  [[nodiscard]] std::vector<std::string_view> offset_range_to_line_strings(size_t start, size_t end) const;
+  [[nodiscard]] std::string_view offset_to_line_string(size_t offset) const;
 
   [[nodiscard]] const std::vector<LexerError>& get_errors() const { return errors_; }
   [[nodiscard]] const std::vector<LexerError>& get_warnings() const { return warnings_; }
