@@ -670,27 +670,20 @@ std::optional<Token> Lexer::indentation() {
   return {line, col};
 }
 
-[[nodiscard]] std::vector<std::string_view> Lexer::offset_range_to_line_strings(size_t start, size_t end) const {
-  std::vector<std::string_view> strs {};
-  if (start >= end || line_offsets_.empty()) return strs;
+[[nodiscard]] std::string_view Lexer::offset_to_line_string(size_t offset) const {
+  if (line_offsets_.empty()) return ""; // Shouldn't happen; line_offsets_ is initialized with 0.
 
   const std::string_view src_view {src_};
 
   // Find the first line whose start offset is > start, then step back one.
-  const auto upper {std::ranges::upper_bound(line_offsets_, start)};
-  if (upper == line_offsets_.begin()) return strs;
-  size_t line_index {static_cast<size_t>(std::distance(line_offsets_.begin(), upper)) - 1};
+  const auto upper {std::ranges::upper_bound(line_offsets_, offset)};
+  const auto line_index {static_cast<int>(std::distance(line_offsets_.begin(), upper)) - 1};
 
-  // Emit all lines that intersect [start, end).
-  for (; line_index < line_offsets_.size(); ++line_index) {
-    const size_t line_start = line_offsets_[line_index];
-    const size_t next_start = (line_index + 1 < line_offsets_.size()) ? line_offsets_[line_index + 1] - 1 : src_view.size();
+  const size_t line_start = line_offsets_[line_index];
+  const size_t next_start = upper == line_offsets_.end()
+                            ? src_view.size()
+                            : line_offsets_[line_index + 1] - 1;
 
-    if (line_start >= end) break; // Past the requested range.
-    const size_t len = next_start - line_start;
-    strs.emplace_back(src_view.substr(line_start, len));
-    if (next_start >= end) break; // Covered the range.
-  }
-
-  return strs;
+  const size_t len = next_start - line_start;
+  return src_view.substr(line_start, len);
 }
