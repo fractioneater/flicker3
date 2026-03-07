@@ -12,8 +12,7 @@
 #include <utility>
 
 /** TODO in the lexer:
- *    Optimize keyword lookup?
- *    Inline peek(), advance(), etc
+ *    Pointer-based indexing
  *    Add context for errors to show the start of an unclosed brace, for example
  *    Add values for chars + strings
  *    Parse numbers in the number() function
@@ -454,9 +453,6 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
 
 // This function will only be called at the start of a line.
 std::optional<Token> Lexer::indentation() {
-  std::optional<LexerError> block_comment_warning {};
-  size_t block_comment_end_line {};
-
   // Loop through characters until something significant (not whitespace or comment) is found.
   while (true) {
     switch (peek()) {
@@ -473,9 +469,7 @@ std::optional<Token> Lexer::indentation() {
       case '#': {
         advance();
         if (peek() == '-') {
-          block_comment_warning = LexerError {offset_ - 1, "Consider moving this comment to the end of the line to make indentation clearer"};
           block_comment(); // May cross lines; the ending column is what matters.
-          block_comment_end_line = line_offsets_.size();
         } else {
           while (peek() != '\n' && !at_eof()) advance();
         }
@@ -485,13 +479,6 @@ std::optional<Token> Lexer::indentation() {
       default: ; // Break from here, which in turn breaks from the loop.
     }
     break;
-  }
-
-  if (line_offsets_.size() == block_comment_end_line && block_comment_warning) {
-    // TODO: This warning only shows up when the block comment is at the start of a line.
-    // By this point, we know that the block comment is in front of some piece of code.
-    block_comment_warning->add_context({offset_, "Code after the end of a block comment"});
-    warnings_.emplace_back(std::move(*block_comment_warning));
   }
 
   const auto col {static_cast<int>(offset_ - line_offsets_.back() + 1)}; // 1-based indexing.
