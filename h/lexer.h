@@ -119,13 +119,16 @@ class Lexer {
 
   /**
    * Scans a block comment until the closing #. Allows, and tracks, nesting.
+   * @return A newline if there is one somewhere in the comment, otherwise nothing
    */
-  void block_comment();
+  std::optional<Token> block_comment();
 
   /**
-   * Assumes a line comment is being parsed, but will call block_comment() if it sees the next character is a colon.
+   * Assumes a line comment is being parsed, but will call block_comment() if it sees the next character is a hyphen.
+   * Can scan PAST the end of the line if followed by another #.
+   * @return Either a newline from block_comment() or nothing
    */
-  void line_comment();
+  std::optional<Token> line_comment();
 
   /**
    * Scans a string of alphanumeric or underscore characters (checking for a reserved word).
