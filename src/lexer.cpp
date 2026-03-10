@@ -12,7 +12,6 @@
 #include <utility>
 
 /** TODO in the lexer:
- *    Pointer-based indexing
  *    Add context for errors to show the start of an unclosed brace, for example
  *    Add values for chars + strings
  *    Parse numbers in the number() function
@@ -128,32 +127,43 @@ bool Lexer::match(char expected) {
   return Token {type, start_offset_, length};
 }
 
-void Lexer::block_comment() {
+std::optional<Token> Lexer::block_comment() {
+  const size_t start_line {line_offsets_.size()};
   // Keep consuming until the closing comment or EOF.
   char prev {};
   for (int nest_depth = 1; nest_depth > 0; prev = advance()) {
     if (at_eof()) {
       errors_.emplace_back(offset_, "Unclosed block comment");
-      return;
+      return std::nullopt;
     }
 
     if (peek() == '#') {
+      // This may seem weird, but comments can be chained like this, just for the sake of not being counterintuitive:
+      // #-     stuff     -#-     more stuff (still at depth 1)     -#
+      if (prev == '-') --nest_depth;
       if (peek_next() == '-') {
         advance();
         if (nest_depth++ == MAX_COMMENT_NEST) {
           errors_.emplace_back(offset_, "Too many nested comments");
-          return;
+          return std::nullopt;
         }
-      } else if (prev == '-') --nest_depth;
+      }
     }
   }
+
+  if (line_offsets_.size() > start_line) return make_token(TOKEN_LINE);
+  return std::nullopt;
 }
 
-void Lexer::line_comment() {
-  if (peek() == '-') block_comment();
-  else {
+std::optional<Token> Lexer::line_comment() {
+  if (peek() == '-') return block_comment();
+  if (peek() == '#') {
+    // A double-hashtag comment consumes past the end of the line (to allow manual wrapping).
+    while (advance() != '\n' && !at_eof()) {}
+  } else {
     while (peek() != '\n' && !at_eof()) advance();
   }
+  return std::nullopt;
 }
 
 [[nodiscard]] Token Lexer::word() {
@@ -613,7 +623,7 @@ std::optional<Token> Lexer::indentation() {
       case '"': return string();
       case '\'': return character();
       case '#':
-        line_comment();
+        if (const std::optional opt {line_comment()}) return *opt;
         break;
       // Whitespace cases.
       case '\n':

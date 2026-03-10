@@ -9,13 +9,13 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
 # It's inside a library so my code is only compiled once and flags can be applied specifically to it
 add_library(flicker_lib
-    src/vm.cpp
-    src/compiler.cpp
-    src/lexer.cpp
-    src/tree-export.cpp
-    gen/antlr/flicker.cpp
-    gen/antlr/flickerBaseVisitor.cpp
-    gen/antlr/flickerVisitor.cpp
+	src/vm.cpp
+	src/compiler.cpp
+	src/lexer.cpp
+	src/tree-export.cpp
+	gen/antlr/flicker.cpp
+	gen/antlr/flickerBaseVisitor.cpp
+	gen/antlr/flickerVisitor.cpp
 )
 
 # ANTLR4 Setup
@@ -32,13 +32,14 @@ target_link_libraries(flicker_3 flicker_lib)
 # GoogleTest
 include(FetchContent)
 FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG v1.17.0
+	googletest
+	GIT_REPOSITORY https://github.com/google/googletest.git
+	GIT_TAG v1.17.0
 )
 FetchContent_MakeAvailable(googletest)
 enable_testing()
 
+# Lexer test
 add_executable(tests test/lexer-test.cpp)
 target_link_libraries(tests GTest::gtest_main flicker_lib)
 
@@ -49,3 +50,16 @@ target_link_libraries(test_parser GTest::gtest_main flicker_lib)
 include(GoogleTest)
 gtest_discover_tests(tests)
 gtest_discover_tests(test_parser)
+
+# Google Benchmark
+FetchContent_Declare(
+	googlebenchmark
+	GIT_REPOSITORY https://github.com/google/benchmark.git
+	GIT_TAG v1.9.5
+)
+set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googlebenchmark)
+
+# Lexer bench
+add_executable(bench_lexer test/lexer-bench.cpp)
+target_link_libraries(bench_lexer benchmark::benchmark_main flicker_lib)
