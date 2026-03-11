@@ -10,6 +10,15 @@
 #include <fstream>
 #include <iostream>
 
+#include "lexer-adapter.h"
+#include "lexer.h"
+#include "parser.h"
+#include "util.h"
+
+enum InterpretResult {
+  INTERPRET_OK, INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERROR
+};
+
 std::string read_entire_file(const char* path) {
   std::ifstream in {path, std::ios::binary};
 
@@ -45,6 +54,78 @@ std::string read_entire_file(const char* path) {
   in.clear();
   in.seekg(0, std::ios::beg);
   return std::string {std::istreambuf_iterator(in), std::istreambuf_iterator<char>()};
+}
+
+InterpretResult interpret(const std::string& source, std::string_view module) {
+  Lexer lexer {source};
+
+  antlr::LexerAdapter adapter {lexer, std::string(module)};
+  antlr4::CommonTokenStream token_stream {&adapter};
+  Parser parser {&token_stream};
+
+  token_stream.fill();
+
+  #if DEBUG_PRINT_TOKENS
+  for (const auto token : token_stream.getTokens()) {
+    if (token->getType() == antlr4::Token::EOF) { // EOF:
+      std::cout << "EOF: col " << token->getCharPositionInLine() << "\n";
+      continue;
+    }
+
+    const auto type = token->getType() - 1;
+    if (type == TOKEN_IDENTIFIER) { // Identifier:
+      std::cout << "Identifier '" << token->getText() << "': " << token->getLine() << ':' << token->getCharPositionInLine() << ", length "
+        << token->getText().length() << "\n";
+    } else if (type == TOKEN_INDENT) {
+      std::cout << "Indent\n";
+    } else if (type == TOKEN_DEDENT) {
+      std::cout << "Dedent\n";
+    } else if (type == TOKEN_LINE) {
+      std::cout << "Newline\n";
+    } else { // Other:
+      std::cout << "Token: type " << type << ", " << token->getLine() << ":" << token->getCharPositionInLine() << ", length "
+        << token->getText().length() << "\n";
+    }
+  }
+  #endif
+
+  for (const auto& err : lexer.get_errors())
+    print_error(lexer, err, module, 0);
+  for (const auto& warning : lexer.get_warnings())
+    print_error(lexer, warning, module, 1);
+
+  if (!lexer.get_errors().empty()) {
+    std::cout << "Lexer error, compiling halted\n";
+    return INTERPRET_COMPILE_ERROR;
+  }
+
+  const bool parse_success {parser.parse()};
+
+  if (!parse_success) {
+    std::cout << "Parser error, compiling halted\n";
+    return INTERPRET_COMPILE_ERROR;
+  }
+
+  #if DEBUG_PRINT_DOT
+  parser.output_dot();
+  #endif
+
+  #if DEBUG_PRINT_CODE
+  #endif
+
+  #if DEBUG_TRACE_EXECUTION
+  #endif
+
+  return INTERPRET_OK;
+}
+
+InterpretResult interpret_and_print(const std::string& source, std::string_view module) {
+  const InterpretResult result = interpret(source, module);
+
+  if (result == INTERPRET_OK)
+    std::cout << "= > \n";
+
+  return result;
 }
 
 void repl() {

@@ -1,7 +1,52 @@
-#include "tree-export.h"
+/**
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+#include "util.h"
+
+#include <iomanip>
+#include <iostream>
 #include <sstream>
 #include <vector>
-#include <iomanip>
+
+#include "common.h"
+
+void formatting(int type) {
+  #if PRINT_ERROR_COLORS
+  if (type == 0) { // Error.
+    std::cout << "\033[38;5;" << COLOR_ERROR << "m\033[1m";
+  } else if (type == 1) { // Warning.
+    std::cout << "\033[38;5;" << COLOR_WARNING << "m\033[1m";
+  } else { // Note.
+    std::cout << "\033[38;5;" << COLOR_NOTE << "m\033[1m  note: ";
+  }
+  #else
+  if (type == 0) { // Error.
+    std::cout << "ERROR ";
+  } else if (type == 1) { // Warning.
+    std::cout << "WARNING ";
+  } else { // Note.
+    std::cout << "NOTE ";
+  }
+  #endif
+}
+
+void print_error(const Lexer& lexer, const LexerError& err, const std::string_view module, int type) {
+  const auto [line, col] {lexer.offset_to_line_col(err.offset)};
+
+  // moduleName@39:14 Unclosed block comment
+  // ^^^^^^^^^^^^^^^^ (this part is colored and bold.)
+  formatting(type);
+  std::cout << module << "@" << line << ":" << col << "\033[0m " << err.what() << '\n';
+
+  const std::string_view line_str {lexer.offset_to_line_string(err.offset)};
+  std::cout << std::setw(5) << line << " │ " << line_str << '\n';
+  std::cout << "        " << std::string(col - 1, ' ') << "^\n";
+
+  if (err.context) print_error(lexer, *err.context, module, 2);
+}
 
 namespace flicker {
   static std::pair<std::string, bool> escape(const std::string& s) {
@@ -28,6 +73,8 @@ namespace flicker {
     return {oss.str(), whitespace};
   }
 
+  // This code is not the greatest (well, I'm assuming this because I didn't write it). It was not intended to be permanent, but I now realize that a
+  // parse tree visualization is actually rather helpful, so I might keep it. When ANTLR goes away, it'll get polished.
   static void walk(antlr4::tree::ParseTree* node, antlr4::Parser* parser, std::ostringstream& out, int& id_counter, int parent_id) {
     const int my_id = id_counter++;
     std::string label;
@@ -38,7 +85,7 @@ namespace flicker {
 
     if (const auto* ctx = dynamic_cast<antlr4::ParserRuleContext*>(node)) {
       label = parser->getRuleNames()[ctx->getRuleIndex()];
-      out << "  n" << my_id << " [label=\"" << escape(label).first<< "\", shape=box, color=cornflowerblue, fontcolor=blue];\n";
+      out << "  n" << my_id << " [label=\"" << escape(label).first << "\", shape=box, color=cornflowerblue, fontcolor=blue];\n";
     } else if (const auto* terminal = dynamic_cast<antlr4::tree::TerminalNode*>(node)) {
       const auto* token = terminal->getSymbol();
       label             = token->getText();
@@ -67,7 +114,7 @@ namespace flicker {
     std::ostringstream out;
     out << "digraph ParseTree {\n";
     out << "  rankdir=TB;\n";
-    out << "  node [fontname=\"Courier New\"];\n";
+    out << "  node [fontname=\"Iosevka Term SS09\"];\n";
     int id_counter = 0;
     walk(tree, parser, out, id_counter, -1);
     out << "}\n";
