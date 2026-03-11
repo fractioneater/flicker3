@@ -1,3 +1,9 @@
+// This file is not licensed because it was...
+// - written by AI
+// - not intended to work
+// - probably not good code
+// And it is going to be deleted as soon as possible.
+
 #pragma once
 
 #include <memory>

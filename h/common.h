@@ -32,10 +32,16 @@
 
 // COMPILER AND VM VALUES ----------------------------------------------------------------
 
+// Pretty stuff
+#define COLOR_ERROR 211
+#define COLOR_WARNING 221
+#define COLOR_NOTE 74
+
+// Restricting stuff
 #define MAX_PARAMETERS 16
 #define MAX_METHOD_NAME 64
 #define MAX_CONSTANTS 0x7FFF
 
-// Lexer
+// Lexer stuff
 #define MAX_COMMENT_NEST 16
 #define MAX_INTERPOLATION_NEST 8

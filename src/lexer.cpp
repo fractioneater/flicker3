@@ -13,6 +13,7 @@
 
 /** TODO in the lexer:
  *    Add context for errors to show the start of an unclosed brace, for example
+ *    WRITE TESTS!
  *    Add values for chars + strings
  *    Parse numbers in the number() function
  */
@@ -478,11 +479,8 @@ std::optional<Token> Lexer::indentation() {
 
       case '#': {
         advance();
-        if (peek() == '-') {
-          block_comment(); // May cross lines; the ending column is what matters.
-        } else {
-          while (peek() != '\n' && !at_eof()) advance();
-        }
+        // Because the function is only called at the start of a line, we can ignore the return value; it can only be another newline.
+        line_comment();
         continue; // Keep processing stuff after a block comment.
       }
 

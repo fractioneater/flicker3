@@ -7,12 +7,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
-# It's inside a library so my code is only compiled once and flags can be applied specifically to it
+# Files are organized as a library so my code is only compiled once and flags can be applied specifically to it.
 add_library(flicker_lib
-	src/vm.cpp
-	src/compiler.cpp
 	src/lexer.cpp
-	src/tree-export.cpp
+	src/parser.cpp
+	src/analyzer.cpp
+	src/vm.cpp
+	src/util.cpp
 	gen/antlr/flicker.cpp
 	gen/antlr/flickerBaseVisitor.cpp
 	gen/antlr/flickerVisitor.cpp
