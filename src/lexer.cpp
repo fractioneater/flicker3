@@ -12,7 +12,6 @@
 #include <utility>
 
 /** TODO in the lexer:
- *    Add context for errors to show the start of an unclosed brace, for example
  *    WRITE TESTS!
  *    Add values for chars + strings
  *    Parse numbers in the number() function
@@ -129,12 +128,12 @@ bool Lexer::match(char expected) {
 }
 
 std::optional<Token> Lexer::block_comment() {
-  const size_t start_line {line_offsets_.size()};
+  const size_t start_offset {offset_ - 1};
   // Keep consuming until the closing comment or EOF.
   char prev {};
   for (int nest_depth = 1; nest_depth > 0; prev = advance()) {
     if (at_eof()) {
-      errors_.emplace_back(offset_, "Unclosed block comment");
+      errors_.emplace_back(start_offset, "Block comment missing closing '-#'");
       return std::nullopt;
     }
 
@@ -145,14 +144,17 @@ std::optional<Token> Lexer::block_comment() {
       if (peek_next() == '-') {
         advance();
         if (nest_depth++ == MAX_COMMENT_NEST) {
-          errors_.emplace_back(offset_, "Too many nested comments");
+          errors_.emplace_back(offset_ - 1, "Too many nested comments");
           return std::nullopt;
         }
       }
     }
   }
 
-  if (line_offsets_.size() > start_line) return make_token(TOKEN_LINE);
+  if (line_offsets_.back() > start_offset) {
+    check_indent_ = true; // Because indentation is column-based, it'll be fine to check indent after the end of a block comment.
+    return make_token(TOKEN_LINE);
+  }
   return std::nullopt;
 }
 
@@ -176,14 +178,14 @@ std::optional<Token> Lexer::line_comment() {
 [[nodiscard]] Token Lexer::backtick_identifier() {
   while (peek() != '`' && !at_eof()) {
     if (peek() == '\n') {
-      errors_.emplace_back(offset_, "Unclosed identifier; even these can't have newlines");
+      errors_.emplace_back(start_offset_, "Identifier is missing closing backtick; even these can't have newlines");
       return make_token(TOKEN_IDENTIFIER);
     }
     advance();
   }
 
   if (at_eof()) {
-    errors_.emplace_back(offset_, "Unclosed identifier");
+    errors_.emplace_back(start_offset_, "Identifier is missing closing backtick");
     return make_token(TOKEN_IDENTIFIER);
   }
 
@@ -194,7 +196,7 @@ std::optional<Token> Lexer::line_comment() {
   token.length -= 2;
 
   if (token.length == 0) {
-    errors_.emplace_back(offset_, "Empty identifier");
+    errors_.emplace_back(start_offset_, "Empty identifier");
     return make_token(TOKEN_IDENTIFIER); // Instead of returning the var 'token', let's just do this.
   }
 
@@ -262,9 +264,13 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
   while (true) {
     const char c {advance()};
     if (c == '"') break;
-    if (c == '\r') continue; // TODO: Why am I removing these?
+    if (c == '\r') continue; // To stay platform-independent.
+    if (c == '\n') {
+      errors_.emplace_back(start_offset_, "String is missing closing quotation mark; newlines aren't allowed in strings");
+      return make_token(TOKEN_STRING);
+    }
     if (at_eof()) {
-      errors_.emplace_back(offset_, "Unclosed string");
+      errors_.emplace_back(start_offset_, "String is missing closing quotation mark");
       return make_token(TOKEN_STRING);
     }
 
@@ -280,7 +286,7 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
         break;
       }
 
-      errors_.emplace_back(offset_, "Too many nested strings");
+      errors_.emplace_back(offset_ + 1, "Too many nested string-interpolations");
       return make_token(TOKEN_STRING);
     }
 
@@ -331,7 +337,12 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
   const char c {advance()};
 
   if (c == '\'') {
-    errors_.emplace_back(offset_, "Empty characters are not allowed");
+    errors_.emplace_back(start_offset_, "Empty characters are not allowed");
+    return make_token(TOKEN_CHAR);
+  }
+
+  if (c == '\n') {
+    errors_.emplace_back(start_offset_, "Character literal is missing closing quotation mark");
     return make_token(TOKEN_CHAR);
   }
 
@@ -358,11 +369,11 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
   // @formatter:on
 
   if (!match('\'')) {
-    while (!at_eof() && peek() != '\'') { advance(); }
-    if (at_eof())
-      errors_.emplace_back(offset_, "Unclosed character literal");
-    else {
-      errors_.emplace_back(offset_, "Use double-quotes for strings; single-quotes are for single characters");
+    while (!at_eof() && peek() != '\'' && peek() != '\n') { advance(); }
+    if (at_eof() || peek() == '\n')
+      errors_.emplace_back(start_offset_, "Character literal is missing closing quotation mark");
+    else if (peek() == '\'') {
+      errors_.emplace_back(start_offset_, "Use double-quotes for strings; single-quotes are for single characters");
       advance(); // Closing quote.
     }
     return make_token(TOKEN_CHAR);
@@ -530,8 +541,6 @@ std::optional<Token> Lexer::indentation() {
 
 [[nodiscard]] Token Lexer::eof() {
   start_offset_ = offset_;
-
-  if (brace_nesting_ > 0) errors_.emplace_back(offset_, "Unclosed lambda");
 
   // Create dedents at EOF: emit one now and queue the rest.
   // The indents list should still hold the original 0.
