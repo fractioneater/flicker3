@@ -1,0 +1,31 @@
+# line comment
+print "after code"  # comment
+
+#- block comment -#
+
+#- chain -#- chain -#- chain -#
+
+#- nest 0 #- nest 1 #- nest 2 -# nest 1 -# nest 0 -#
+
+#-
+multiple
+lines
+-#
+
+if true
+#- before code -# pass
+
+if true #- emits a newline too
+       -# pass
+          print "same indentation"
+
+a ##
+  + b
+
+a ##
++ b
+
+print 30 #- in expression -# + 300
+print ok #-
+  -#
+print ok

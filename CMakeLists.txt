@@ -41,15 +41,15 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 # Lexer test
-add_executable(tests test/lexer-test.cpp)
-target_link_libraries(tests GTest::gtest_main flicker_lib)
+add_executable(test_lexer test/lexer-test.cpp)
+target_link_libraries(test_lexer GTest::gtest_main flicker_lib)
 
 # Parser test
 add_executable(test_parser test/parser-test.cpp)
 target_link_libraries(test_parser GTest::gtest_main flicker_lib)
 
 include(GoogleTest)
-gtest_discover_tests(tests)
+gtest_discover_tests(test_lexer)
 gtest_discover_tests(test_parser)
 
 # Google Benchmark

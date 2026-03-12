@@ -43,7 +43,7 @@ void print_error(const Lexer& lexer, const LexerError& err, const std::string_vi
 
   const std::string_view line_str {lexer.offset_to_line_string(err.offset)};
   std::cout << std::setw(5) << line << " │ " << line_str << '\n';
-  std::cout << "        " << std::string(col - 1, ' ') << "^\n";
+  std::cout << "        " << std::string(col - 1, ' ') << "\033[38;5;78m\033[1m^\033[0m\n";
 
   if (err.context) print_error(lexer, *err.context, module, 2);
 }

@@ -54,6 +54,8 @@ namespace antlr {
           text = lexer_.get_src().substr(start, flicker_token.length);
         }
 
+        auto [line, col] {lexer_.offset_to_line_col(start)};
+
         auto token = factory_->create(
           {this, nullptr},
           type,
@@ -61,7 +63,7 @@ namespace antlr {
           antlr4::Token::DEFAULT_CHANNEL,
           start,
           stop,
-          1, 1
+          line, col
         );
 
         return token;
