@@ -123,7 +123,7 @@ InterpretResult interpret_and_print(const std::string& source, std::string_view 
   const InterpretResult result = interpret(source, module);
 
   if (result == INTERPRET_OK)
-    std::cout << "= > \n";
+    std::cout << "\033[38;5;" << RESULT_COLOR << 'm' << "= > \n" << "\033[0m";
 
   return result;
 }
@@ -132,7 +132,7 @@ void repl() {
   constexpr std::string_view prompt {"~ > "};
   std::string line {};
   // Not the cleanest syntax, but this comma expression works to print the "~ >" prompt and then get input.
-  while (std::cout << prompt, std::getline(std::cin >> std::ws, line)) {
+  while (std::cout << "\033[38;5;" << PROMPT_COLOR << 'm' << prompt << "\033[0m", std::getline(std::cin >> std::ws, line)) {
     interpret_and_print(line, "input");
   }
 

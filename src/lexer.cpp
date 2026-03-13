@@ -647,7 +647,7 @@ std::optional<Token> Lexer::indentation() {
         if (match('b')) return binary_number();
         return number();
       default:
-        if (std::isalpha(static_cast<unsigned char>(c)) != 0) return word();
+        if (c == '_' || std::isalpha(static_cast<unsigned char>(c)) != 0) return word();
         if (std::isdigit(static_cast<unsigned char>(c)) != 0) return number();
         errors_.emplace_back(offset_ - 1, "Unexpected character");
     }
