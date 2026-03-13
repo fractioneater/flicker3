@@ -16,11 +16,11 @@
 void formatting(int type) {
   #if PRINT_ERROR_COLORS
   if (type == 0) { // Error.
-    std::cout << "\033[38;5;" << COLOR_ERROR << "m\033[1m";
+    std::cout << "\033[38;5;" << ERROR_COLOR << "m\033[1m";
   } else if (type == 1) { // Warning.
-    std::cout << "\033[38;5;" << COLOR_WARNING << "m\033[1m";
+    std::cout << "\033[38;5;" << WARNING_COLOR << "m\033[1m";
   } else { // Note.
-    std::cout << "\033[38;5;" << COLOR_NOTE << "m\033[1m  note: ";
+    std::cout << "\033[38;5;" << NOTE_COLOR << "m\033[1m  note: ";
   }
   #else
   if (type == 0) { // Error.
@@ -43,7 +43,7 @@ void print_error(const Lexer& lexer, const LexerError& err, const std::string_vi
 
   const std::string_view line_str {lexer.offset_to_line_string(err.offset)};
   std::cout << std::setw(5) << line << " │ " << line_str << '\n';
-  std::cout << "        " << std::string(col - 1, ' ') << "\033[38;5;78m\033[1m^\033[0m\n";
+  std::cout << "        " << std::string(col - 1, ' ') << "\033[38;5;" << POINTER_COLOR << "m\033[1m^\033[0m\n";
 
   if (err.context) print_error(lexer, *err.context, module, 2);
 }

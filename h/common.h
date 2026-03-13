@@ -10,7 +10,7 @@
 
 // For the three following flags: 0 to disable, 1 to print user code, 2 to print everything (includes core module)
 // Don't compile; just print the tokens straight from the lexer.
-#define DEBUG_PRINT_TOKENS 0
+#define DEBUG_PRINT_TOKENS 1
 // Print bytecode instructions immediately after compiling.
 #define DEBUG_PRINT_CODE 0
 // Print bytecode instructions as they run.
@@ -33,9 +33,12 @@
 // COMPILER AND VM VALUES ----------------------------------------------------------------
 
 // Pretty stuff
-#define COLOR_ERROR 211
-#define COLOR_WARNING 221
-#define COLOR_NOTE 74
+#define PROMPT_COLOR 141
+#define RESULT_COLOR 156
+#define ERROR_COLOR 211
+#define WARNING_COLOR 221
+#define NOTE_COLOR 74
+#define POINTER_COLOR 156
 
 // Restricting stuff
 #define MAX_PARAMETERS 16
