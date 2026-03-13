@@ -19,13 +19,13 @@ if true #- emits a newline too
        -# pass
           print "same indentation"
 
+print 30 #- in expression -# + 300
+print ok #-
+  -#
+print ok
+
 a ##
   + b
 
 a ##
 + b
-
-print 30 #- in expression -# + 300
-print ok #-
-  -#
-print ok
