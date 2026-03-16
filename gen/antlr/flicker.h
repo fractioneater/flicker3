@@ -1693,6 +1693,7 @@ public:
     antlr4::tree::TerminalNode *EQ();
     ExpressionContext *expression();
     LambdaParamsContext *lambdaParams();
+    antlr4::tree::TerminalNode *SEMICOLON();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
