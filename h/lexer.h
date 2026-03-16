@@ -155,8 +155,9 @@ class Lexer {
    * @param buffer The string to which the UTF-8 encoded bytes will be appended
    * @param code_point The Unicode code point to be encoded and added to the buffer
    *                   Must be a valid code point in the Unicode range (0x0 to 0x10FFFF) and not a surrogate (0xD800 to 0xDFFF)
+   * @param sequence_start_offset The char index in the source file where the sequence starts, for error reporting
    */
-  void append_utf8(std::string& buffer, uint32_t code_point);
+  void append_utf8(std::string& buffer, uint32_t code_point, size_t sequence_start_offset);
 
   /**
    * Scans a double-quote delineated string, allowing newlines and the following escape codes:

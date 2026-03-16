@@ -223,13 +223,13 @@ std::optional<Token> Lexer::line_comment() {
   return value;
 }
 
-void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
+void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point, size_t sequence_start_offset) {
   if (code_point > 0x10FFFFu) {
-    errors_.emplace_back(offset_, "Invalid Unicode code point");
+    errors_.emplace_back(sequence_start_offset, "Invalid Unicode code point");
     return;
   }
   if (code_point >= 0xD800u && code_point <= 0xDFFFu) {
-    errors_.emplace_back(offset_, "Invalid Unicode surrogate");
+    errors_.emplace_back(sequence_start_offset, "Invalid Unicode surrogate");
     return;
   }
 
@@ -305,13 +305,15 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
         case 'r': buffer.push_back('\r'); break;
         case 't': buffer.push_back('\t'); break;
         case 'u': {
+          const size_t sequence_start_offset {offset_};
           const std::uint32_t code_point {read_hex(4)};
-          append_utf8(buffer, code_point);
+          append_utf8(buffer, code_point, sequence_start_offset);
           break;
         }
         case 'U': {
+          const size_t sequence_start_offset {offset_};
           const std::uint32_t code_point {read_hex(8)};
-          append_utf8(buffer, code_point);
+          append_utf8(buffer, code_point, sequence_start_offset);
           break;
         }
         case 'v': buffer.push_back('\v'); break;
@@ -369,12 +371,18 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point) {
   // @formatter:on
 
   if (!match('\'')) {
+    const size_t possible_end_offset {offset_ - 1}; // To check if a backslash was accidentally escaped.
+
     while (!at_eof() && peek() != '\'' && peek() != '\n') { advance(); }
-    if (at_eof() || peek() == '\n')
+    if (at_eof() || peek() == '\n') {
       errors_.emplace_back(start_offset_, "Character literal is missing closing quotation mark");
-    else if (peek() == '\'') {
+    } else if (peek() == '\'') {
       errors_.emplace_back(start_offset_, "Use double-quotes for strings; single-quotes are for single characters");
       advance(); // Closing quote.
+    }
+
+    if (src_[possible_end_offset] == '\'') {
+      errors_.back().add_context({possible_end_offset, "Backslashes should be escaped ('\\\\') to allow this quote to close the char"});
     }
     return make_token(TOKEN_CHAR);
   }
