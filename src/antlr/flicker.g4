@@ -195,4 +195,4 @@ blockLambda : lambdaParams (blockOrStatement | EQ expression) ;
 braceLambda : LEFT_BRACE (statementLambdaBody | exprLambdaBody) RIGHT_BRACE ;
 
 statementLambdaBody : (lambdaParams RIGHT_ARROW)? (codeItem SEMICOLON)* ; // All must end in semicolon.
-exprLambdaBody : lambdaParams? EQ expression ;
+exprLambdaBody : lambdaParams? EQ expression SEMICOLON? ;
