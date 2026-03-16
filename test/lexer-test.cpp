@@ -39,19 +39,11 @@ static bool has_warning(const std::string& src) {
   return !lexer.get_warnings().empty();
 }
 
-// REAL TESTS (written for a very specific reason):
+// Each section here will start with a "file test." These are in test/lexer/...
+// The file tests should (in theory) cover everything CORRECT about the item being tested.
+// The rest of the section ensures INCORRECT code is handled properly (errors, warnings).
+
 // Comment
-TEST(Comment, BlockCommentMaxNest) {
-  std::string src = "#-";
-  for (int i = 0; i < MAX_COMMENT_NEST; ++i) src += " #-";
-  for (int i = 0; i <= MAX_COMMENT_NEST; ++i) src += " -#";
-  EXPECT_TRUE(has_error(src));
-}
-
-TEST(Comment, BlockCommentUnclosed) {
-  EXPECT_TRUE(has_error("#- unclosed"));
-}
-
 TEST(Comment, FileTest) {
   std::ifstream file("../test/lexer/comment.fl");
   if (!file.is_open()) {
@@ -73,20 +65,18 @@ TEST(Comment, FileTest) {
   EXPECT_TRUE(parse_success);
 }
 
+TEST(Comment, BlockCommentMaxNest) {
+  std::string src = "#-";
+  for (int i = 0; i < MAX_COMMENT_NEST; ++i) src += " #-";
+  for (int i = 0; i <= MAX_COMMENT_NEST; ++i) src += " -#";
+  EXPECT_TRUE(has_error(src));
+}
+
+TEST(Comment, BlockCommentUnclosed) {
+  EXPECT_TRUE(has_error("#- unclosed"));
+}
+
 // Identifier
-TEST(Identifier, BacktickIdentifierUnclosed) {
-  EXPECT_TRUE(has_error("`unclosed"));
-}
-
-TEST(Identifier, BacktickIdentifierEmpty) {
-  EXPECT_TRUE(has_error("``"));
-}
-
-TEST(Identifier, BacktickIdentifierLength) {
-  const Token token {scan_single("`four`")};
-  EXPECT_EQ(token.length, 4);
-}
-
 TEST(Identifier, FileTest) {
   std::ifstream file("../test/lexer/identifier.fl");
   if (!file.is_open()) {
@@ -108,7 +98,41 @@ TEST(Identifier, FileTest) {
   EXPECT_TRUE(parse_success);
 }
 
+TEST(Identifier, BacktickIdentifierUnclosed) {
+  EXPECT_TRUE(has_error("`unclosed"));
+}
+
+TEST(Identifier, BacktickIdentifierEmpty) {
+  EXPECT_TRUE(has_error("``"));
+}
+
+TEST(Identifier, BacktickIdentifierLength) {
+  const Token token {scan_single("`four`")};
+  EXPECT_EQ(token.length, 4);
+}
+
 // Number
+TEST(Number, FileTest) {
+  std::ifstream file("../test/lexer/number.fl");
+  if (!file.is_open()) {
+    FAIL() << "Could not open test/lexer/number.fl";
+  }
+  std::stringstream buffer;
+  buffer << file.rdbuf();
+  std::string source = buffer.str();
+  Lexer lexer {source};
+
+  antlr::LexerAdapter adapter {lexer, "number-test"};
+  antlr4::CommonTokenStream token_stream {&adapter};
+  Parser parser {&token_stream};
+
+  token_stream.fill();
+  EXPECT_TRUE(lexer.get_errors().empty());
+
+  const bool parse_success {parser.parse()};
+  EXPECT_TRUE(parse_success);
+}
+
 TEST(Number, UnderscoreInvalid) {
   EXPECT_TRUE(has_error("32_"));
   EXPECT_TRUE(has_error("32_x"));
@@ -138,27 +162,6 @@ TEST(Number, SuspiciousChar) {
   EXPECT_TRUE(has_warning("882i"));
 }
 
-TEST(Number, FileTest) {
-  std::ifstream file("../test/lexer/number.fl");
-  if (!file.is_open()) {
-    FAIL() << "Could not open test/lexer/number.fl";
-  }
-  std::stringstream buffer;
-  buffer << file.rdbuf();
-  std::string source = buffer.str();
-  Lexer lexer {source};
-
-  antlr::LexerAdapter adapter {lexer, "number-test"};
-  antlr4::CommonTokenStream token_stream {&adapter};
-  Parser parser {&token_stream};
-
-  token_stream.fill();
-  EXPECT_TRUE(lexer.get_errors().empty());
-
-  const bool parse_success {parser.parse()};
-  EXPECT_TRUE(parse_success);
-}
-
 // Strings + Chars
 TEST(String, FileTest) {
   std::ifstream file("../test/lexer/string.fl");
@@ -181,30 +184,54 @@ TEST(String, FileTest) {
   EXPECT_TRUE(parse_success);
 }
 
-// BELOW THIS POINT, TESTS ARE NOT SPECIFIC AND TARGETED. A lot of them are not useful, and there are many missing, but I'll fix that.
-// TODO: Finish curating (errors)
-
-// Error cases
-TEST(LexerTest, UnterminatedString) {
-  EXPECT_TRUE(has_error(R"("hello)"));
+TEST(String, Unterminated) {
+  EXPECT_TRUE(has_error("\"no closing quote"));
+  EXPECT_TRUE(has_error("'e"));
+  EXPECT_TRUE(has_error("'"));
 }
 
-TEST(LexerTest, UnterminatedCharacter) {
-  EXPECT_TRUE(has_error(R"('h)"));
+TEST(String, EmptyChar) {
+  EXPECT_TRUE(has_error("''"));
 }
 
-TEST(LexerTest, EmptyCharacter) {
-  EXPECT_TRUE(has_error(R"('')"));
+TEST(String, InvalidEscape) {
+  EXPECT_TRUE(has_error("\"\\6\""));
+  EXPECT_TRUE(has_error("'\\6'"));
 }
 
-TEST(LexerTest, InvalidEscapeInString) {
-  EXPECT_TRUE(has_error(R"("\q")"));
+// Indentation + Lambdas
+TEST(Indentation, FileTest) {
+  std::ifstream file("../test/lexer/indent.fl");
+  if (!file.is_open()) {
+    FAIL() << "Could not open test/lexer/indent.fl";
+  }
+  std::stringstream buffer;
+  buffer << file.rdbuf();
+  std::string source = buffer.str();
+  Lexer lexer {source};
+
+  antlr::LexerAdapter adapter {lexer, "indent-test"};
+  antlr4::CommonTokenStream token_stream {&adapter};
+  Parser parser {&token_stream};
+
+  token_stream.fill();
+  EXPECT_TRUE(lexer.get_errors().empty());
+
+  const bool parse_success {parser.parse()};
+  EXPECT_TRUE(parse_success);
 }
 
-TEST(LexerTest, UnexpectedCharacter) {
-  EXPECT_TRUE(has_error("@"));
-}
-
-TEST(LexerTest, InvalidIndentation) {
+TEST(Indentation, NoPrevMatchingIndent) {
   EXPECT_TRUE(has_error("if true\n  foo\n bar"));
+}
+
+TEST(Indentation, Tabs) {
+  EXPECT_TRUE(has_error("\t"));
+}
+
+// It may feel like there are things missing here (for lambdas especially), but they're tests for the parser, not the lexer.
+
+// Other little things
+TEST(Misc, UnexpectedCharacter) {
+  EXPECT_TRUE(has_error("@$"));
 }

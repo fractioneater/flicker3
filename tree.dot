@@ -2,13 +2,19 @@ digraph ParseTree {
   rankdir=TB;
   node [fontname="Iosevka Term SS09"];
   n0 [label="program", shape=box, color=cornflowerblue, fontcolor=blue];
-  n1 [label="printStmt", shape=box, color=cornflowerblue, fontcolor=blue];
+  n1 [label="lambdaLiteral", shape=box, color=cornflowerblue, fontcolor=blue];
   n0 -> n1;
-  n2 [label="print", shape=ellipse, color=red, fontcolor=maroon];
+  n2 [label="fun", shape=ellipse, color=red, fontcolor=maroon];
   n1 -> n2;
-  n3 [label="3", shape=ellipse, color=red, fontcolor=maroon];
+  n3 [label="braceLambda", shape=box, color=cornflowerblue, fontcolor=blue];
   n1 -> n3;
-  n4 [label="EOF", shape=ellipse, color=red, fontcolor=maroon];
-  n0 -> n4;
+  n4 [label="{", shape=ellipse, color=red, fontcolor=maroon];
+  n3 -> n4;
+  n5 [label="statementLambdaBody", shape=box, color=cornflowerblue, fontcolor=blue];
+  n3 -> n5;
+  n6 [label="}", shape=ellipse, color=red, fontcolor=maroon];
+  n3 -> n6;
+  n7 [label="EOF", shape=ellipse, color=red, fontcolor=maroon];
+  n0 -> n7;
 }
 
