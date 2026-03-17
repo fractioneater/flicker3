@@ -11,6 +11,8 @@
 
 #include "util.h"
 
+// ANTLR --------------------------------------------------
+
 class FlickerErrorListener : public antlr4::BaseErrorListener {
 public:
   void syntaxError(
@@ -22,7 +24,22 @@ public:
 
 Parser::Parser(antlr4::CommonTokenStream* token_stream) : antlr_parser_ {token_stream} {}
 
-bool Parser::parse() {
+void Parser::output_dot() {
+  if (!tree_) {
+    std::cerr << "output_dot() couldn't run. There's no tree. Make sure you're parsing with ANTLR.\n";
+    return;
+  }
+
+  if (std::ofstream out {DEBUG_DOT_FILENAME}) {
+    out << flicker::to_dot(tree_, &antlr_parser_) << '\n';
+    out.close();
+    std::cout << "Parse tree exported to " << DEBUG_DOT_FILENAME << '\n';
+  } else {
+    std::cerr << "Could not open " << DEBUG_DOT_FILENAME << " to export parse tree\n";
+  }
+}
+
+bool Parser::parse_antlr() {
   FlickerErrorListener error_listener {};
   antlr_parser_.removeErrorListeners();
   antlr_parser_.addErrorListener(&error_listener);
@@ -33,12 +50,13 @@ bool Parser::parse() {
   return antlr_parser_.getNumberOfSyntaxErrors() == 0;
 }
 
-void Parser::output_dot() {
-  if (std::ofstream out {DEBUG_DOT_FILENAME}) {
-    out << flicker::to_dot(tree_, &antlr_parser_) << '\n';
-    out.close();
-    std::cout << "Parse tree exported to " << DEBUG_DOT_FILENAME << '\n';
-  } else {
-    std::cerr << "Could not open " << DEBUG_DOT_FILENAME << " to export parse tree\n";
-  }
+// Non-ANTLR --------------------------------------------------
+
+std::shared_ptr<Expr> Parser::parse_expression() {
+  return std::make_shared<Literal>(2.0);
+}
+
+bool Parser::parse() {
+  parse_expression();
+  return true;
 }

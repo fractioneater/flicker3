@@ -12,7 +12,6 @@
 #include <utility>
 
 /** TODO in the lexer:
- *    WRITE TESTS!
  *    Add values for chars + strings
  *    Parse numbers in the number() function
  */
