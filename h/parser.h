@@ -51,15 +51,6 @@ enum class Precedence {
   ATOM
 };
 
-class Parser;
-using ParseFn = std::shared_ptr<Expr>(Parser::*)();
-
-struct ParseRule {
-  ParseFn prefix;
-  ParseFn infix;
-  Precedence prec;
-};
-
 class Parser {
   antlr::flicker antlr_parser_;
   antlr::flicker::ProgramContext* tree_ {};
@@ -141,10 +132,18 @@ public:
  */
   bool parse();
 
+  using ParseFn = std::shared_ptr<Expr>(Parser::*)();
+
+  struct ParseRule {
+    ParseFn prefix;
+    ParseFn infix;
+    Precedence prec;
+  };
+
   #define UNUSED              ParseRule {nullptr, nullptr, Precedence::NONE}
-  #define INFIX(fn, prec)     ParseRule {nullptr, fn, Precedence::prec}
-  #define PREFIX(fn, prec)    ParseRule {fn, nullptr, Precedence::prec}
-  #define BOTH(pre, in, prec) ParseRule {pre, in, Precedence::prec}
+  #define INFIX(fn, prec)     ParseRule {nullptr, &Parser::fn, Precedence::prec}
+  #define PREFIX(fn, prec)    ParseRule {&Parser::fn, nullptr, Precedence::prec}
+  #define BOTH(pre, in, prec) ParseRule {&Parser::pre, &Parser::in, Precedence::prec}
 
   // @formatter:off
   std::array<ParseRule, 91> rules {{

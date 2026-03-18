@@ -73,21 +73,24 @@ std::shared_ptr<Expr> Parser::grouping() {
 std::shared_ptr<Expr> Parser::parse_expression(Precedence precedence) {
   advance();
   const ParseFn prefix_rule {rules[previous_.type].prefix};
-  if (!prefix_rule == nullptr) {
+  if (prefix_rule == nullptr) {
     errors_.emplace_back(previous_, "Expecting an expression");
     return nullptr;
   }
 
-  prefix_rule();
+  const auto expr {(this->*prefix_rule)()};
 
   while (precedence <= rules[current_.type].prec) {
     advance();
     const ParseFn infix_rule {rules[previous_.type].infix};
-    infix_rule();
+    (this->*infix_rule)();
   }
+
+  return expr;
 }
 
 bool Parser::parse() {
+  advance();
   ast_ = parse_expression(Precedence::NONE);
   return true;
 }
