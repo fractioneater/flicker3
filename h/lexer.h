@@ -23,6 +23,7 @@ public:
   std::unique_ptr<LexerError> context {};
 
   LexerError(size_t offset, std::string&& message) : offset {offset}, message {std::move(message)} {}
+
   LexerError(size_t offset, std::string&& message, LexerError&& context) : offset {offset}, message {std::move(message)},
     context {std::make_unique<LexerError>(std::move(context))} {}
 
@@ -93,29 +94,53 @@ class Lexer {
   std::vector<LexerError> errors_ {};
   std::vector<LexerError> warnings_ {};
 
-  [[nodiscard]] bool at_eof() const;
-  [[nodiscard]] char peek() const;
-  [[nodiscard]] char peek_next() const;
+  [[nodiscard]] bool at_eof() const { return offset_ >= src_length_; }
+
+  [[nodiscard]] char peek() const {
+    if (at_eof()) return '\0';
+    return src_[offset_];
+  }
+
+  [[nodiscard]] char peek_next() const {
+    if (offset_ + 1 >= src_length_) return '\0';
+    return src_[offset_ + 1];
+  }
 
   /**
    * Advance to the next char, handling newlines.
    * @return The current (now previous) character
    */
-  char advance();
+  char advance() {
+    ++offset_;
+    if (src_[offset_ - 1] == '\n') {
+      // Hopefully, when this is called, we shouldn't be at the point where we need to check for indentation again.
+      line_offsets_.emplace_back(offset_);
+    }
+    return src_[offset_ - 1];
+  }
 
   /**
    * Checks if the expected char is present, and if so, advances to the next.
    * @param expected The char to check for
    * @return Whether the expected char was found
    */
-  bool match(char expected);
+  bool match(char expected) {
+    if (at_eof()) return false;
+    if (src_[offset_] != expected) return false;
+    advance();
+    return true;
+  }
 
   /**
    * Creates a token of a specified type, initializing it with lexer state info.
    * @param type The type of token to create
    * @return A token with line, char, and col data
    */
-  [[nodiscard]] Token make_token(TokenType type); // To set prev_type_ automatically.
+  [[nodiscard]] Token make_token(TokenType type) {
+    prev_type_        = type;
+    const auto length = offset_ - start_offset_;
+    return Token {type, start_offset_, length};
+  }
 
   /**
    * Scans a block comment until the closing #. Allows, and tracks, nesting.
@@ -223,8 +248,11 @@ class Lexer {
   [[nodiscard]] Token eof();
 
 public:
-  explicit Lexer(std::string src);
-  ~Lexer();
+  explicit Lexer(std::string src) : src_ {std::move(src)}, src_length_ {std::ssize(src_)} {
+    indents_.emplace_back(0);
+  }
+
+  ~Lexer() = default;
 
   /**
    * The only function here that NEEDS to be exposed to the public. Retrieves the next token.

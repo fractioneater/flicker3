@@ -22,8 +22,6 @@ public:
   }
 };
 
-Parser::Parser(antlr4::CommonTokenStream* token_stream) : antlr_parser_ {token_stream} {}
-
 void Parser::output_dot() {
   if (!tree_) {
     std::cerr << "output_dot() couldn't run. There's no tree. Make sure you're parsing with ANTLR.\n";
@@ -52,11 +50,44 @@ bool Parser::parse_antlr() {
 
 // Non-ANTLR --------------------------------------------------
 
-std::shared_ptr<Expr> Parser::parse_expression() {
-  return std::make_shared<Literal>(2.0);
+std::shared_ptr<Expr> Parser::binary() {
+  const auto left {parse_expression(Precedence::NONE)};
+  const auto right {parse_expression(Precedence::NONE)};
+  return std::make_shared<Binary>(previous_, left, right);
+}
+
+std::shared_ptr<Expr> Parser::unary() {
+  return std::make_shared<Unary>(previous_, parse_expression(Precedence::NONE));
+}
+
+std::shared_ptr<Expr> Parser::literal() {
+  return std::make_shared<Literal>(320.424);
+}
+
+std::shared_ptr<Expr> Parser::grouping() {
+  const auto grouping {std::make_shared<Grouping>(parse_expression(Precedence::NONE))};
+  expect(TOKEN_RIGHT_PAREN, "Expecting a closing parenthesis");
+  return grouping;
+}
+
+std::shared_ptr<Expr> Parser::parse_expression(Precedence precedence) {
+  advance();
+  const ParseFn prefix_rule {rules[previous_.type].prefix};
+  if (!prefix_rule == nullptr) {
+    errors_.emplace_back(previous_, "Expecting an expression");
+    return nullptr;
+  }
+
+  prefix_rule();
+
+  while (precedence <= rules[current_.type].prec) {
+    advance();
+    const ParseFn infix_rule {rules[previous_.type].infix};
+    infix_rule();
+  }
 }
 
 bool Parser::parse() {
-  parse_expression();
+  ast_ = parse_expression(Precedence::NONE);
   return true;
 }

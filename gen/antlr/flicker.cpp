@@ -5317,47 +5317,6 @@ std::any flicker::LambdaContext::accept(tree::ParseTreeVisitor *visitor) {
   else
     return visitor->visitChildren(this);
 }
-//----------------- BitwisExprContext ------------------------------------------------------------------
-
-std::vector<flicker::ExpressionContext *> flicker::BitwisExprContext::expression() {
-  return getRuleContexts<flicker::ExpressionContext>();
-}
-
-flicker::ExpressionContext* flicker::BitwisExprContext::expression(size_t i) {
-  return getRuleContext<flicker::ExpressionContext>(i);
-}
-
-tree::TerminalNode* flicker::BitwisExprContext::PIPE() {
-  return getToken(flicker::PIPE, 0);
-}
-
-tree::TerminalNode* flicker::BitwisExprContext::AMPERSAND() {
-  return getToken(flicker::AMPERSAND, 0);
-}
-
-tree::TerminalNode* flicker::BitwisExprContext::CARET() {
-  return getToken(flicker::CARET, 0);
-}
-
-flicker::BitwisExprContext::BitwisExprContext(ExpressionContext *ctx) { copyFrom(ctx); }
-
-void flicker::BitwisExprContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<flickerListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterBitwisExpr(this);
-}
-void flicker::BitwisExprContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<flickerListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitBitwisExpr(this);
-}
-
-std::any flicker::BitwisExprContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<flickerVisitor*>(visitor))
-    return parserVisitor->visitBitwisExpr(this);
-  else
-    return visitor->visitChildren(this);
-}
 //----------------- NilCoalescingOpContext ------------------------------------------------------------------
 
 std::vector<flicker::ExpressionContext *> flicker::NilCoalescingOpContext::expression() {
@@ -5763,6 +5722,47 @@ void flicker::OrExprContext::exitRule(tree::ParseTreeListener *listener) {
 std::any flicker::OrExprContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<flickerVisitor*>(visitor))
     return parserVisitor->visitOrExpr(this);
+  else
+    return visitor->visitChildren(this);
+}
+//----------------- BitwiseExprContext ------------------------------------------------------------------
+
+std::vector<flicker::ExpressionContext *> flicker::BitwiseExprContext::expression() {
+  return getRuleContexts<flicker::ExpressionContext>();
+}
+
+flicker::ExpressionContext* flicker::BitwiseExprContext::expression(size_t i) {
+  return getRuleContext<flicker::ExpressionContext>(i);
+}
+
+tree::TerminalNode* flicker::BitwiseExprContext::PIPE() {
+  return getToken(flicker::PIPE, 0);
+}
+
+tree::TerminalNode* flicker::BitwiseExprContext::AMPERSAND() {
+  return getToken(flicker::AMPERSAND, 0);
+}
+
+tree::TerminalNode* flicker::BitwiseExprContext::CARET() {
+  return getToken(flicker::CARET, 0);
+}
+
+flicker::BitwiseExprContext::BitwiseExprContext(ExpressionContext *ctx) { copyFrom(ctx); }
+
+void flicker::BitwiseExprContext::enterRule(tree::ParseTreeListener *listener) {
+  auto parserListener = dynamic_cast<flickerListener *>(listener);
+  if (parserListener != nullptr)
+    parserListener->enterBitwiseExpr(this);
+}
+void flicker::BitwiseExprContext::exitRule(tree::ParseTreeListener *listener) {
+  auto parserListener = dynamic_cast<flickerListener *>(listener);
+  if (parserListener != nullptr)
+    parserListener->exitBitwiseExpr(this);
+}
+
+std::any flicker::BitwiseExprContext::accept(tree::ParseTreeVisitor *visitor) {
+  if (auto parserVisitor = dynamic_cast<flickerVisitor*>(visitor))
+    return parserVisitor->visitBitwiseExpr(this);
   else
     return visitor->visitChildren(this);
 }
@@ -6280,7 +6280,7 @@ flicker::ExpressionContext* flicker::expression(int precedence) {
         }
 
         case 7: {
-          auto newContext = _tracker.createInstance<BitwisExprContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
+          auto newContext = _tracker.createInstance<BitwiseExprContext>(_tracker.createInstance<ExpressionContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpression);
           setState(562);

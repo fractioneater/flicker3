@@ -155,7 +155,7 @@ expression
 	| expression (SLASH | STAR) expression                                  #factorExpr
 	| expression (PLUS | MINUS) expression                                  #termExpr
 	| expression (LT_LT | GT_GT) expression                                 #bitShiftExpr
-	| expression (PIPE | AMPERSAND | CARET) expression                      #bitwisExpr
+	| expression (PIPE | AMPERSAND | CARET) expression                      #bitwiseExpr
 	| expression IF expression ELSE expression                              #ifExpr
 	| expression (IS | IS NOT) expression                                   #isExpr
 	| expression (IN | NOT IN) expression                                   #inExpr

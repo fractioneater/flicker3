@@ -130,8 +130,6 @@ public:
 
     virtual std::any visitLambda(flicker::LambdaContext *context) = 0;
 
-    virtual std::any visitBitwisExpr(flicker::BitwisExprContext *context) = 0;
-
     virtual std::any visitNilCoalescingOp(flicker::NilCoalescingOpContext *context) = 0;
 
     virtual std::any visitMember(flicker::MemberContext *context) = 0;
@@ -155,6 +153,8 @@ public:
     virtual std::any visitAssignment(flicker::AssignmentContext *context) = 0;
 
     virtual std::any visitOrExpr(flicker::OrExprContext *context) = 0;
+
+    virtual std::any visitBitwiseExpr(flicker::BitwiseExprContext *context) = 0;
 
     virtual std::any visitCall(flicker::CallContext *context) = 0;
 

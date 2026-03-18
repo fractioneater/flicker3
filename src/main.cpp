@@ -61,9 +61,10 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
 
   antlr::LexerAdapter adapter {lexer, std::string(module)};
   antlr4::CommonTokenStream token_stream {&adapter};
-  Parser parser {&token_stream};
+  Parser parser {lexer};
 
-  token_stream.fill();
+  // If using ANTLR:
+  // token_stream.fill();
 
   #if DEBUG_PRINT_TOKENS
   for (const auto token : token_stream.getTokens()) {
