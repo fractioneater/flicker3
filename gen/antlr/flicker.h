@@ -1122,21 +1122,6 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
-  class  BitwisExprContext : public ExpressionContext {
-  public:
-    BitwisExprContext(ExpressionContext *ctx);
-
-    std::vector<ExpressionContext *> expression();
-    ExpressionContext* expression(size_t i);
-    antlr4::tree::TerminalNode *PIPE();
-    antlr4::tree::TerminalNode *AMPERSAND();
-    antlr4::tree::TerminalNode *CARET();
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
   class  NilCoalescingOpContext : public ExpressionContext {
   public:
     NilCoalescingOpContext(ExpressionContext *ctx);
@@ -1290,6 +1275,21 @@ public:
     std::vector<ExpressionContext *> expression();
     ExpressionContext* expression(size_t i);
     antlr4::tree::TerminalNode *OR();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  BitwiseExprContext : public ExpressionContext {
+  public:
+    BitwiseExprContext(ExpressionContext *ctx);
+
+    std::vector<ExpressionContext *> expression();
+    ExpressionContext* expression(size_t i);
+    antlr4::tree::TerminalNode *PIPE();
+    antlr4::tree::TerminalNode *AMPERSAND();
+    antlr4::tree::TerminalNode *CARET();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 

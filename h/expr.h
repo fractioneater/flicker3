@@ -33,14 +33,14 @@ public:
 
 class Binary : public Expr, public std::enable_shared_from_this<Binary> {
 public:
-  Binary(std::shared_ptr<Expr> left, const Token& op, std::shared_ptr<Expr> right) : left {std::move(left)}, op {op}, right {std::move(right)} {}
+  Binary(const Token& op, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right) : op {op}, left {std::move(left)}, right {std::move(right)} {}
 
   std::any accept(ExprVisitor& visitor) override {
     return visitor.visit_binary_expr(shared_from_this());
   }
 
-  const std::shared_ptr<Expr> left {};
   const Token op {};
+  const std::shared_ptr<Expr> left {};
   const std::shared_ptr<Expr> right {};
 };
 

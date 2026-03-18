@@ -183,9 +183,6 @@ public:
   virtual void enterLambda(flicker::LambdaContext * /*ctx*/) override { }
   virtual void exitLambda(flicker::LambdaContext * /*ctx*/) override { }
 
-  virtual void enterBitwisExpr(flicker::BitwisExprContext * /*ctx*/) override { }
-  virtual void exitBitwisExpr(flicker::BitwisExprContext * /*ctx*/) override { }
-
   virtual void enterNilCoalescingOp(flicker::NilCoalescingOpContext * /*ctx*/) override { }
   virtual void exitNilCoalescingOp(flicker::NilCoalescingOpContext * /*ctx*/) override { }
 
@@ -221,6 +218,9 @@ public:
 
   virtual void enterOrExpr(flicker::OrExprContext * /*ctx*/) override { }
   virtual void exitOrExpr(flicker::OrExprContext * /*ctx*/) override { }
+
+  virtual void enterBitwiseExpr(flicker::BitwiseExprContext * /*ctx*/) override { }
+  virtual void exitBitwiseExpr(flicker::BitwiseExprContext * /*ctx*/) override { }
 
   virtual void enterCall(flicker::CallContext * /*ctx*/) override { }
   virtual void exitCall(flicker::CallContext * /*ctx*/) override { }

@@ -237,10 +237,6 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitBitwisExpr(flicker::BitwisExprContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual std::any visitNilCoalescingOp(flicker::NilCoalescingOpContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -286,6 +282,10 @@ public:
   }
 
   virtual std::any visitOrExpr(flicker::OrExprContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitBitwiseExpr(flicker::BitwiseExprContext *ctx) override {
     return visitChildren(ctx);
   }
 

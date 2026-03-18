@@ -82,49 +82,7 @@ namespace Helpers {
   }
 }
 
-Lexer::Lexer(std::string src) : src_ {std::move(src)}, src_length_ {std::ssize(src_)} {
-  indents_.emplace_back(0);
-}
-
-Lexer::~Lexer() = default;
-
 // PRIVATE -------------------------------------------------------------------------------
-
-// CONSIDER! Use only basic methods as part of the lexer class, turn others into public functions that use the lexer's basic functionality.
-
-[[nodiscard]] bool Lexer::at_eof() const { return offset_ >= src_length_; }
-
-[[nodiscard]] char Lexer::peek() const {
-  if (at_eof()) return '\0';
-  return src_[offset_];
-}
-
-[[nodiscard]] char Lexer::peek_next() const {
-  if (offset_ + 1 >= src_length_) return '\0';
-  return src_[offset_ + 1];
-}
-
-char Lexer::advance() {
-  ++offset_;
-  if (src_[offset_ - 1] == '\n') {
-    // Hopefully, when this is called, we shouldn't be at the point where we need to check for indentation again.
-    line_offsets_.emplace_back(offset_);
-  }
-  return src_[offset_ - 1];
-}
-
-bool Lexer::match(char expected) {
-  if (at_eof()) return false;
-  if (src_[offset_] != expected) return false;
-  advance();
-  return true;
-}
-
-[[nodiscard]] Token Lexer::make_token(TokenType type) {
-  prev_type_        = type;
-  const auto length = offset_ - start_offset_;
-  return Token {type, start_offset_, length};
-}
 
 std::optional<Token> Lexer::block_comment() {
   const size_t start_offset {offset_ - 1};
