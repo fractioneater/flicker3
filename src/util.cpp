@@ -33,18 +33,25 @@ void formatting(int type) {
   #endif
 }
 
-void print_error(const Lexer& lexer, const LexerError& err, const std::string_view module, int type) {
-  const auto [line, col] {lexer.offset_to_line_col(err.offset)};
-
-  // moduleName@39:14 Unclosed block comment
-  // ^^^^^^^^^^^^^^^^ (this part is colored and bold.)
+void print_error(size_t line, size_t col, const std::string_view module, const std::string_view line_str, const char* message, int type) {
+  // moduleName@39:14 Block comment is missing closing '-#'
+  //    39 │ print 0xABCD #- unclosed!
+  //                      ^
   formatting(type);
-  std::cout << module << "@" << line << ":" << col << "\033[0m " << err.what() << '\n';
-
-  const std::string_view line_str {lexer.offset_to_line_string(err.offset)};
+  std::cout << module << "@" << line << ":" << col << "\033[0m " << message << '\n';
   std::cout << std::setw(5) << line << " │ " << line_str << '\n';
   std::cout << "        " << std::string(col - 1, ' ') << "\033[38;5;" << POINTER_COLOR << "m\033[1m^\033[0m\n";
+}
 
+void print_error(const Lexer& lexer, const LexerError& err, const std::string_view module, int type) {
+  const auto [line, col] {lexer.offset_to_line_col(err.offset)};
+  print_error(line, col, module, lexer.offset_to_line_string(err.offset), err.what(), type);
+  if (err.context) print_error(lexer, *err.context, module, 2);
+}
+
+void print_error(const Lexer& lexer, const ParserError& err, const std::string_view module, int type) {
+  const auto [line, col] {lexer.offset_to_line_col(err.token->start_offset)};
+  print_error(line, col, module, lexer.offset_to_line_string(err.token->start_offset), err.what(), type);
   if (err.context) print_error(lexer, *err.context, module, 2);
 }
 

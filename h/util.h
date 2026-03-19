@@ -8,22 +8,35 @@
 
 #include "antlr4-runtime.h"
 #include "lexer.h"
+#include "parser.h"
 
 /**
  * Prints an error, warning, or note, and all of its child contexts.
- * @param lexer The source file's lexer, to turn the offset into  line:column
- * @param err The error, warning, or note to print
- * @param module A module string
- * @param type 0 for error, 1 for warning, anything else (but use 2) for note
+ * @param line Line number (1-based)
+ * @param col Column number (1-based)
+ * @param module The name of the module being compiled
+ * @param line_str The line in the source code where the error occurs
+ * @param message Error message
+ * @param type 0 for error, 1 for warning, 2 for note
+ */
+void print_error(size_t line, size_t col, std::string_view module, std::string_view line_str, const char* message, int type);
+
+/**
+ * Wrapper around print_error(line, col, module, line_str, message, type).
  */
 void print_error(const Lexer& lexer, const LexerError& err, std::string_view module, int type);
 
+/**
+ * Wrapper around print_error(line, col, module, line_str, message, type).
+ */
+void print_error(const Lexer& lexer, const ParserError& err, std::string_view module, int type);
+
 namespace flicker {
- /**
-  * Exports an ANTLR parse tree to GraphViz DOT format.
-  * @param tree The parse tree to export
-  * @param parser The parser that generated the tree (used for rule names)
-  * @return A string containing the DOT representation of the tree
-  */
- std::string to_dot(antlr4::tree::ParseTree* tree, antlr4::Parser* parser);
+  /**
+   * Exports an ANTLR parse tree to GraphViz DOT format.
+   * @param tree The parse tree to export
+   * @param parser The parser that generated the tree (used for rule names)
+   * @return A string containing the DOT representation of the tree
+   */
+  std::string to_dot(antlr4::tree::ParseTree* tree, antlr4::Parser* parser);
 }

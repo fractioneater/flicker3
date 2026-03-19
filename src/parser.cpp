@@ -76,7 +76,7 @@ std::shared_ptr<Expr> Parser::literal() {
 }
 
 std::shared_ptr<Expr> Parser::grouping() {
-  const auto grouping {std::make_shared<Grouping>(parse_expression(Precedence::ASSIGNMENT))};
+  const auto grouping {std::make_shared<Grouping>(parse_expression(Precedence::BEGIN))};
   expect(TOKEN_RIGHT_PAREN, "Expecting a closing parenthesis");
   return grouping;
 }
@@ -85,7 +85,7 @@ std::shared_ptr<Expr> Parser::parse_expression(Precedence precedence) {
   advance();
   const PrefixFn prefix_rule {rules[previous_->type].prefix};
   if (prefix_rule == nullptr) {
-    errors_.emplace_back(*previous_, "Expecting an expression");
+    errors_.emplace_back(previous_, "Expecting an expression");
     return nullptr;
   }
 
@@ -106,13 +106,13 @@ void Parser::populate_token_vec() {
     tokens_.emplace_back(next);
     if (next.type == TOKEN_EOF) break;
   }
-  previous_ = tokens_.data();
-  current_ = tokens_.size() > 1 ? previous_ + 1 : previous_;
+  current_ = tokens_.data();
 }
 
-bool Parser::parse() {
-  if (tokens_.empty()) return false;
-  ast_ = parse_expression(Precedence::ASSIGNMENT);
-
-  return errors_.empty();
+void Parser::parse() {
+  if (tokens_.empty()) {
+    errors_.emplace_back("No tokens to parse");
+    return;
+  }
+  ast_ = parse_expression(Precedence::BEGIN);
 }
