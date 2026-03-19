@@ -1080,6 +1080,7 @@ public:
     ExpressionContext* expression(size_t i);
     antlr4::tree::TerminalNode *SLASH();
     antlr4::tree::TerminalNode *STAR();
+    antlr4::tree::TerminalNode *PERCENT();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 

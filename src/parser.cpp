@@ -50,47 +50,69 @@ bool Parser::parse_antlr() {
 
 // Non-ANTLR --------------------------------------------------
 
-std::shared_ptr<Expr> Parser::binary() {
-  const auto left {parse_expression(Precedence::NONE)};
-  const auto right {parse_expression(Precedence::NONE)};
-  return std::make_shared<Binary>(previous_, left, right);
+std::shared_ptr<Expr> Parser::binary(const std::shared_ptr<Expr>& left) {
+  Precedence prec {static_cast<int>(rules[previous_->type].prec) + 1};
+  if (previous_->type == TOKEN_STAR_STAR) prec = static_cast<Precedence>(static_cast<int>(prec) - 1);
+  return std::make_shared<Binary>(*previous_, left, parse_expression(prec));
 }
 
 std::shared_ptr<Expr> Parser::unary() {
-  return std::make_shared<Unary>(previous_, parse_expression(Precedence::NONE));
+  auto prec {Precedence::PREFIX};
+  if (previous_->type == TOKEN_NOT) prec = Precedence::NOT;
+  return std::make_shared<Unary>(*previous_, parse_expression(prec));
 }
 
+// ReSharper disable once CppMemberFunctionMayBeConst
 std::shared_ptr<Expr> Parser::literal() {
-  return std::make_shared<Literal>(320.424);
+  switch (previous_->type) {
+    case TOKEN_TRUE: return std::make_shared<Literal>(true);
+    case TOKEN_FALSE: return std::make_shared<Literal>(false);
+    case TOKEN_NIL: return std::make_shared<Literal>(nullptr);
+    case TOKEN_NUMBER:
+    case TOKEN_STRING:
+    case TOKEN_CHAR: return std::make_shared<Literal>(previous_->value);
+    default: throw std::logic_error {"unreachable"};
+  }
 }
 
 std::shared_ptr<Expr> Parser::grouping() {
-  const auto grouping {std::make_shared<Grouping>(parse_expression(Precedence::NONE))};
+  const auto grouping {std::make_shared<Grouping>(parse_expression(Precedence::ASSIGNMENT))};
   expect(TOKEN_RIGHT_PAREN, "Expecting a closing parenthesis");
   return grouping;
 }
 
 std::shared_ptr<Expr> Parser::parse_expression(Precedence precedence) {
   advance();
-  const ParseFn prefix_rule {rules[previous_.type].prefix};
+  const PrefixFn prefix_rule {rules[previous_->type].prefix};
   if (prefix_rule == nullptr) {
-    errors_.emplace_back(previous_, "Expecting an expression");
+    errors_.emplace_back(*previous_, "Expecting an expression");
     return nullptr;
   }
 
-  const auto expr {(this->*prefix_rule)()};
+  auto expr {(this->*prefix_rule)()};
 
-  while (precedence <= rules[current_.type].prec) {
+  while (precedence <= rules[current_->type].prec) {
     advance();
-    const ParseFn infix_rule {rules[previous_.type].infix};
-    (this->*infix_rule)();
+    const InfixFn infix_rule {rules[previous_->type].infix};
+    expr = (this->*infix_rule)(expr);
   }
 
   return expr;
 }
 
+void Parser::populate_token_vec() {
+  while (true) {
+    const auto next {lexer_.next_token()};
+    tokens_.emplace_back(next);
+    if (next.type == TOKEN_EOF) break;
+  }
+  previous_ = tokens_.data();
+  current_ = tokens_.size() > 1 ? previous_ + 1 : previous_;
+}
+
 bool Parser::parse() {
-  advance();
-  ast_ = parse_expression(Precedence::NONE);
-  return true;
+  if (tokens_.empty()) return false;
+  ast_ = parse_expression(Precedence::ASSIGNMENT);
+
+  return errors_.empty();
 }

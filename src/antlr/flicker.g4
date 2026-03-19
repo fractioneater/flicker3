@@ -152,7 +152,7 @@ expression
 	| expression QUEST_COLON expression                                     #nilCoalescingOp
 	| <assoc=right> expression STAR_STAR expression                         #powerExpr
 	| (MINUS | BANG | TILDE | PLUS_PLUS | MINUS_MINUS) expression           #prefixExpr
-	| expression (SLASH | STAR) expression                                  #factorExpr
+	| expression (SLASH | STAR | PERCENT) expression                        #factorExpr
 	| expression (PLUS | MINUS) expression                                  #termExpr
 	| expression (LT_LT | GT_GT) expression                                 #bitShiftExpr
 	| expression (PIPE | AMPERSAND | CARET) expression                      #bitwiseExpr

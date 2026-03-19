@@ -65,6 +65,8 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
 
   // If using ANTLR:
   // token_stream.fill();
+  // Otherwise:
+  parser.populate_token_vec();
 
   #if DEBUG_PRINT_TOKENS
   for (const auto token : token_stream.getTokens()) {

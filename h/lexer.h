@@ -7,10 +7,12 @@
 #pragma once
 
 #include <algorithm>
+#include <any>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 #include <bits/stdint-uintn.h>
 
@@ -70,6 +72,8 @@ struct Token {
   size_t start_offset {};
   size_t length {}; // Number of chars that belong to this token.
   // End column can be computed with (col + length). End char can be computed with (start_char + length)
+
+  std::any value {};
 };
 
 class Lexer {
@@ -134,12 +138,25 @@ class Lexer {
   /**
    * Creates a token of a specified type, initializing it with lexer state info.
    * @param type The type of token to create
-   * @return A token with line, char, and col data
+   * @return A token with type, offset, and length data
    */
   [[nodiscard]] Token make_token(TokenType type) {
     prev_type_        = type;
     const auto length = offset_ - start_offset_;
     return Token {type, start_offset_, length};
+  }
+
+  /**
+   * Creates a token of a specified type, initializing it with lexer state info and a value.
+   * Relies on make_token(type).
+   * @param type The type of token to create
+   * @param value The token's value (number, string, char)
+   * @return A token with type, offset, length, and value data
+   */
+  [[nodiscard]] Token make_token(TokenType type, std::any value) {
+    Token t {make_token(type)};
+    t.value = std::move(value);
+    return t;
   }
 
   /**
