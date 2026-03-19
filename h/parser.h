@@ -11,13 +11,15 @@
 
 class ParserError {
 public:
-  Token token {};
+  Token* token {};
   std::string message {};
   std::unique_ptr<ParserError> context {};
 
-  ParserError(const Token& token, std::string&& message) : token {token}, message {std::move(message)} {}
+  explicit ParserError(std::string&& message) : message{std::move(message)} {}
 
-  ParserError(const Token& token, std::string&& message, ParserError&& context) : token {token}, message {std::move(message)},
+  ParserError(Token* token, std::string&& message) : token {token}, message {std::move(message)} {}
+
+  ParserError(Token* token, std::string&& message, ParserError&& context) : token {token}, message {std::move(message)},
     context {std::make_unique<ParserError>(std::move(context))} {}
 
   void add_context(ParserError&& c) {
@@ -29,6 +31,7 @@ public:
 
 enum class Precedence {
   NONE,
+  BEGIN,          // used when calling parse_expression() at top level, or in parentheses
   ASSIGNMENT,     // = | -= | += | *= | /= | **= | |= | &= | ^= | %=
   NOT,            // not
   OR,             // or
@@ -117,7 +120,7 @@ public:
       advance();
       return;
     }
-    errors_.emplace_back(*current_, std::string(message));
+    errors_.emplace_back(current_, std::string(message));
   }
 
   std::shared_ptr<Expr> binary(const std::shared_ptr<Expr>& left);
@@ -138,8 +141,12 @@ public:
    * Parses the input token stream and generates an AST which is stored in ast_ if there are no errors.
    * @return True if parsing completes without syntax errors; otherwise false
    */
-  bool parse();
+  void parse();
 
+  const std::vector<ParserError>& get_errors() { return errors_; }
+  const std::vector<ParserError>& get_warnings() { return warnings_; }
+
+  // Helper data structures and parse rules
   using PrefixFn = std::shared_ptr<Expr>(Parser::*)();
   using InfixFn  = std::shared_ptr<Expr>(Parser::*)(const std::shared_ptr<Expr>&);
 

@@ -102,9 +102,14 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
     return INTERPRET_COMPILE_ERROR;
   }
 
-  const bool parse_success {parser.parse()};
+  parser.parse();
 
-  if (!parse_success) {
+  for (const auto& err : parser.get_errors())
+    print_error(lexer, err, module, 0);
+  for (const auto& warning : parser.get_warnings())
+    print_error(lexer, warning, module, 1);
+
+  if (!parser.get_errors().empty()) {
     std::cout << "Parser error, compiling halted\n";
     return INTERPRET_COMPILE_ERROR;
   }
