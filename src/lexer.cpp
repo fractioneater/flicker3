@@ -11,11 +11,6 @@
 #include <iostream>
 #include <utility>
 
-/** TODO in the lexer:
- *    Add values for chars + strings
- *    Parse numbers in the number() function
- */
-
 namespace Helpers {
   // The string on the left represents how these keywords should show up in USER CODE.
   // So, for example, if I wanted the "nil" keyword to become "NIL" or "Nil", I'd change it here.
@@ -288,11 +283,11 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point, size_t se
   }
   // @formatter:on again
 
-  return make_token(type);
+  return make_token(type, buffer);
 }
 
 [[nodiscard]] Token Lexer::character() {
-  [[maybe_unused]] char value {}; //- TEMP (maybe_unused for -Werror)
+  char value {};
   const char c {advance()};
 
   if (c == '\'') {
@@ -344,7 +339,7 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point, size_t se
     return make_token(TOKEN_CHAR);
   }
 
-  return make_token(TOKEN_CHAR);
+  return make_token(TOKEN_CHAR, value);
 }
 
 void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
@@ -382,7 +377,9 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
     warnings_.emplace_back(offset_, "Character appears to be part of the number, but is actually not");
   }
 
-  return make_token(TOKEN_NUMBER);
+  auto hex {static_cast<double>(std::stoll(src_.substr(start_offset_, offset_ - start_offset_), nullptr, 16))};
+  std::cout << hex << '\n'; // TODO: Underscores
+  return make_token(TOKEN_NUMBER, hex);
 }
 
 [[nodiscard]] Token Lexer::binary_number() {
@@ -398,7 +395,9 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
     warnings_.emplace_back(offset_, "Character appears to be part of the number, but is actually not");
   }
 
-  return make_token(TOKEN_NUMBER);
+  auto binary {static_cast<double>(std::stoll(src_.substr(start_offset_, offset_ - start_offset_), nullptr, 2))};
+  std::cout << binary << '\n'; // TODO: Underscores
+  return make_token(TOKEN_NUMBER, binary);
 }
 
 [[nodiscard]] Token Lexer::number() {
@@ -435,7 +434,7 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
       warnings_.emplace_back(offset_, "Character appears to be part of the number, but is actually not");
   }
 
-  return make_token(TOKEN_NUMBER);
+  return make_token(TOKEN_NUMBER, 10); // TODO
 }
 
 // This function will only be called at the start of a line.

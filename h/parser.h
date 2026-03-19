@@ -58,8 +58,9 @@ class Parser {
   Lexer& lexer_;
   std::shared_ptr<Expr> ast_ {};
 
-  Token current_ {};
-  Token previous_ {};
+  std::vector<Token> tokens_ {};
+  Token* current_ {};
+  Token* previous_ {};
 
   std::vector<ParserError> errors_ {};
   std::vector<ParserError> warnings_ {};
@@ -83,7 +84,7 @@ public:
 
   void advance() {
     previous_ = current_;
-    current_  = lexer_.next_token();
+    if (current_->type != TOKEN_EOF) ++current_;
   }
 
   /**
@@ -92,7 +93,7 @@ public:
    * @return A boolean, true if the token matches 'type'
    */
   [[nodiscard]] bool check(TokenType type) const {
-    return current_.type == type;
+    return current_->type == type;
   }
 
   /**
@@ -112,14 +113,14 @@ public:
    * @param message The error message if the expected TokenType is not found
    */
   void expect(TokenType type, std::string_view message) {
-    if (current_.type != type) {
+    if (current_->type != type) {
       advance();
       return;
     }
-    errors_.emplace_back(current_, std::string(message));
+    errors_.emplace_back(*current_, std::string(message));
   }
 
-  std::shared_ptr<Expr> binary();
+  std::shared_ptr<Expr> binary(const std::shared_ptr<Expr>& left);
   std::shared_ptr<Expr> unary();
   std::shared_ptr<Expr> literal();
   std::shared_ptr<Expr> grouping();
@@ -127,16 +128,24 @@ public:
   std::shared_ptr<Expr> parse_expression(Precedence precedence);
 
   /**
- * Parses the input token stream and generates an AST which is stored in ast_ if there are no errors.
- * @return True if parsing completes without syntax errors; otherwise false
- */
+   * Fill the tokens_ vector with tokens from the lexer, up to ONE end-of-file token.
+   * This allows the lexer to display all of its errors and warnings before the parser begins.
+   * Also initializes current_ and previous_ (IMPORTANT! Must be called for this purpose).
+   */
+  void populate_token_vec();
+
+  /**
+   * Parses the input token stream and generates an AST which is stored in ast_ if there are no errors.
+   * @return True if parsing completes without syntax errors; otherwise false
+   */
   bool parse();
 
-  using ParseFn = std::shared_ptr<Expr>(Parser::*)();
+  using PrefixFn = std::shared_ptr<Expr>(Parser::*)();
+  using InfixFn  = std::shared_ptr<Expr>(Parser::*)(const std::shared_ptr<Expr>&);
 
   struct ParseRule {
-    ParseFn prefix;
-    ParseFn infix;
+    PrefixFn prefix;
+    InfixFn infix;
     Precedence prec;
   };
 
@@ -160,7 +169,7 @@ public:
     /* TOKEN_STAR_STAR     */ INFIX(binary, EXPONENT),
     /* TOKEN_STAR_EQ       */ UNUSED,
     /* TOKEN_STAR_STAR_EQ  */ UNUSED,
-    /* TOKEN_MINUS         */ INFIX(binary, TERM),
+    /* TOKEN_MINUS         */ BOTH(unary, binary, TERM),
     /* TOKEN_MINUS_MINUS   *//* BOTH(unary, postfix, POSTFIX),*/ UNUSED,
     /* TOKEN_RIGHT_ARROW   */ UNUSED,
     /* TOKEN_MINUS_EQ      */ UNUSED,
@@ -183,7 +192,7 @@ public:
     /* TOKEN_COLON_COLON   *//* INFIX(scope_access, ATOM),*/ UNUSED,
     /* TOKEN_SLASH         */ INFIX(binary, FACTOR),
     /* TOKEN_SLASH_EQ      */ UNUSED,
-    /* TOKEN_PERCENT       */ INFIX(binary, FACTOR), // TODO: Where does % go?
+    /* TOKEN_PERCENT       */ INFIX(binary, FACTOR),
     /* TOKEN_PERCENT_EQ    */ UNUSED,
     /* TOKEN_PIPE          */ INFIX(binary, BIT_OR),
     /* TOKEN_PIPE_EQ       */ UNUSED,
