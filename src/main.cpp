@@ -58,14 +58,9 @@ std::string read_entire_file(const char* path) {
 
 InterpretResult interpret(const std::string& source, std::string_view module) {
   Lexer lexer {source};
-
-  antlr::LexerAdapter adapter {lexer, std::string(module)};
-  antlr4::CommonTokenStream token_stream {&adapter};
   Parser parser {lexer};
 
-  // If using ANTLR:
-  // token_stream.fill();
-  // Otherwise:
+  // Run the lexer.
   parser.populate_token_vec();
 
   #if DEBUG_PRINT_TOKENS

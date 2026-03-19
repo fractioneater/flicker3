@@ -434,7 +434,7 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
       warnings_.emplace_back(offset_, "Character appears to be part of the number, but is actually not");
   }
 
-  return make_token(TOKEN_NUMBER, 10); // TODO
+  return make_token(TOKEN_NUMBER, 10.0); // TODO
 }
 
 // This function will only be called at the start of a line.
