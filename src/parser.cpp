@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <iostream>
 
+#include "flicker.h"
 #include "util.h"
 
 // ANTLR --------------------------------------------------
@@ -22,30 +23,24 @@ public:
   }
 };
 
-void Parser::output_dot() {
-  if (!tree_) {
-    std::cerr << "output_dot() couldn't run. There's no tree. Make sure you're parsing with ANTLR.\n";
-    return;
-  }
+// If you're trying to get output_dot for ANTLR, you'll need to revert the util file back to the previous version (before 3/19/2026).
+// void Parser::output_dot(antlr4::tree::ParseTree* tree) {
+//   if (std::ofstream out {DEBUG_DOT_FILENAME}) {
+//     out << to_dot(tree, &antlr_parser_) << '\n';
+//     out.close();
+//     std::cout << "Parse tree exported to " << DEBUG_DOT_FILENAME << '\n';
+//   } else {
+//     std::cerr << "Could not open " << DEBUG_DOT_FILENAME << " to export parse tree\n";
+//   }
+// }
 
-  if (std::ofstream out {DEBUG_DOT_FILENAME}) {
-    out << flicker::to_dot(tree_, &antlr_parser_) << '\n';
-    out.close();
-    std::cout << "Parse tree exported to " << DEBUG_DOT_FILENAME << '\n';
-  } else {
-    std::cerr << "Could not open " << DEBUG_DOT_FILENAME << " to export parse tree\n";
-  }
-}
-
-bool Parser::parse_antlr() {
+antlr::flicker::ProgramContext* Parser::parse_antlr() {
   FlickerErrorListener error_listener {};
   antlr_parser_.removeErrorListeners();
   antlr_parser_.addErrorListener(&error_listener);
 
   // Run the thing!
-  tree_ = antlr_parser_.program();
-
-  return antlr_parser_.getNumberOfSyntaxErrors() == 0;
+  return antlr_parser_.program();
 }
 
 // Non-ANTLR --------------------------------------------------
@@ -53,6 +48,8 @@ bool Parser::parse_antlr() {
 std::shared_ptr<Expr> Parser::binary(const std::shared_ptr<Expr>& left) {
   Precedence prec {static_cast<int>(rules[previous_->type].prec) + 1};
   if (previous_->type == TOKEN_STAR_STAR) prec = static_cast<Precedence>(static_cast<int>(prec) - 1);
+  if (previous_->type == TOKEN_NOT) match(TOKEN_IN);
+  if (previous_->type == TOKEN_IS) match(TOKEN_NOT);
   return std::make_shared<Binary>(*previous_, left, parse_expression(prec));
 }
 
@@ -115,4 +112,19 @@ void Parser::parse() {
     return;
   }
   ast_ = parse_expression(Precedence::BEGIN);
+}
+
+void Parser::output_dot() const {
+  if (!ast_) {
+    std::cerr << "Parser's ast_ is nullptr; run parse() before calling\n";
+    return;
+  }
+
+  if (std::ofstream out {DEBUG_DOT_FILENAME}) {
+    out << to_dot(ast_) << '\n';
+    out.close();
+    std::cout << "Parse tree exported to " << DEBUG_DOT_FILENAME << '\n';
+  } else {
+    std::cerr << "Could not open " << DEBUG_DOT_FILENAME << " to export parse tree\n";
+  }
 }

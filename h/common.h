@@ -22,7 +22,7 @@
 #define DEBUG_LOG_GC 0
 
 // Print the parse tree in DOT format for GraphViz.
-#define DEBUG_PRINT_DOT 0
+#define DEBUG_PRINT_DOT 1
 #define DEBUG_DOT_FILENAME "./tree.dot"
 
 // OTHER FLAGS ---------------------------------------------------------------------------

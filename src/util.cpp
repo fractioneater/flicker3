@@ -55,76 +55,121 @@ void print_error(const Lexer& lexer, const ParserError& err, const std::string_v
   if (err.context) print_error(lexer, *err.context, module, 2);
 }
 
-namespace flicker {
-  static std::pair<std::string, bool> escape(const std::string& s) {
-    std::ostringstream oss;
-    bool whitespace = true;
-    for (const auto c : s) {
-      switch (c) {
-        case '"': oss << "\\\"";
-          break;
-        case '\\': oss << "\\\\";
-          break;
-        case '\n': oss << "\\\\n";
-          break;
-        case '\r': oss << "\\\\r";
-          break;
-        case '\t': oss << "\\\\t";
-          break;
-        case ' ': break;
-        default: oss << c;
-          whitespace = false;
-          break;
-      }
-    }
-    return {oss.str(), whitespace};
+// Returns a vector of a node's children.
+class NodeChildrenVisitor : public ExprVisitor<std::vector<std::shared_ptr<Expr>>> {
+  std::vector<std::shared_ptr<Expr>> visit_binary_expr(std::shared_ptr<Binary> expr) override {
+    return std::vector {expr->left, expr->right};
   }
 
-  // This code is not the greatest (well, I'm assuming this because I didn't write it). It was not intended to be permanent, but I now realize that a
-  // parse tree visualization is actually rather helpful, so I might keep it. When ANTLR goes away, it'll get polished.
-  static void walk(antlr4::tree::ParseTree* node, antlr4::Parser* parser, std::ostringstream& out, int& id_counter, int parent_id) {
-    const int my_id = id_counter++;
-    std::string label;
+  std::vector<std::shared_ptr<Expr>> visit_unary_expr(std::shared_ptr<Unary> expr) override {
+    return std::vector {expr->expr};
+  }
 
-    while (node->children.size() == 1) {
-      node = node->children[0];
-    }
+  std::vector<std::shared_ptr<Expr>> visit_grouping_expr(std::shared_ptr<Grouping> expr) override {
+    return std::vector {expr->expr};
+  }
 
-    if (const auto* ctx = dynamic_cast<antlr4::ParserRuleContext*>(node)) {
-      label = parser->getRuleNames()[ctx->getRuleIndex()];
-      out << "  n" << my_id << " [label=\"" << escape(label).first << "\", shape=box, color=cornflowerblue, fontcolor=blue];\n";
-    } else if (const auto* terminal = dynamic_cast<antlr4::tree::TerminalNode*>(node)) {
-      const auto* token = terminal->getSymbol();
-      label             = token->getText();
-      if (token->getType() == antlr4::Token::EOF) {
-        label = "EOF";
-      }
-      const auto [txt,whitespace] {escape(label)};
-      out << "  n" << my_id << " [label=\"" << txt << "\", shape=ellipse, ";
-      if (!whitespace) out << "color=red, fontcolor=maroon];\n";
-      else out << "color=black, fontcolor=black];\n";
-    } else {
-      label = "Unknown";
-      out << "  n" << my_id << " [label=\"" << escape(label).first << "\"];\n";
-    }
+  std::vector<std::shared_ptr<Expr>> visit_literal_expr(std::shared_ptr<Literal> expr) override {
+    return {};
+  }
+};
 
-    if (parent_id != -1) {
-      out << "  n" << parent_id << " -> n" << my_id << ";\n";
-    }
-
-    for (const auto& i : node->children) {
-      walk(i, parser, out, id_counter, my_id);
+// Returns the node's name as a string.
+class NodeNameVisitor : public ExprVisitor<std::string> {
+  std::string visit_binary_expr(std::shared_ptr<Binary> expr) override {
+    switch (expr->op.type) {
+      case TOKEN_STAR: return "binary *";
+      case TOKEN_STAR_STAR: return "binary **";
+      case TOKEN_MINUS: return "binary -";
+      case TOKEN_PLUS: return "binary +";
+      case TOKEN_DOT_DOT: return "binary ..";
+      case TOKEN_DOT_DOT_LT: return "binary ..<";
+      case TOKEN_QUEST_COLON: return "binary ?:";
+      case TOKEN_GT: return "binary >";
+      case TOKEN_GT_GT: return "binary >>";
+      case TOKEN_GT_EQ: return "binary >=";
+      case TOKEN_LT: return "binary <";
+      case TOKEN_LT_LT: return "binary <<";
+      case TOKEN_LT_EQ: return "binary <=";
+      case TOKEN_SLASH: return "binary /";
+      case TOKEN_PERCENT: return "binary %";
+      case TOKEN_PIPE: return "binary |";
+      case TOKEN_CARET: return "binary ^";
+      case TOKEN_AMPERSAND: return "binary &";
+      case TOKEN_BANG_EQ: return "binary !=";
+      case TOKEN_EQ_EQ: return "binary ==";
+      case TOKEN_AND: return "binary and";
+      case TOKEN_IN: return "binary (not) in"; // expr.op is the last token, so in this case it's ambiguous. TODO: if the AST can't store that, then ...
+      case TOKEN_IS: return "binary is";       // at least "is" and "is not" work.
+      case TOKEN_NOT: return "binary is not";
+      case TOKEN_OR: return "binary or";
+      default: return "binary";
     }
   }
 
-  std::string to_dot(antlr4::tree::ParseTree* tree, antlr4::Parser* parser) {
-    std::ostringstream out;
-    out << "digraph ParseTree {\n";
-    out << "  rankdir=TB;\n";
-    out << "  node [fontname=\"Iosevka Term SS09\"];\n";
-    int id_counter = 0;
-    walk(tree, parser, out, id_counter, -1);
-    out << "}\n";
-    return out.str();
+  std::string visit_unary_expr(std::shared_ptr<Unary> expr) override {
+    switch (expr->op.type) {
+      case TOKEN_MINUS: return "unary -";
+      case TOKEN_BANG: return "unary !";
+      case TOKEN_TILDE: return "unary ~";
+      case TOKEN_MINUS_MINUS: return "prefix --";
+      case TOKEN_PLUS_PLUS: return "prefix ++";
+      case TOKEN_NOT: return "unary not";
+      default: return "unary";
+    }
   }
+
+  std::string visit_grouping_expr(std::shared_ptr<Grouping> expr) override {
+    return "( )";
+  }
+
+  std::string visit_literal_expr(std::shared_ptr<Literal> expr) override {
+    if (expr->value.type() == typeid(double)) {
+      return std::to_string(std::any_cast<double>(expr->value));
+    }
+    if (expr->value.type() == typeid(char)) {
+      return std::to_string(std::any_cast<char>(expr->value));
+    }
+    if (expr->value.type() == typeid(std::string)) {
+      return std::any_cast<std::string>(expr->value);
+    }
+    if (expr->value.type() == typeid(bool)) {
+      if (std::any_cast<bool>(expr->value))
+        return "true";
+      return "false";
+    }
+    if (expr->value.type() == typeid(nullptr)) {
+      return "nil";
+    }
+    return "unknown literal";
+  }
+};
+
+static void walk(
+  const std::shared_ptr<Expr>& node, std::ostringstream& out, int& id_counter, int parent_id, NodeNameVisitor& name_visitor,
+  NodeChildrenVisitor& children_visitor
+) {
+  const int my_id = id_counter++;
+  const std::string label {node->accept(name_visitor)};
+
+  out << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=cornflowerblue, fontcolor=blue];\n";
+
+  if (parent_id != -1)
+    out << "  n" << parent_id << " -> n" << my_id << ";\n";
+
+  for (const auto& child : node->accept(children_visitor))
+    walk(child, out, id_counter, my_id, name_visitor, children_visitor);
+}
+
+std::string to_dot(const std::shared_ptr<Expr>& tree) {
+  NodeNameVisitor name_visitor {};
+  NodeChildrenVisitor children_visitor {};
+  std::ostringstream out;
+  out << "digraph Expr {\n";
+  out << "  rankdir=TB;\n";
+  out << "  node [fontname=\"Iosevka Term SS09\"];\n";
+  int id_counter {};
+  walk(tree, out, id_counter, -1, name_visitor, children_visitor);
+  out << "}\n";
+  return out.str();
 }

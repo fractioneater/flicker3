@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "antlr4-runtime.h"
 #include "lexer.h"
 #include "parser.h"
 
@@ -31,12 +30,9 @@ void print_error(const Lexer& lexer, const LexerError& err, std::string_view mod
  */
 void print_error(const Lexer& lexer, const ParserError& err, std::string_view module, int type);
 
-namespace flicker {
-  /**
-   * Exports an ANTLR parse tree to GraphViz DOT format.
-   * @param tree The parse tree to export
-   * @param parser The parser that generated the tree (used for rule names)
-   * @return A string containing the DOT representation of the tree
-   */
-  std::string to_dot(antlr4::tree::ParseTree* tree, antlr4::Parser* parser);
-}
+/**
+ * Exports a  parse tree to GraphViz DOT format.
+ * @param tree The parse tree to export
+ * @return A string containing the DOT representation of the tree
+ */
+std::string to_dot(const std::shared_ptr<Expr>& tree);
