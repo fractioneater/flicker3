@@ -23,7 +23,7 @@
 
 // Print the parse tree in DOT format for GraphViz.
 #define DEBUG_PRINT_DOT 1
-#define DEBUG_DOT_FILENAME "./tree.dot"
+#define DEBUG_DOT_FILENAME "/home/fractioneater/stuff/git/flicker-3/tree.dot"
 
 // OTHER FLAGS ---------------------------------------------------------------------------
 
