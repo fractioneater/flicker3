@@ -73,8 +73,9 @@ std::shared_ptr<Expr> Parser::literal() {
 }
 
 std::shared_ptr<Expr> Parser::grouping() {
+  ParserError start_context {previous_, "To match this one"};
   const auto grouping {std::make_shared<Grouping>(parse_expression(Precedence::BEGIN))};
-  expect(TOKEN_RIGHT_PAREN, "Expecting a closing parenthesis");
+  expect(TOKEN_RIGHT_PAREN, "Expecting a closing parenthesis", start_context);
   return grouping;
 }
 
