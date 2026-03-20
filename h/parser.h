@@ -112,15 +112,29 @@ public:
 
   /**
    * If the next token matches a certain type, advances, otherwise creates an error.
-   * @param type The expected token type of the next token
-   * @param message The error message if the expected TokenType is not found
+   * @param type The expected type of the next token
+   * @param message The error message in case the expected type is not found
    */
   void expect(TokenType type, std::string_view message) {
-    if (current_->type != type) {
+    if (current_->type == type) {
       advance();
       return;
     }
     errors_.emplace_back(current_, std::string(message));
+  }
+
+  /**
+   * If the next token matches a certain type, advances, otherwise creates an error.
+   * @param type The expected type of the next token
+   * @param message The error message in case the expected type is not found
+   * @param context A context to add to the error
+   */
+  void expect(TokenType type, std::string_view message, ParserError& context) {
+    if (current_->type == type) {
+      advance();
+      return;
+    }
+    errors_.emplace_back(current_, std::string(message), std::move(context));
   }
 
   std::shared_ptr<Expr> binary(const std::shared_ptr<Expr>& left);
@@ -162,67 +176,67 @@ public:
     Precedence prec;
   };
 
-  #define UNUSED              ParseRule {nullptr, nullptr, Precedence::NONE}
-  #define INFIX(fn, prec)     ParseRule {nullptr, &Parser::fn, Precedence::prec}
-  #define PREFIX(fn, prec)    ParseRule {&Parser::fn, nullptr, Precedence::prec}
-  #define BOTH(pre, in, prec) ParseRule {&Parser::pre, &Parser::in, Precedence::prec}
+  #define UNUSED                ParseRule {nullptr, nullptr, Precedence::NONE}
+  #define INFIX_RULE(fn, prec)  ParseRule {nullptr, &Parser::fn, Precedence::prec}
+  #define PREFIX_RULE(fn, prec) ParseRule {&Parser::fn, nullptr, Precedence::prec}
+  #define BOTH(pre, in, prec)   ParseRule {&Parser::pre, &Parser::in, Precedence::prec}
 
   // @formatter:off
   std::array<ParseRule, 91> rules {{
-    /* TOKEN_LEFT_PAREN    *//* BOTH(grouping, call, POSTFIX),*/ PREFIX(grouping, NONE),
+    /* TOKEN_LEFT_PAREN    *//* BOTH(grouping, call, POSTFIX),*/ PREFIX_RULE(grouping, NONE),
     /* TOKEN_RIGHT_PAREN   */ UNUSED,
     /* TOKEN_LEFT_BRACKET  *//* BOTH(collection, subscript, POSTFIX),*/ UNUSED,
     /* TOKEN_RIGHT_BRACKET */ UNUSED,
-    /* TOKEN_LEFT_BRACE    *//* INFIX(lambda_call, POSTFIX),*/ UNUSED,
+    /* TOKEN_LEFT_BRACE    *//* INFIX_RULE(lambda_call, POSTFIX),*/ UNUSED,
     /* TOKEN_RIGHT_BRACE   */ UNUSED,
     /* TOKEN_SEMICOLON     */ UNUSED,
     /* TOKEN_COMMA         */ UNUSED,
-    /* TOKEN_TILDE         */ PREFIX(unary, PREFIX),
-    /* TOKEN_STAR          */ INFIX(binary, FACTOR),
-    /* TOKEN_STAR_STAR     */ INFIX(binary, EXPONENT),
+    /* TOKEN_TILDE         */ PREFIX_RULE(unary, PREFIX),
+    /* TOKEN_STAR          */ INFIX_RULE(binary, FACTOR),
+    /* TOKEN_STAR_STAR     */ INFIX_RULE(binary, EXPONENT),
     /* TOKEN_STAR_EQ       */ UNUSED,
     /* TOKEN_STAR_STAR_EQ  */ UNUSED,
     /* TOKEN_MINUS         */ BOTH(unary, binary, TERM),
     /* TOKEN_MINUS_MINUS   *//* BOTH(unary, postfix, POSTFIX),*/ UNUSED,
     /* TOKEN_RIGHT_ARROW   */ UNUSED,
     /* TOKEN_MINUS_EQ      */ UNUSED,
-    /* TOKEN_PLUS          */ INFIX(binary, TERM),
+    /* TOKEN_PLUS          */ INFIX_RULE(binary, TERM),
     /* TOKEN_PLUS_PLUS     *//* BOTH(unary, postfix, POSTFIX),*/ UNUSED,
     /* TOKEN_PLUS_EQ       */ UNUSED,
-    /* TOKEN_DOT           *//* INFIX(dot, POSTFIX),*/ UNUSED,
-    /* TOKEN_DOT_DOT       */ INFIX(binary, RANGE),
-    /* TOKEN_DOT_DOT_LT    */ INFIX(binary, RANGE),
+    /* TOKEN_DOT           *//* INFIX_RULE(dot, POSTFIX),*/ UNUSED,
+    /* TOKEN_DOT_DOT       */ INFIX_RULE(binary, RANGE),
+    /* TOKEN_DOT_DOT_LT    */ INFIX_RULE(binary, RANGE),
     /* TOKEN_QUEST         */ UNUSED,
-    /* TOKEN_QUEST_COLON   */ INFIX(binary, NIL_COALESCING),
-    /* TOKEN_QUEST_DOT     *//* INFIX(dot, POSTFIX),*/ UNUSED,
-    /* TOKEN_GT            */ INFIX(binary, COMPARISON),
-    /* TOKEN_GT_GT         */ INFIX(binary, BIT_SHIFT),
-    /* TOKEN_GT_EQ         */ INFIX(binary, COMPARISON),
-    /* TOKEN_LT            */ INFIX(binary, COMPARISON),
-    /* TOKEN_LT_LT         */ INFIX(binary, BIT_SHIFT),
-    /* TOKEN_LT_EQ         */ INFIX(binary, COMPARISON),
+    /* TOKEN_QUEST_COLON   */ INFIX_RULE(binary, NIL_COALESCING),
+    /* TOKEN_QUEST_DOT     *//* INFIX_RULE(dot, POSTFIX),*/ UNUSED,
+    /* TOKEN_GT            */ INFIX_RULE(binary, COMPARISON),
+    /* TOKEN_GT_GT         */ INFIX_RULE(binary, BIT_SHIFT),
+    /* TOKEN_GT_EQ         */ INFIX_RULE(binary, COMPARISON),
+    /* TOKEN_LT            */ INFIX_RULE(binary, COMPARISON),
+    /* TOKEN_LT_LT         */ INFIX_RULE(binary, BIT_SHIFT),
+    /* TOKEN_LT_EQ         */ INFIX_RULE(binary, COMPARISON),
     /* TOKEN_COLON         */ UNUSED,
-    /* TOKEN_COLON_COLON   *//* INFIX(scope_access, ATOM),*/ UNUSED,
-    /* TOKEN_SLASH         */ INFIX(binary, FACTOR),
+    /* TOKEN_COLON_COLON   *//* INFIX_RULE(scope_access, ATOM),*/ UNUSED,
+    /* TOKEN_SLASH         */ INFIX_RULE(binary, FACTOR),
     /* TOKEN_SLASH_EQ      */ UNUSED,
-    /* TOKEN_PERCENT       */ INFIX(binary, FACTOR),
+    /* TOKEN_PERCENT       */ INFIX_RULE(binary, FACTOR),
     /* TOKEN_PERCENT_EQ    */ UNUSED,
-    /* TOKEN_PIPE          */ INFIX(binary, BIT_OR),
+    /* TOKEN_PIPE          */ INFIX_RULE(binary, BIT_OR),
     /* TOKEN_PIPE_EQ       */ UNUSED,
-    /* TOKEN_CARET         */ INFIX(binary, BIT_XOR),
+    /* TOKEN_CARET         */ INFIX_RULE(binary, BIT_XOR),
     /* TOKEN_CARET_EQ      */ UNUSED,
-    /* TOKEN_AMPERSAND     */ INFIX(binary, BIT_AND),
+    /* TOKEN_AMPERSAND     */ INFIX_RULE(binary, BIT_AND),
     /* TOKEN_AMPERSAND_EQ  */ UNUSED,
-    /* TOKEN_BANG          */ PREFIX(unary, PREFIX),
-    /* TOKEN_BANG_EQ       */ INFIX(binary, COMPARISON),
+    /* TOKEN_BANG          */ PREFIX_RULE(unary, PREFIX),
+    /* TOKEN_BANG_EQ       */ INFIX_RULE(binary, COMPARISON),
     /* TOKEN_EQ            */ UNUSED,
-    /* TOKEN_EQ_EQ         */ INFIX(binary, COMPARISON),
-    /* TOKEN_IDENTIFIER    *//* PREFIX(identifier, NONE),*/ UNUSED,
-    /* TOKEN_STRING        */ PREFIX(literal, NONE),
-    /* TOKEN_INTERPOLATION *//* PREFIX(string_interpolation, NONE),*/ UNUSED,
-    /* TOKEN_CHAR          */ PREFIX(literal, NONE),
-    /* TOKEN_NUMBER        */ PREFIX(literal, NONE),
-    /* TOKEN_AND           */ INFIX(binary, AND),
+    /* TOKEN_EQ_EQ         */ INFIX_RULE(binary, COMPARISON),
+    /* TOKEN_IDENTIFIER    *//* PREFIX_RULE(identifier, NONE),*/ UNUSED,
+    /* TOKEN_STRING        */ PREFIX_RULE(literal, NONE),
+    /* TOKEN_INTERPOLATION *//* PREFIX_RULE(string_interpolation, NONE),*/ UNUSED,
+    /* TOKEN_CHAR          */ PREFIX_RULE(literal, NONE),
+    /* TOKEN_NUMBER        */ PREFIX_RULE(literal, NONE),
+    /* TOKEN_AND           */ INFIX_RULE(binary, AND),
     /* TOKEN_BREAK         */ UNUSED,
     /* TOKEN_CLASS         */ UNUSED,
     /* TOKEN_CONTINUE      */ UNUSED,
@@ -230,17 +244,17 @@ public:
     /* TOKEN_EACH          */ UNUSED,
     /* TOKEN_ELIF          */ UNUSED,
     /* TOKEN_ELSE          */ UNUSED,
-    /* TOKEN_FALSE         */ PREFIX(literal, NONE),
+    /* TOKEN_FALSE         */ PREFIX_RULE(literal, NONE),
     /* TOKEN_FOR           */ UNUSED,
     /* TOKEN_FUN           */ UNUSED,
-    /* TOKEN_IF            *//* INFIX(if_expr, IF),*/ UNUSED,
-    /* TOKEN_IN            */ INFIX(binary, IN),
-    /* TOKEN_IS            */ INFIX(binary, IS),
+    /* TOKEN_IF            *//* INFIX_RULE(if_expr, IF),*/ UNUSED,
+    /* TOKEN_IN            */ INFIX_RULE(binary, IN),
+    /* TOKEN_IS            */ INFIX_RULE(binary, IS),
     /* TOKEN_NAMESPACE     */ UNUSED,
-    /* TOKEN_NIL           */ PREFIX(literal, NONE),
+    /* TOKEN_NIL           */ PREFIX_RULE(literal, NONE),
     /* TOKEN_NOT           */ BOTH(unary, binary, IN),
-    /* TOKEN_OF            *//* PREFIX(of, ATOM),*/ UNUSED,
-    /* TOKEN_OR            */ INFIX(binary, OR),
+    /* TOKEN_OF            *//* PREFIX_RULE(of, ATOM),*/ UNUSED,
+    /* TOKEN_OR            */ INFIX_RULE(binary, OR),
     /* TOKEN_OVERRIDE      */ UNUSED,
     /* TOKEN_PASS          */ UNUSED,
     /* TOKEN_PRINT         */ UNUSED,
@@ -248,9 +262,9 @@ public:
     /* TOKEN_PRIVATE       */ UNUSED,
     /* TOKEN_RETURN        */ UNUSED,
     /* TOKEN_STATIC        */ UNUSED,
-    /* TOKEN_SUPER         *//* PREFIX(super_id, NONE),*/ UNUSED,
-    /* TOKEN_THIS          *//* PREFIX(this_id, NONE),*/ UNUSED,
-    /* TOKEN_TRUE          */ PREFIX(literal, NONE),
+    /* TOKEN_SUPER         *//* PREFIX_RULE(super_id, NONE),*/ UNUSED,
+    /* TOKEN_THIS          *//* PREFIX_RULE(this_id, NONE),*/ UNUSED,
+    /* TOKEN_TRUE          */ PREFIX_RULE(literal, NONE),
     /* TOKEN_USING         */ UNUSED,
     /* TOKEN_VAL           */ UNUSED,
     /* TOKEN_VAR           */ UNUSED,
