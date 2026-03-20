@@ -28,17 +28,30 @@
 // OTHER FLAGS ---------------------------------------------------------------------------
 
 // This should be disabled for use in a terminal that doesn't support color.
-#define PRINT_ERROR_COLORS 1
+#define PRINT_COLORS 1
 
 // COMPILER AND VM VALUES ----------------------------------------------------------------
 
 // Pretty stuff
-#define PROMPT_COLOR 141
-#define RESULT_COLOR 156
-#define ERROR_COLOR 211
-#define WARNING_COLOR 221
-#define NOTE_COLOR 74
-#define POINTER_COLOR 156
+#define USE_SYSTEM_COLORS_ONLY 0
+#if USE_SYSTEM_COLORS_ONLY
+#  define PROMPT_COLOR "\033[38;5;13m"
+#  define RESULT_COLOR "\033[38;5;10m"
+#  define ERROR_COLOR "\033[38;5;9m"
+#  define WARNING_COLOR "\033[38;5;11m"
+#  define NOTE_COLOR "\033[38;5;14m"
+#  define POINTER_COLOR "\033[38;5;10m"
+#else
+#  define PROMPT_COLOR "\033[38;2;187;134;255m"
+#  define RESULT_COLOR "\033[38;2;119;235;53m"
+#  define ERROR_COLOR "\033[38;2;232;98;91m"
+#  define WARNING_COLOR "\033[38;2;235;195;53m"
+#  define NOTE_COLOR "\033[38;2;74;190;218m"
+#  define POINTER_COLOR "\033[38;2;187;134;255m"
+#endif
+#define DARK_GRAY_COLOR "\033[38;5;8m"
+#define BOLD "\033[1m"
+#define CLEAR_FORMAT "\033[0m"
 
 // Restricting stuff
 #define MAX_PARAMETERS 16

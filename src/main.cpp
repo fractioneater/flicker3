@@ -93,7 +93,12 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
     print_error(lexer, warning, module, 1);
 
   if (!lexer.get_errors().empty()) {
-    std::cout << "Lexer error, compiling halted\n";
+    #if PRINT_COLORS
+    std::cout << "Compiling halted at Lexer\n\033[4m" << ERROR_COLOR << "Lexer" << DARK_GRAY_COLOR <<
+      " -> Parser -> Type Checker -> Bytecode Generator -> Virtual Machine" << CLEAR_FORMAT << '\n';
+    #else
+    std::cout << "Compiling halted at Lexer\n";
+    #endif
     return INTERPRET_COMPILE_ERROR;
   }
 
@@ -105,7 +110,12 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
     print_error(lexer, warning, module, 1);
 
   if (!parser.get_errors().empty()) {
-    std::cout << "Parser error, compiling halted\n";
+    #if PRINT_COLORS
+    std::cout << "Compiling halted at Parser\n\033[4m" << RESULT_COLOR << "Lexer -> " << ERROR_COLOR << "Parser" << DARK_GRAY_COLOR <<
+      " -> Type Checker -> Bytecode Generator -> Virtual Machine" << CLEAR_FORMAT << '\n';
+    #else
+    std::cout << "Compiling halted at Parser\n";
+    #endif
     return INTERPRET_COMPILE_ERROR;
   }
 
@@ -125,8 +135,13 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
 InterpretResult interpret_and_print(const std::string& source, std::string_view module) {
   const InterpretResult result = interpret(source, module);
 
-  if (result == INTERPRET_OK)
-    std::cout << "\033[38;5;" << RESULT_COLOR << 'm' << "= > \n" << "\033[0m";
+  if (result == INTERPRET_OK) {
+    #if PRINT_COLORS
+    std::cout << RESULT_COLOR << "= > " << CLEAR_FORMAT << '\n';
+    #else
+    std::cout << "= > \n";
+    #endif
+  }
 
   return result;
 }
@@ -134,8 +149,15 @@ InterpretResult interpret_and_print(const std::string& source, std::string_view 
 void repl() {
   constexpr std::string_view prompt {"~ > "};
   std::string line {};
+
+  #if PRINT_COLORS
+  #  define PROMPT PROMPT_COLOR << prompt << CLEAR_FORMAT
+  #else
+  #  define PROMPT prompt
+  #endif
+
   // Not the cleanest syntax, but this comma expression works to print the "~ >" prompt and then get input.
-  while (std::cout << "\033[38;5;" << PROMPT_COLOR << 'm' << prompt << "\033[0m", std::getline(std::cin >> std::ws, line)) {
+  while (std::cout << PROMPT, std::getline(std::cin >> std::ws, line)) {
     interpret_and_print(line, "input");
   }
 
