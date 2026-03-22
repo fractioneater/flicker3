@@ -82,18 +82,72 @@ I've shifted the data structure of things around; now, instead of storing lines 
 "offsets": absolute character positions within the source string. The lexer keeps track of the offset of the start of each line, allowing me to compute line
 and column without difficulty, but only when they're necessary (in case of an error).
 
-Errors can now have "contexts" attached to them, which show an additional note when needed (exactly like most C/C++ compilers). In fact, errors are just nicer in general. They went from this:
-```ansi
+Errors can now have "contexts" attached to them, which show an additional note when needed (exactly like most C/C++ compilers). In fact, errors are just nicer
+in general. They went from this:
+
+```
 /test/lexer/numbers.fl@107:6 Unexpected character
  | bx + $3
  |      ^
 ```
+
 to this:
-```ansi
+
+```
 numbers@107:6 Unexpected character
   107 │ bx + $3
              ^
 ```
+
 And, of course, the module name and position are bold and colored.
 
+## March 10, 2026
+
+I'm very aware that I should get the lexer to a point where I'm satisfied with it, then start a parser (or bytecode VM, depending on what I feel like doing
+next). Because of this, `parser.h` now exists, containing a wrapper around my ANTLR4 parser.
+
+A block comment issue has been sorted out now—they can return newlines if they actually cross a newline; double comments (`##`) are the way to override/escape
+newlines.
+
+## March 13 – 16, 2026
+
+For the lexer to be considered complete, it needs to stand up to some rigorous testing. I've rewritten the whole lexer test file.
+
+## March 17 – 18, 2026
+
+And yes, I was correct a week ago that I should start working on something new. That is why I now have a few very simple AST node classes: Binary, Unary,
+Grouping, and Literal, based on [someone else's implementation of JLox in C++](https://github.com/the-lambda-way/CppLox) (thanks, the-lambda-way!).
+
+After a couple of days of work, I have a Pratt parser—for very basic expressions only—that works as expected! If only I had a way to print its output.
+
+## March 19, 2026
+
+Parser errors can now be printed, just like lexer ones (really, it's the same function). I've been working next on printing DOT output to make a graph of the
+parse tree. It should, in theory, be easier than it was with ANTLR, and that's saying a lot, considering I didn't write any code myself for that. I've gotten
+experience creating `ExprVisitor`s to play around with the tree now—the visitor pattern is pretty nice. The problem I've faced is that an `ExprVisitor`'s accept
+methods must return `std::any`, which allows me to write some pretty atrocious code and not realize. Luckily, there happens to be a way to build a wrapper class
+around a templated `ExprVisitor<R>` to force all methods to return `R`.
+
+With that annoyance out of the way, I have both good-looking code _and_ a graphical parse tree printer.
+
+## March 20, 2026
+
+I've done three things:
+
+1. Avoided populating every folder I run `flicker3` in with a `tree.dot` file; it's exported to an absolute path now.
+2. Fixed broken logic in `Parser::expect()` which broke parentheses, and would've broken much more if I had anything more for it to break.
+3. Made an honestly pretty pointless progress tracker (oh, and by the way, colors are now RGB instead of from the 256 options).
+
+![Screenshot From 2026-03-20 20-47-07.png](static/error-progress-display.png)
+
+## March 22, 2026
+
+The lexer parser numbers now. I'm now fully satisfied with it. I don't know if I'll ever say the same about the parser, VM, or anything...
+
+Oh, wait. The lexer has too many keywords. Sometime I'll need to turn some of those reserved words into soft keywords. Nothing's perfect after all.
+
+And, what's more, the log is now up to date. I am actually writing this on the day it is listed as, unlike the past 5 entries.
+
 [learncpp]: https://learncpp.com
+
+[thing]: https://github.com/
