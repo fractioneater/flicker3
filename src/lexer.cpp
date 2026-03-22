@@ -377,8 +377,9 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
     warnings_.emplace_back(offset_, "Character appears to be part of the number, but is actually not");
   }
 
-  auto hex {static_cast<double>(std::stoll(src_.substr(start_offset_, offset_ - start_offset_), nullptr, 16))};
-  std::cout << hex << '\n'; // TODO: Underscores
+  auto raw_hex {std::string(src_.substr(start_offset_, offset_ - start_offset_))};
+  std::erase(raw_hex, '_');
+  auto hex {static_cast<double>(std::stoll(raw_hex, nullptr, 16))};
   return make_token(TOKEN_NUMBER, hex);
 }
 
@@ -395,8 +396,9 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
     warnings_.emplace_back(offset_, "Character appears to be part of the number, but is actually not");
   }
 
-  auto binary {static_cast<double>(std::stoll(src_.substr(start_offset_, offset_ - start_offset_), nullptr, 2))};
-  std::cout << binary << '\n'; // TODO: Underscores
+  auto raw_binary {std::string(src_.substr(start_offset_, offset_ - start_offset_))};
+  std::erase(raw_binary, '_');
+  auto binary {static_cast<double>(std::stoll(raw_binary, nullptr, 2))};
   return make_token(TOKEN_NUMBER, binary);
 }
 
@@ -434,7 +436,10 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
       warnings_.emplace_back(offset_, "Character appears to be part of the number, but is actually not");
   }
 
-  return make_token(TOKEN_NUMBER, 10.0); // TODO
+  auto raw_decimal {std::string(src_.substr(start_offset_, offset_ - start_offset_))};
+  std::erase(raw_decimal, '_');
+  auto decimal {std::stod(raw_decimal)};
+  return make_token(TOKEN_NUMBER, decimal);
 }
 
 // This function will only be called at the start of a line.
