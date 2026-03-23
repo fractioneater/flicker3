@@ -9,6 +9,8 @@
 #include "expr.h"
 #include "flicker.h"
 
+using Expression = std::shared_ptr<Expr>;
+
 class ParserError {
 public:
   Token* token {};
@@ -58,7 +60,7 @@ class Parser {
   antlr::flicker antlr_parser_;
 
   Lexer& lexer_;
-  std::shared_ptr<Expr> ast_ {};
+  Expression ast_ {};
 
   std::vector<Token> tokens_ {};
   Token* current_ {};
@@ -114,13 +116,12 @@ public:
    * If the next token matches a certain type, advances, otherwise creates an error.
    * @param type The expected type of the next token
    * @param message The error message in case the expected type is not found
+   * @param error_token The token to associate the error with
    */
-  void expect(TokenType type, std::string_view message) {
-    if (current_->type == type) {
-      advance();
-      return;
-    }
-    errors_.emplace_back(current_, std::string(message));
+  void expect(TokenType type, std::string_view message, Token* error_token = nullptr) {
+    error_token = (error_token == nullptr) ? current_ : error_token;
+    if (!match(type))
+      errors_.emplace_back(error_token, std::string(message));
   }
 
   /**
@@ -128,21 +129,23 @@ public:
    * @param type The expected type of the next token
    * @param message The error message in case the expected type is not found
    * @param context A context to add to the error
+   * @param error_token The token to associate the error with
    */
-  void expect(TokenType type, std::string_view message, ParserError& context) {
-    if (current_->type == type) {
-      advance();
-      return;
-    }
-    errors_.emplace_back(current_, std::string(message), std::move(context));
+  void expect(TokenType type, std::string_view message, ParserError& context, Token* error_token = nullptr) {
+    error_token = (error_token == nullptr) ? current_ : error_token;
+    if (!match(type))
+      errors_.emplace_back(error_token, std::string(message), std::move(context));
   }
 
-  std::shared_ptr<Expr> binary(const std::shared_ptr<Expr>& left);
-  std::shared_ptr<Expr> unary();
-  std::shared_ptr<Expr> literal();
-  std::shared_ptr<Expr> grouping();
+  Expression binary_right_assoc(const Expression& left);
+  Expression binary(const Expression& left);
+  Expression infix_not(const Expression& left);
+  Expression binary_is(const Expression& left);
+  Expression unary();
+  Expression literal();
+  Expression grouping();
 
-  std::shared_ptr<Expr> parse_expression(Precedence precedence);
+  Expression parse_expression(Precedence precedence);
 
   /**
    * Fill the tokens_ vector with tokens from the lexer, up to ONE end-of-file token.
@@ -167,8 +170,8 @@ public:
   const std::vector<ParserError>& get_warnings() { return warnings_; }
 
   // Helper data structures and parse rules
-  using PrefixFn = std::shared_ptr<Expr>(Parser::*)();
-  using InfixFn  = std::shared_ptr<Expr>(Parser::*)(const std::shared_ptr<Expr>&);
+  using PrefixFn = Expression(Parser::*)();
+  using InfixFn  = Expression(Parser::*)(const Expression&);
 
   struct ParseRule {
     PrefixFn prefix;
@@ -193,7 +196,7 @@ public:
     /* TOKEN_COMMA         */ UNUSED,
     /* TOKEN_TILDE         */ PREFIX_RULE(unary, PREFIX),
     /* TOKEN_STAR          */ INFIX_RULE(binary, FACTOR),
-    /* TOKEN_STAR_STAR     */ INFIX_RULE(binary, EXPONENT),
+    /* TOKEN_STAR_STAR     */ INFIX_RULE(binary_right_assoc, EXPONENT),
     /* TOKEN_STAR_EQ       */ UNUSED,
     /* TOKEN_STAR_STAR_EQ  */ UNUSED,
     /* TOKEN_MINUS         */ BOTH(unary, binary, TERM),
@@ -249,10 +252,10 @@ public:
     /* TOKEN_FUN           */ UNUSED,
     /* TOKEN_IF            *//* INFIX_RULE(if_expr, IF),*/ UNUSED,
     /* TOKEN_IN            */ INFIX_RULE(binary, IN),
-    /* TOKEN_IS            */ INFIX_RULE(binary, IS),
+    /* TOKEN_IS            */ INFIX_RULE(binary_is, IS),
     /* TOKEN_NAMESPACE     */ UNUSED,
     /* TOKEN_NIL           */ PREFIX_RULE(literal, NONE),
-    /* TOKEN_NOT           */ BOTH(unary, binary, IN),
+    /* TOKEN_NOT           */ BOTH(unary, infix_not, IN),
     /* TOKEN_OF            *//* PREFIX_RULE(of, ATOM),*/ UNUSED,
     /* TOKEN_OR            */ INFIX_RULE(binary, OR),
     /* TOKEN_OVERRIDE      */ UNUSED,

@@ -83,7 +83,7 @@ class NodeChildrenVisitor : public ExprVisitor<std::vector<std::shared_ptr<Expr>
 class NodeNameVisitor : public ExprVisitor<std::string> {
   std::string visit_binary_expr(std::shared_ptr<Binary> expr) override {
     switch (expr->op.type) {
-      case TOKEN_STAR: return "binary *";
+      case TOKEN_STAR: return "binary *"; // TODO NEXT: Instead of using this, put function strings (in the parse table!) like "*" "**" "is not"
       case TOKEN_STAR_STAR: return "binary **";
       case TOKEN_MINUS: return "binary -";
       case TOKEN_PLUS: return "binary +";
@@ -104,9 +104,9 @@ class NodeNameVisitor : public ExprVisitor<std::string> {
       case TOKEN_BANG_EQ: return "binary !=";
       case TOKEN_EQ_EQ: return "binary ==";
       case TOKEN_AND: return "binary and";
-      case TOKEN_IN: return "binary (not) in"; // expr.op is the last token, so in this case it's ambiguous. TODO: if the AST can't store that, then ...
-      case TOKEN_IS: return "binary is";       // at least "is" and "is not" work.
-      case TOKEN_NOT: return "binary is not";
+      case TOKEN_IN: return "binary in";
+      case TOKEN_IS: return "binary is (not)";
+      case TOKEN_NOT: return "binary not in";
       case TOKEN_OR: return "binary or";
       default: return "binary";
     }

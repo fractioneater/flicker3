@@ -45,22 +45,37 @@ antlr::flicker::ProgramContext* Parser::parse_antlr() {
 
 // Non-ANTLR --------------------------------------------------
 
-std::shared_ptr<Expr> Parser::binary(const std::shared_ptr<Expr>& left) {
-  Precedence prec {static_cast<int>(rules[previous_->type].prec) + 1};
-  if (previous_->type == TOKEN_STAR_STAR) prec = static_cast<Precedence>(static_cast<int>(prec) - 1);
-  if (previous_->type == TOKEN_NOT) match(TOKEN_IN);
-  if (previous_->type == TOKEN_IS) match(TOKEN_NOT);
+Expression Parser::binary_right_assoc(const Expression& left) {
+  const Precedence prec {static_cast<int>(rules[previous_->type].prec)};
   return std::make_shared<Binary>(*previous_, left, parse_expression(prec));
 }
 
-std::shared_ptr<Expr> Parser::unary() {
+Expression Parser::binary(const Expression& left) {
+  const Precedence prec {static_cast<int>(rules[previous_->type].prec) + 1};
+  return std::make_shared<Binary>(*previous_, left, parse_expression(prec));
+}
+
+Expression Parser::infix_not(const Expression& left) {
+  expect(TOKEN_IN, "Cannot use 'not' as an infix operator by itself; try 'not in' or 'is not'", previous_);
+  constexpr Precedence prec {static_cast<int>(Precedence::IN) + 1};
+  return std::make_shared<Binary>(*(previous_ - 1), left, parse_expression(prec));
+}
+
+Expression Parser::binary_is(const Expression& left) {
+  constexpr Precedence prec {static_cast<int>(Precedence::IS) + 1};
+  if (match(TOKEN_NOT))
+    return std::make_shared<Binary>(*(previous_ - 1), left, parse_expression(prec));
+  return std::make_shared<Binary>(*previous_, left, parse_expression(prec));
+}
+
+Expression Parser::unary() {
   auto prec {Precedence::PREFIX};
   if (previous_->type == TOKEN_NOT) prec = Precedence::NOT;
   return std::make_shared<Unary>(*previous_, parse_expression(prec));
 }
 
 // ReSharper disable once CppMemberFunctionMayBeConst
-std::shared_ptr<Expr> Parser::literal() {
+Expression Parser::literal() {
   switch (previous_->type) {
     case TOKEN_TRUE: return std::make_shared<Literal>(true);
     case TOKEN_FALSE: return std::make_shared<Literal>(false);
@@ -72,14 +87,14 @@ std::shared_ptr<Expr> Parser::literal() {
   }
 }
 
-std::shared_ptr<Expr> Parser::grouping() {
+Expression Parser::grouping() {
   ParserError start_context {previous_, "To match this one"};
   const auto grouping {std::make_shared<Grouping>(parse_expression(Precedence::BEGIN))};
   expect(TOKEN_RIGHT_PAREN, "Expecting a closing parenthesis", start_context);
   return grouping;
 }
 
-std::shared_ptr<Expr> Parser::parse_expression(Precedence precedence) {
+Expression Parser::parse_expression(Precedence precedence) {
   advance();
   const PrefixFn prefix_rule {rules[previous_->type].prefix};
   if (prefix_rule == nullptr) {
