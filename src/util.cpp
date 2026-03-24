@@ -61,67 +61,40 @@ void print_error(const Lexer& lexer, const ParserError& err, const std::string_v
 }
 
 // Returns a vector of a node's children.
-class NodeChildrenVisitor : public ExprVisitor<std::vector<std::shared_ptr<Expr>>> {
-  std::vector<std::shared_ptr<Expr>> visit_binary_expr(std::shared_ptr<Binary> expr) override {
-    return std::vector {expr->left, expr->right};
+class NodeChildrenVisitor : public ExprVisitor<std::vector<Expression>> {
+  std::vector<Expression> visit_binary_expr(std::shared_ptr<Binary> binary) override {
+    return {binary->left, binary->right};
   }
 
-  std::vector<std::shared_ptr<Expr>> visit_unary_expr(std::shared_ptr<Unary> expr) override {
-    return std::vector {expr->expr};
+  std::vector<Expression> visit_unary_expr(std::shared_ptr<Unary> unary) override {
+    return {unary->expr};
   }
 
-  std::vector<std::shared_ptr<Expr>> visit_grouping_expr(std::shared_ptr<Grouping> expr) override {
-    return std::vector {expr->expr};
+  std::vector<Expression> visit_grouping_expr(std::shared_ptr<Grouping> group) override {
+    return {group->expr};
   }
 
-  std::vector<std::shared_ptr<Expr>> visit_literal_expr(std::shared_ptr<Literal> expr) override {
+  std::vector<Expression> visit_literal_expr(std::shared_ptr<Literal> literal) override {
     return {};
+  }
+
+  std::vector<Expression> visit_print_expr(std::shared_ptr<Print> print) override {
+    return {print->expr};
   }
 };
 
 // Returns the node's name as a string.
 class NodeNameVisitor : public ExprVisitor<std::string> {
   std::string visit_binary_expr(std::shared_ptr<Binary> expr) override {
-    switch (expr->op.type) {
-      case TOKEN_STAR: return "binary *"; // TODO NEXT: Instead of using this, put function strings (in the parse table!) like "*" "**" "is not"
-      case TOKEN_STAR_STAR: return "binary **";
-      case TOKEN_MINUS: return "binary -";
-      case TOKEN_PLUS: return "binary +";
-      case TOKEN_DOT_DOT: return "binary ..";
-      case TOKEN_DOT_DOT_LT: return "binary ..<";
-      case TOKEN_QUEST_COLON: return "binary ?:";
-      case TOKEN_GT: return "binary >";
-      case TOKEN_GT_GT: return "binary >>";
-      case TOKEN_GT_EQ: return "binary >=";
-      case TOKEN_LT: return "binary <";
-      case TOKEN_LT_LT: return "binary <<";
-      case TOKEN_LT_EQ: return "binary <=";
-      case TOKEN_SLASH: return "binary /";
-      case TOKEN_PERCENT: return "binary %";
-      case TOKEN_PIPE: return "binary |";
-      case TOKEN_CARET: return "binary ^";
-      case TOKEN_AMPERSAND: return "binary &";
-      case TOKEN_BANG_EQ: return "binary !=";
-      case TOKEN_EQ_EQ: return "binary ==";
-      case TOKEN_AND: return "binary and";
-      case TOKEN_IN: return "binary in";
-      case TOKEN_IS: return "binary is (not)";
-      case TOKEN_NOT: return "binary not in";
-      case TOKEN_OR: return "binary or";
-      default: return "binary";
-    }
+    const std::string blah {"binary "};
+    const std::string bluh {expr->fn_name};
+    return blah + bluh;
   }
 
   std::string visit_unary_expr(std::shared_ptr<Unary> expr) override {
-    switch (expr->op.type) {
-      case TOKEN_MINUS: return "unary -";
-      case TOKEN_BANG: return "unary !";
-      case TOKEN_TILDE: return "unary ~";
-      case TOKEN_MINUS_MINUS: return "prefix --";
-      case TOKEN_PLUS_PLUS: return "prefix ++";
-      case TOKEN_NOT: return "unary not";
-      default: return "unary";
-    }
+    const std::string blah {"unary "};
+    const std::string bluh {expr->fn_name};
+    return blah + bluh;
   }
 
   std::string visit_grouping_expr(std::shared_ptr<Grouping> expr) override {
@@ -147,6 +120,10 @@ class NodeNameVisitor : public ExprVisitor<std::string> {
       return "nil";
     }
     return "unknown literal";
+  }
+
+  std::string visit_print_expr(std::shared_ptr<Print> print) override {
+    return "print";
   }
 };
 

@@ -47,31 +47,37 @@ antlr::flicker::ProgramContext* Parser::parse_antlr() {
 
 Expression Parser::binary_right_assoc(const Expression& left) {
   const Precedence prec {static_cast<int>(rules[previous_->type].prec)};
-  return std::make_shared<Binary>(*previous_, left, parse_expression(prec));
+  return std::make_shared<Binary>(*previous_, rules[previous_->type].fn_name, left, parse_expression(prec));
 }
 
 Expression Parser::binary(const Expression& left) {
   const Precedence prec {static_cast<int>(rules[previous_->type].prec) + 1};
-  return std::make_shared<Binary>(*previous_, left, parse_expression(prec));
+  return std::make_shared<Binary>(*previous_, rules[previous_->type].fn_name, left, parse_expression(prec));
 }
 
 Expression Parser::infix_not(const Expression& left) {
   expect(TOKEN_IN, "Cannot use 'not' as an infix operator by itself; try 'not in' or 'is not'", previous_);
   constexpr Precedence prec {static_cast<int>(Precedence::IN) + 1};
-  return std::make_shared<Binary>(*(previous_ - 1), left, parse_expression(prec));
+  return std::make_shared<Binary>(*(previous_ - 1), "not_in", left, parse_expression(prec));
 }
 
 Expression Parser::binary_is(const Expression& left) {
   constexpr Precedence prec {static_cast<int>(Precedence::IS) + 1};
   if (match(TOKEN_NOT))
-    return std::make_shared<Binary>(*(previous_ - 1), left, parse_expression(prec));
-  return std::make_shared<Binary>(*previous_, left, parse_expression(prec));
+    return std::make_shared<Binary>(*(previous_ - 1), "is_not", left, parse_expression(prec));
+  return std::make_shared<Binary>(*previous_, "is", left, parse_expression(prec));
 }
 
 Expression Parser::unary() {
-  auto prec {Precedence::PREFIX};
-  if (previous_->type == TOKEN_NOT) prec = Precedence::NOT;
-  return std::make_shared<Unary>(*previous_, parse_expression(prec));
+  return std::make_shared<Unary>(*previous_, rules[previous_->type].fn_name, parse_expression(Precedence::PREFIX));
+}
+
+Expression Parser::prefix_not() {
+  return std::make_shared<Unary>(*previous_, "!", parse_expression(Precedence::NOT));
+}
+
+Expression Parser::print() {
+  return std::make_shared<Print>(*previous_, parse_expression(Precedence::PRINT));
 }
 
 // ReSharper disable once CppMemberFunctionMayBeConst
