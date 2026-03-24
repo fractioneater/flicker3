@@ -148,6 +148,14 @@ Oh, wait. The lexer has too many keywords. Sometime I'll need to turn some of th
 
 And, what's more, the log is now up to date. I am actually writing this on the day it is listed as, unlike the past 5 entries.
 
+## March 24, 2026
+
+Moving closer to what operators will be like in the future, I've now added function names to the parse rule table (like `+` and `not_in`). The AST stores the
+name of this function so it can be resolved then called. There are still some iffy things about this—plot holes, you could say—but it makes the DOT printing in
+`util.cpp` much easier.
+
+And, because it has more benefits than drawbacks, `print` is now an expression.
+
 [learncpp]: https://learncpp.com
 
 [thing]: https://github.com/
