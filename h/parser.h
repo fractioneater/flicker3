@@ -140,7 +140,10 @@ public:
 
   StmtNode declaration();
   StmtNode statement();
+  StmtNode if_statement();
+  StmtNode while_statement();
   StmtNode block();
+  StmtNode block_or_statement();
 
   ExprNode binary_right_assoc(const ExprNode& left);
   ExprNode binary(const ExprNode& left);

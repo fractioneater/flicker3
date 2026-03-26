@@ -59,13 +59,23 @@ DEFAULT_SPEC = {
     {"name": "Block", "fields": [{"type": "std::vector<StmtNode>", "name": "statements", "move": True}]},
     {"name": "Expression", "fields": [{"type": "ExprNode", "name": "expression", "move": True}]},
     {"name": "Pass", "fields": []},
+    {"name": "If", "fields": [
+      {"type": "ExprNode", "name": "condition", "move": True},
+      {"type": "StmtNode", "name": "then_body", "move": True},
+      {"type": "StmtNode", "name": "else_body", "move": True},
+    ]},
+    {"name": "While", "fields": [
+      {"type": "ExprNode", "name": "condition", "move": True},
+      {"type": "StmtNode", "name": "loop_body", "move": True},
+      {"type": "StmtNode", "name": "else_body", "move": True},
+    ]},
   ],
   "expressions": [
     {
       "name": "Binary",
       "fields": [
-        {"type": "Token", "name": "op", "parameter": "const Token&"},
-        {"type": "NamedFunction", "name": "fn_name", "parameter": "NamedFunction"},
+        {"type": "Token", "name": "op", "ref": True},
+        {"type": "NamedFunction", "name": "fn_name"},
         {"type": "ExprNode", "name": "left", "move": True},
         {"type": "ExprNode", "name": "right", "move": True},
       ],
@@ -73,8 +83,8 @@ DEFAULT_SPEC = {
     {
       "name": "Unary",
       "fields": [
-        {"type": "Token", "name": "op", "parameter": "const Token&"},
-        {"type": "NamedFunction", "name": "fn_name", "parameter": "NamedFunction"},
+        {"type": "Token", "name": "op", "ref": True},
+        {"type": "NamedFunction", "name": "fn_name"},
         {"type": "ExprNode", "name": "expr", "move": True},
       ],
     },
@@ -83,8 +93,8 @@ DEFAULT_SPEC = {
     {
       "name": "Print",
       "fields": [
-        {"type": "Token", "name": "op", "parameter": "const Token&"},
-        {"type": "NamedFunction", "name": "fn_name", "parameter": "NamedFunction"},
+        {"type": "Token", "name": "op", "ref": True},
+        {"type": "NamedFunction", "name": "fn_name"},
         {"type": "ExprNode", "name": "expr", "move": True},
       ],
     },
@@ -96,10 +106,10 @@ class Field:
   type: str
   name: str
   move: bool = False
-  parameter: Optional[str] = None
+  ref: bool = False
 
   def ctor_param(self) -> str:
-    param_type = self.parameter if self.parameter else (self.type if self.move else f"const {self.type}&")
+    param_type = self.type if (not self.ref) else f"const {self.type}&"
     return f"{param_type} {self.name}"
 
   def init_expr(self) -> str:
@@ -146,7 +156,7 @@ def parse_fields(raw_fields: Iterable[dict]) -> List[Field]:
         type=raw["type"],
         name=raw["name"],
         move=bool(raw.get("move", False)),
-        parameter=raw.get("parameter"),
+        ref=raw.get("ref"),
       )
     )
   return parsed

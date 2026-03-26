@@ -12,17 +12,41 @@
 
 #include "util.h"
 
-// Statements
+// Statements --------------------------------------------------
 
 StmtNode Parser::declaration() {
   return statement();
 }
 
 StmtNode Parser::statement() {
+  if (match(TOKEN_IF)) return if_statement();
+  if (match(TOKEN_WHILE)) return while_statement();
   if (match(TOKEN_PASS)) return std::make_shared<Statements::Pass>();
-  if (match(TOKEN_DO)) return block(); // TODO: This is temporary. You can't use DO for blocks. Or should I make it permanent?
   // Otherwise, expect an expression statement.
+  //   TODO: This creates a weird situation with errors if there's nothing valid here ("Expected an expression" when a statement or expression would be okay)
   return std::make_shared<Statements::Expression>(parse_expression(Precedence::BEGIN));
+}
+
+StmtNode Parser::if_statement() {
+  const ExprNode condition {parse_expression(Precedence::BEGIN)};
+  const StmtNode then_body {block_or_statement()};
+  StmtNode else_body {std::make_shared<Statements::Pass>()};
+
+  match_line();
+  if (match(TOKEN_ELSE))
+    else_body = block_or_statement();
+  return std::make_shared<Statements::If>(condition, then_body, else_body);
+}
+
+StmtNode Parser::while_statement() {
+  const ExprNode condition {parse_expression(Precedence::BEGIN)};
+  const StmtNode loop_body {block_or_statement()};
+  StmtNode else_body {std::make_shared<Statements::Pass>()};
+
+  match_line();
+  if (match(TOKEN_ELSE)) // The while loop's else clause is a weird thing, but it's wonderful. It should be a standard in all languages.
+    else_body = block_or_statement();
+  return std::make_shared<Statements::While>(condition, loop_body, else_body);
 }
 
 StmtNode Parser::block() {
@@ -39,7 +63,14 @@ StmtNode Parser::block() {
   return std::make_shared<Statements::Block>(contents);
 }
 
-// Expressions
+StmtNode Parser::block_or_statement() {
+  if (check(TOKEN_LINE)) return block();
+  expect(TOKEN_DO, "Must have either 'do' or newline between condition and statement");
+  if (check(TOKEN_LINE)) return block();
+  return statement();
+}
+
+// Expressions --------------------------------------------------
 
 ExprNode Parser::binary_right_assoc(const ExprNode& left) {
   const Precedence prec {static_cast<int>(rules[previous_->type].prec)};
@@ -115,7 +146,7 @@ ExprNode Parser::parse_expression(Precedence precedence) {
   return expr;
 }
 
-// Non-parsing functions
+// Non-parsing functions --------------------------------------------------
 
 void Parser::populate_token_vec() {
   while (true) {
