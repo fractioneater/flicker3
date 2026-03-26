@@ -17,6 +17,8 @@ namespace Statements {
   class Block;
   class Expression;
   class Pass;
+  class If;
+  class While;
 }
 
 namespace Expressions {
@@ -36,6 +38,8 @@ public:
   virtual std::any visit_block_stmt_any(std::shared_ptr<Statements::Block> stmt) = 0;
   virtual std::any visit_expression_stmt_any(std::shared_ptr<Statements::Expression> stmt) = 0;
   virtual std::any visit_pass_stmt_any(std::shared_ptr<Statements::Pass> stmt) = 0;
+  virtual std::any visit_if_stmt_any(std::shared_ptr<Statements::If> stmt) = 0;
+  virtual std::any visit_while_stmt_any(std::shared_ptr<Statements::While> stmt) = 0;
   virtual ~StmtVisitorAny() = default;
 };
 
@@ -59,6 +63,8 @@ public:
   virtual R visit_block_stmt(std::shared_ptr<Statements::Block> stmt) = 0;
   virtual R visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) = 0;
   virtual R visit_pass_stmt(std::shared_ptr<Statements::Pass> stmt) = 0;
+  virtual R visit_if_stmt(std::shared_ptr<Statements::If> stmt) = 0;
+  virtual R visit_while_stmt(std::shared_ptr<Statements::While> stmt) = 0;
 
 private:
   std::any visit_block_stmt_any(std::shared_ptr<Statements::Block> stmt) final {
@@ -71,6 +77,14 @@ private:
 
   std::any visit_pass_stmt_any(std::shared_ptr<Statements::Pass> stmt) final {
     return visit_pass_stmt(std::move(stmt));
+  }
+
+  std::any visit_if_stmt_any(std::shared_ptr<Statements::If> stmt) final {
+    return visit_if_stmt(std::move(stmt));
+  }
+
+  std::any visit_while_stmt_any(std::shared_ptr<Statements::While> stmt) final {
+    return visit_while_stmt(std::move(stmt));
   }
 };
 
@@ -168,6 +182,32 @@ public:
     return visitor.visit_pass_stmt_any(shared_from_this());
   }
 
+};
+
+class Statements::If : public Stmt, public std::enable_shared_from_this<If> {
+public:
+  If(ExprNode condition, StmtNode then_body, StmtNode else_body) : condition {std::move(condition)}, then_body {std::move(then_body)}, else_body {std::move(else_body)} {}
+
+  std::any accept(StmtVisitorAny& visitor) override {
+    return visitor.visit_if_stmt_any(shared_from_this());
+  }
+
+  const ExprNode condition {};
+  const StmtNode then_body {};
+  const StmtNode else_body {};
+};
+
+class Statements::While : public Stmt, public std::enable_shared_from_this<While> {
+public:
+  While(ExprNode condition, StmtNode loop_body, StmtNode else_body) : condition {std::move(condition)}, loop_body {std::move(loop_body)}, else_body {std::move(else_body)} {}
+
+  std::any accept(StmtVisitorAny& visitor) override {
+    return visitor.visit_while_stmt_any(shared_from_this());
+  }
+
+  const ExprNode condition {};
+  const StmtNode loop_body {};
+  const StmtNode else_body {};
 };
 
 // Expressions --------------------------------------------------

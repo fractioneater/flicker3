@@ -80,6 +80,20 @@ class StmtChildrenVisitor : public StmtVisitor<std::vector<ExprNode>> {
   std::vector<ExprNode> visit_pass_stmt(std::shared_ptr<Statements::Pass> stmt) override {
     return {};
   }
+
+  std::vector<ExprNode> visit_if_stmt(std::shared_ptr<Statements::If> stmt) override {
+    const auto this_id {id_counter - 1};
+    walk(std::vector {stmt->then_body}, this_id);
+    walk(std::vector {stmt->else_body}, this_id);
+    return {stmt->condition};
+  }
+
+  std::vector<ExprNode> visit_while_stmt(std::shared_ptr<Statements::While> stmt) override {
+    const auto this_id {id_counter - 1};
+    walk(std::vector {stmt->loop_body}, this_id);
+    walk(std::vector {stmt->else_body}, this_id);
+    return {stmt->condition};
+  }
 };
 
 class ExprChildrenVisitor : public ExprVisitor<std::vector<ExprNode>> {
@@ -116,6 +130,18 @@ class StmtNameVisitor : public StmtVisitor<std::string> {
 
   std::string visit_pass_stmt(std::shared_ptr<Statements::Pass> stmt) override {
     return "pass";
+  }
+
+  std::string visit_if_stmt(std::shared_ptr<Statements::If> stmt) override {
+    if (std::dynamic_pointer_cast<Statements::Pass>(stmt->else_body))
+      return "if";
+    return "if else";
+  }
+
+  std::string visit_while_stmt(std::shared_ptr<Statements::While> stmt) override {
+    if (std::dynamic_pointer_cast<Statements::Pass>(stmt->else_body))
+      return "while";
+    return "while else";
   }
 };
 

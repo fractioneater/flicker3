@@ -1,7 +1,2 @@
-do
-  print 30
-  pass
-  do
-    false and true or true or false and not false or true
-    0x301a
-  error "nope!"
+if true do print 3
+else do print 9
