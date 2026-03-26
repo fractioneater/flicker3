@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "expr.h"
+#include "ast.h"
 #include "flicker.h"
 
 class ParserError {
@@ -59,7 +59,7 @@ class Parser {
   antlr::flicker antlr_parser_;
 
   Lexer& lexer_;
-  Expression ast_ {};
+  ExprNode ast_ {};
 
   std::vector<Token> tokens_ {};
   Token* current_ {};
@@ -136,17 +136,17 @@ public:
       errors_.emplace_back(error_token, std::string(message), std::move(context));
   }
 
-  Expression binary_right_assoc(const Expression& left);
-  Expression binary(const Expression& left);
-  Expression infix_not(const Expression& left);
-  Expression binary_is(const Expression& left);
-  Expression unary();
-  Expression prefix_not();
-  Expression print();
-  Expression literal();
-  Expression grouping();
+  ExprNode binary_right_assoc(const ExprNode& left);
+  ExprNode binary(const ExprNode& left);
+  ExprNode infix_not(const ExprNode& left);
+  ExprNode binary_is(const ExprNode& left);
+  ExprNode unary();
+  ExprNode prefix_not();
+  ExprNode print();
+  ExprNode literal();
+  ExprNode grouping();
 
-  Expression parse_expression(Precedence precedence);
+  ExprNode parse_expression(Precedence precedence);
 
   /**
    * Fill the tokens_ vector with tokens from the lexer, up to ONE end-of-file token.
@@ -171,8 +171,8 @@ public:
   const std::vector<ParserError>& get_warnings() { return warnings_; }
 
   // Helper data structures and parse rules
-  using PrefixFn = Expression(Parser::*)();
-  using InfixFn  = Expression(Parser::*)(const Expression&);
+  using PrefixFn = ExprNode(Parser::*)();
+  using InfixFn  = ExprNode(Parser::*)(const ExprNode&);
 
   struct ParseRule {
     PrefixFn prefix {};
@@ -262,8 +262,8 @@ public:
     /* TOKEN_OR            */ INFIX_RULE(binary, "or", OR),
     /* TOKEN_OVERRIDE      */ UNUSED,
     /* TOKEN_PASS          */ UNUSED,
-    /* TOKEN_PRINT         */ PREFIX_RULE(print, "", PRINT),
-    /* TOKEN_PRINT_ERROR   */ UNUSED,
+    /* TOKEN_PRINT         */ PREFIX_RULE(print, "print", PRINT),
+    /* TOKEN_PRINT_ERROR   */ PREFIX_RULE(print, "print_err", PRINT),
     /* TOKEN_PRIVATE       */ UNUSED,
     /* TOKEN_RETURN        */ UNUSED,
     /* TOKEN_STATIC        */ UNUSED,

@@ -43,14 +43,13 @@ public:
     RuleImportList = 27, RuleImportItem = 28, RuleLoopLabel = 29, RuleDoStatement = 30, 
     RuleBlockOrStatement = 31, RuleIfStmt = 32, RuleWhileStmt = 33, RuleEachStmt = 34, 
     RuleForStmt = 35, RuleBreakStmt = 36, RuleContinueStmt = 37, RuleWhenStmt = 38, 
-    RuleReturnStmt = 39, RulePrintStmt = 40, RuleConsoleErrorStmt = 41, 
-    RulePassStmt = 42, RuleWhenBody = 43, RuleWhenContents = 44, RuleWhenCase = 45, 
-    RuleElseCase = 46, RuleExpression = 47, RuleComparisonOperator = 48, 
-    RuleAssignOperator = 49, RuleInterpolationExpr = 50, RuleConstantExpr = 51, 
-    RuleListOrMapLiteral = 52, RuleListLiteral = 53, RuleListItems = 54, 
-    RuleMapLiteral = 55, RuleMapItems = 56, RuleMapItem = 57, RuleLambdaLiteral = 58, 
-    RuleLambdaParams = 59, RuleParenthesizedOptionalParamList = 60, RuleBlockLambda = 61, 
-    RuleBraceLambda = 62, RuleStatementLambdaBody = 63, RuleExprLambdaBody = 64
+    RuleReturnStmt = 39, RulePassStmt = 40, RuleWhenBody = 41, RuleWhenContents = 42, 
+    RuleWhenCase = 43, RuleElseCase = 44, RuleExpression = 45, RuleComparisonOperator = 46, 
+    RuleAssignOperator = 47, RuleInterpolationExpr = 48, RuleConstantExpr = 49, 
+    RuleListOrMapLiteral = 50, RuleListLiteral = 51, RuleListItems = 52, 
+    RuleMapLiteral = 53, RuleMapItems = 54, RuleMapItem = 55, RuleLambdaLiteral = 56, 
+    RuleLambdaParams = 57, RuleParenthesizedOptionalParamList = 58, RuleBlockLambda = 59, 
+    RuleBraceLambda = 60, RuleStatementLambdaBody = 61, RuleExprLambdaBody = 62
   };
 
   explicit flicker(antlr4::TokenStream *input);
@@ -110,8 +109,6 @@ public:
   class ContinueStmtContext;
   class WhenStmtContext;
   class ReturnStmtContext;
-  class PrintStmtContext;
-  class ConsoleErrorStmtContext;
   class PassStmtContext;
   class WhenBodyContext;
   class WhenContentsContext;
@@ -220,8 +217,6 @@ public:
     ContinueStmtContext *continueStmt();
     WhenStmtContext *whenStmt();
     ReturnStmtContext *returnStmt();
-    PrintStmtContext *printStmt();
-    ConsoleErrorStmtContext *consoleErrorStmt();
     PassStmtContext *passStmt();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -891,38 +886,6 @@ public:
 
   ReturnStmtContext* returnStmt();
 
-  class  PrintStmtContext : public antlr4::ParserRuleContext {
-  public:
-    PrintStmtContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *PRINT();
-    ExpressionContext *expression();
-
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  PrintStmtContext* printStmt();
-
-  class  ConsoleErrorStmtContext : public antlr4::ParserRuleContext {
-  public:
-    ConsoleErrorStmtContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *PRINT_ERROR();
-    ExpressionContext *expression();
-
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  ConsoleErrorStmtContext* consoleErrorStmt();
-
   class  PassStmtContext : public antlr4::ParserRuleContext {
   public:
     PassStmtContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -1212,6 +1175,19 @@ public:
     ExpressionContext* expression(size_t i);
     antlr4::tree::TerminalNode *IS();
     antlr4::tree::TerminalNode *NOT();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  PrintExprContext : public ExpressionContext {
+  public:
+    PrintExprContext(ExpressionContext *ctx);
+
+    ExpressionContext *expression();
+    antlr4::tree::TerminalNode *PRINT();
+    antlr4::tree::TerminalNode *PRINT_ERROR();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 

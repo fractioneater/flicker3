@@ -136,12 +136,6 @@ public:
   virtual void enterReturnStmt(flicker::ReturnStmtContext *ctx) = 0;
   virtual void exitReturnStmt(flicker::ReturnStmtContext *ctx) = 0;
 
-  virtual void enterPrintStmt(flicker::PrintStmtContext *ctx) = 0;
-  virtual void exitPrintStmt(flicker::PrintStmtContext *ctx) = 0;
-
-  virtual void enterConsoleErrorStmt(flicker::ConsoleErrorStmtContext *ctx) = 0;
-  virtual void exitConsoleErrorStmt(flicker::ConsoleErrorStmtContext *ctx) = 0;
-
   virtual void enterPassStmt(flicker::PassStmtContext *ctx) = 0;
   virtual void exitPassStmt(flicker::PassStmtContext *ctx) = 0;
 
@@ -201,6 +195,9 @@ public:
 
   virtual void enterIsExpr(flicker::IsExprContext *ctx) = 0;
   virtual void exitIsExpr(flicker::IsExprContext *ctx) = 0;
+
+  virtual void enterPrintExpr(flicker::PrintExprContext *ctx) = 0;
+  virtual void exitPrintExpr(flicker::PrintExprContext *ctx) = 0;
 
   virtual void enterIdentifier(flicker::IdentifierContext *ctx) = 0;
   virtual void exitIdentifier(flicker::IdentifierContext *ctx) = 0;

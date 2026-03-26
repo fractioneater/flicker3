@@ -138,12 +138,6 @@ public:
   virtual void enterReturnStmt(flicker::ReturnStmtContext * /*ctx*/) override { }
   virtual void exitReturnStmt(flicker::ReturnStmtContext * /*ctx*/) override { }
 
-  virtual void enterPrintStmt(flicker::PrintStmtContext * /*ctx*/) override { }
-  virtual void exitPrintStmt(flicker::PrintStmtContext * /*ctx*/) override { }
-
-  virtual void enterConsoleErrorStmt(flicker::ConsoleErrorStmtContext * /*ctx*/) override { }
-  virtual void exitConsoleErrorStmt(flicker::ConsoleErrorStmtContext * /*ctx*/) override { }
-
   virtual void enterPassStmt(flicker::PassStmtContext * /*ctx*/) override { }
   virtual void exitPassStmt(flicker::PassStmtContext * /*ctx*/) override { }
 
@@ -203,6 +197,9 @@ public:
 
   virtual void enterIsExpr(flicker::IsExprContext * /*ctx*/) override { }
   virtual void exitIsExpr(flicker::IsExprContext * /*ctx*/) override { }
+
+  virtual void enterPrintExpr(flicker::PrintExprContext * /*ctx*/) override { }
+  virtual void exitPrintExpr(flicker::PrintExprContext * /*ctx*/) override { }
 
   virtual void enterIdentifier(flicker::IdentifierContext * /*ctx*/) override { }
   virtual void exitIdentifier(flicker::IdentifierContext * /*ctx*/) override { }

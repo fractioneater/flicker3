@@ -59,8 +59,6 @@ statement
 	| continueStmt
 	| whenStmt
 	| returnStmt
-	| printStmt
-	| consoleErrorStmt
 	| passStmt
 	;
 
@@ -124,8 +122,6 @@ breakStmt : BREAK loopLabel? ;
 continueStmt : CONTINUE loopLabel? ;
 whenStmt : WHEN expression whenBody ;
 returnStmt : RETURN (expression)? ;
-printStmt : PRINT expression ;
-consoleErrorStmt : PRINT_ERROR expression ;
 passStmt : PASS ;
 
 whenBody : newline INDENT whenContents DEDENT ;
@@ -164,6 +160,7 @@ expression
 	| expression OR expression                                              #orExpr
 	| NOT expression                                                        #notExpr
 	| <assoc=right> expression assignOperator expression                    #assignment
+	| (PRINT | PRINT_ERROR) expression                                      #printExpr
 	;
 
 comparisonOperator : EQ_EQ | BANG_EQ | GT | GT_EQ | LT | LT_EQ ;

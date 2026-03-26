@@ -61,47 +61,45 @@ void print_error(const Lexer& lexer, const ParserError& err, const std::string_v
 }
 
 // Returns a vector of a node's children.
-class NodeChildrenVisitor : public ExprVisitor<std::vector<Expression>> {
-  std::vector<Expression> visit_binary_expr(std::shared_ptr<Binary> binary) override {
+class NodeChildrenVisitor : public ExprVisitor<std::vector<ExprNode>> {
+  std::vector<ExprNode> visit_binary_expr(std::shared_ptr<Expressions::Binary> binary) override {
     return {binary->left, binary->right};
   }
 
-  std::vector<Expression> visit_unary_expr(std::shared_ptr<Unary> unary) override {
+  std::vector<ExprNode> visit_unary_expr(std::shared_ptr<Expressions::Unary> unary) override {
     return {unary->expr};
   }
 
-  std::vector<Expression> visit_grouping_expr(std::shared_ptr<Grouping> group) override {
+  std::vector<ExprNode> visit_grouping_expr(std::shared_ptr<Expressions::Grouping> group) override {
     return {group->expr};
   }
 
-  std::vector<Expression> visit_literal_expr(std::shared_ptr<Literal> literal) override {
+  std::vector<ExprNode> visit_literal_expr(std::shared_ptr<Expressions::Literal> literal) override {
     return {};
   }
 
-  std::vector<Expression> visit_print_expr(std::shared_ptr<Print> print) override {
+  std::vector<ExprNode> visit_print_expr(std::shared_ptr<Expressions::Print> print) override {
     return {print->expr};
   }
 };
 
 // Returns the node's name as a string.
 class NodeNameVisitor : public ExprVisitor<std::string> {
-  std::string visit_binary_expr(std::shared_ptr<Binary> expr) override {
-    const std::string blah {"binary "};
-    const std::string bluh {expr->fn_name};
-    return blah + bluh;
+  std::string visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) override {
+    const std::string blah {expr->fn_name};
+    return "binary " + blah;
   }
 
-  std::string visit_unary_expr(std::shared_ptr<Unary> expr) override {
-    const std::string blah {"unary "};
-    const std::string bluh {expr->fn_name};
-    return blah + bluh;
+  std::string visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) override {
+    const std::string blah {expr->fn_name};
+    return "unary " + blah;
   }
 
-  std::string visit_grouping_expr(std::shared_ptr<Grouping> expr) override {
+  std::string visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) override {
     return "( )";
   }
 
-  std::string visit_literal_expr(std::shared_ptr<Literal> expr) override {
+  std::string visit_literal_expr(std::shared_ptr<Expressions::Literal> expr) override {
     if (expr->value.type() == typeid(double)) {
       return std::to_string(std::any_cast<double>(expr->value));
     }
@@ -122,13 +120,14 @@ class NodeNameVisitor : public ExprVisitor<std::string> {
     return "unknown literal";
   }
 
-  std::string visit_print_expr(std::shared_ptr<Print> print) override {
-    return "print";
+  std::string visit_print_expr(std::shared_ptr<Expressions::Print> print) override {
+    const std::string blah {print->fn_name};
+    return "print (" + blah + ")";
   }
 };
 
 static void walk(
-  const std::shared_ptr<Expr>& node, std::ostringstream& out, int& id_counter, int parent_id, NodeNameVisitor& name_visitor,
+  const ExprNode& node, std::ostringstream& out, int& id_counter, int parent_id, NodeNameVisitor& name_visitor,
   NodeChildrenVisitor& children_visitor
 ) {
   const int my_id = id_counter++;
@@ -143,7 +142,7 @@ static void walk(
     walk(child, out, id_counter, my_id, name_visitor, children_visitor);
 }
 
-std::string to_dot(const std::shared_ptr<Expr>& tree) {
+std::string to_dot(const ExprNode& tree) {
   NodeNameVisitor name_visitor {};
   NodeChildrenVisitor children_visitor {};
   std::ostringstream out;
