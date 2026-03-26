@@ -6,44 +6,11 @@
 
 #include "parser.h"
 
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 
-#include "flicker.h"
 #include "util.h"
-
-// ANTLR --------------------------------------------------
-
-class FlickerErrorListener : public antlr4::BaseErrorListener {
-public:
-  void syntaxError(
-    antlr4::Recognizer* recognizer, antlr4::Token* offending_symbol, size_t line, size_t char_position_in_line, const std::string& msg, std::exception_ptr e
-  ) override {
-    std::cout << "Error at " << line << ":" << char_position_in_line << ". " << msg << '\n';
-  }
-};
-
-// If you're trying to get output_dot for ANTLR, you'll need to revert the util file back to the previous version (before 3/19/2026).
-// void Parser::output_dot(antlr4::tree::ParseTree* tree) {
-//   if (std::ofstream out {DEBUG_DOT_FILENAME}) {
-//     out << to_dot(tree, &antlr_parser_) << '\n';
-//     out.close();
-//     std::cout << "Parse tree exported to " << DEBUG_DOT_FILENAME << '\n';
-//   } else {
-//     std::cerr << "Could not open " << DEBUG_DOT_FILENAME << " to export parse tree\n";
-//   }
-// }
-
-antlr::flicker::ProgramContext* Parser::parse_antlr() {
-  FlickerErrorListener error_listener {};
-  antlr_parser_.removeErrorListeners();
-  antlr_parser_.addErrorListener(&error_listener);
-
-  // Run the thing!
-  return antlr_parser_.program();
-}
-
-// Non-ANTLR --------------------------------------------------
 
 // Statements
 

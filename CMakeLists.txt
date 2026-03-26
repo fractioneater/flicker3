@@ -14,14 +14,7 @@ add_library(flicker_lib
 	src/analyzer.cpp
 	src/vm.cpp
 	src/util.cpp
-	gen/antlr/flicker.cpp
-	gen/antlr/flickerBaseVisitor.cpp
-	gen/antlr/flickerVisitor.cpp
 )
-
-# ANTLR4 Setup
-target_include_directories(flicker_lib SYSTEM PUBLIC /usr/local/include/antlr4-runtime gen/antlr)
-target_link_libraries(flicker_lib PRIVATE /usr/local/lib/libantlr4-runtime.a)
 
 target_compile_options(flicker_lib PRIVATE -Wall -Werror)
 target_include_directories(flicker_lib PUBLIC h)

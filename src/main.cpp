@@ -10,7 +10,6 @@
 #include <fstream>
 #include <iostream>
 
-#include "lexer-adapter.h"
 #include "lexer.h"
 #include "parser.h"
 #include "util.h"
@@ -64,6 +63,7 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
   parser.populate_token_vec();
 
   #if DEBUG_PRINT_TOKENS
+  // TODO: Make this work again (non-ANTLR)
   for (const auto token : token_stream.getTokens()) {
     if (token->getType() == antlr4::Token::EOF) { // EOF:
       std::cout << "EOF: col " << token->getCharPositionInLine() << "\n";
