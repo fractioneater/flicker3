@@ -95,6 +95,7 @@ classItem
   | accessSpecifier* (variableDecl | method)
   ;
 // CONSIDER: Identifiers can't have type params this way (no init for T())
+//    Wait, what did I mean by that? Of course they can; the type is defined in "Class of T"
 initializer : IDENTIFIER LEFT_PAREN initParamList? RIGHT_PAREN superInitParams? blockOrStatement ;
 initParamList : initParam (COMMA initParam)* ;
 initParam : (VAR | VAL)? IDENTIFIER COLON type ;
