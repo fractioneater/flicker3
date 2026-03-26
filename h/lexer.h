@@ -125,7 +125,7 @@ class Lexer {
 
   /**
    * Checks if the expected char is present, and if so, advances to the next.
-   * @param expected The char to check for
+   * @param expected Char to check for
    * @return Whether the expected char was found
    */
   bool match(char expected) {
@@ -149,8 +149,8 @@ class Lexer {
   /**
    * Creates a token of a specified type, initializing it with lexer state info and a value.
    * Relies on make_token(type).
-   * @param type The type of token to create
-   * @param value The token's value (number, string, char)
+   * @param type Type of token to create
+   * @param value Token's value (number, string, char)
    * @return A token with type, offset, length, and value data
    */
   [[nodiscard]] Token make_token(TokenType type, std::any value) {
@@ -194,10 +194,10 @@ class Lexer {
   /**
    * Appends the UTF-8 encoded representation of a Unicode code point to a buffer. Also checks
    * the code point to ensure it is within the valid Unicode range and not a surrogate.
-   * @param buffer The string to which the UTF-8 encoded bytes will be appended
-   * @param code_point The Unicode code point to be encoded and added to the buffer
+   * @param buffer String to which the UTF-8 encoded bytes will be appended
+   * @param code_point Unicode code point to be encoded and added to the buffer
    *                   Must be a valid code point in the Unicode range (0x0 to 0x10FFFF) and not a surrogate (0xD800 to 0xDFFF)
-   * @param sequence_start_offset The char index in the source file where the sequence starts, for error reporting
+   * @param sequence_start_offset Char index in the source file where the sequence starts, for error reporting
    */
   void append_utf8(std::string& buffer, uint32_t code_point, size_t sequence_start_offset);
 
@@ -285,7 +285,7 @@ public:
   [[nodiscard]] const std::vector<size_t>& get_line_offsets() const { return line_offsets_; }
   /**
    * Returns the human-readable position in code of a character index in the source file.
-   * @param offset The char index to convert to line and column
+   * @param offset Char index to convert to line and column
    * @return A pair of [line, col], 1-based indexing, from the offset given
    */
   [[nodiscard]] std::pair<size_t, size_t> offset_to_line_col(size_t offset) const;

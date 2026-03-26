@@ -59,7 +59,7 @@ class Parser {
   antlr::flicker antlr_parser_;
 
   Lexer& lexer_;
-  ExprNode ast_ {};
+  std::vector<StmtNode> program_ {};
 
   std::vector<Token> tokens_ {};
   Token* current_ {};
@@ -93,7 +93,7 @@ public:
 
   /**
    * Returns a boolean of whether the next token is a certain type.
-   * @param type The type to check for
+   * @param type Type to check for
    * @return A boolean, true if the token matches 'type'
    */
   [[nodiscard]] bool check(TokenType type) const {
@@ -102,7 +102,7 @@ public:
 
   /**
    * Advances if the next token matches a certain type, otherwise returns false.
-   * @param type The type to check for
+   * @param type Type to check for
    * @return A boolean, true if the token matches 'type'
    */
   bool match(TokenType type) {
@@ -112,10 +112,20 @@ public:
   }
 
   /**
+   * Match as many TOKEN_LINEs as are available, returning true if one was found.
+   * @return Whether at least one newline was found
+   */
+  bool match_line() {
+    if (!check(TOKEN_LINE)) return false;
+    while (match(TOKEN_LINE)) {}
+    return true;
+  }
+
+  /**
    * If the next token matches a certain type, advances, otherwise creates an error.
-   * @param type The expected type of the next token
-   * @param message The error message in case the expected type is not found
-   * @param error_token The token to associate the error with
+   * @param type Expected type of the next token
+   * @param message Error message in case the expected type is not found
+   * @param error_token Token to associate the error with
    */
   void expect(TokenType type, std::string_view message, Token* error_token = nullptr) {
     error_token = (error_token == nullptr) ? current_ : error_token;
@@ -124,17 +134,31 @@ public:
   }
 
   /**
+   * Consumes a chain of TOKEN_LINEs if there are any, otherwise creates an error.
+   * @param message Error message
+   * @param error_token Token to associate the error with
+   */
+  void expect_line(std::string_view message, Token* error_token = nullptr) {
+    error_token = (error_token == nullptr) ? current_ : error_token;
+    if (!match_line()) errors_.emplace_back(error_token, std::string(message));
+  }
+
+  /**
    * If the next token matches a certain type, advances, otherwise creates an error.
-   * @param type The expected type of the next token
-   * @param message The error message in case the expected type is not found
-   * @param context A context to add to the error
-   * @param error_token The token to associate the error with
+   * @param type Expected type of the next token
+   * @param message Error message in case the expected type is not found
+   * @param context Context to add to the error
+   * @param error_token Token to associate the error with
    */
   void expect(TokenType type, std::string_view message, ParserError& context, Token* error_token = nullptr) {
     error_token = (error_token == nullptr) ? current_ : error_token;
     if (!match(type))
       errors_.emplace_back(error_token, std::string(message), std::move(context));
   }
+
+  StmtNode declaration();
+  StmtNode statement();
+  StmtNode block();
 
   ExprNode binary_right_assoc(const ExprNode& left);
   ExprNode binary(const ExprNode& left);
@@ -156,13 +180,13 @@ public:
   void populate_token_vec();
 
   /**
-   * Parses the input token stream and generates an AST which is stored in ast_ if there are no errors.
+   * Parses the input token stream and generates an AST which is stored in program_ if there are no errors.
    * @return True if parsing completes without syntax errors; otherwise false
    */
   void parse();
 
   /**
-   * Output in GraphViz DOT format, to a file specified by DEBUG_DOT_FILENAME, from the tree stored in ast_.
+   * Output in GraphViz DOT format, to a file specified by DEBUG_DOT_FILENAME, from the tree stored in program_.
    * There must be a tree already—parse() must have been called.
    */
   void output_dot() const;

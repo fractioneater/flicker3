@@ -13,8 +13,8 @@
  * Prints an error, warning, or note, and all of its child contexts.
  * @param line Line number (1-based)
  * @param col Column number (1-based)
- * @param module The name of the module being compiled
- * @param line_str The line in the source code where the error occurs
+ * @param module Name of the module being compiled
+ * @param line_str Line in the source code where the error occurs
  * @param message Error message
  * @param type 0 for error, 1 for warning, 2 for note
  */
@@ -32,7 +32,7 @@ void print_error(const Lexer& lexer, const ParserError& err, std::string_view mo
 
 /**
  * Exports a  parse tree to GraphViz DOT format.
- * @param tree The parse tree to export
+ * @param tree Parse tree to export
  * @return A string containing the DOT representation of the tree
  */
-std::string to_dot(const ExprNode& tree);
+std::string to_dot(const std::vector<StmtNode>& tree);

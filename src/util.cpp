@@ -60,8 +60,29 @@ void print_error(const Lexer& lexer, const ParserError& err, const std::string_v
   if (err.context) print_error(lexer, *err.context, module, 2);
 }
 
-// Returns a vector of a node's children.
-class NodeChildrenVisitor : public ExprVisitor<std::vector<ExprNode>> {
+// Forward declaration so visit_block_stmt can walk().
+static void walk(const std::vector<StmtNode>& vec, int parent_id);
+// These variables are static for the same reason.
+static int id_counter {};
+static std::ostringstream out {};
+
+// Returns a vector of a node's EXPRESSION children.
+class StmtChildrenVisitor : public StmtVisitor<std::vector<ExprNode>> {
+  std::vector<ExprNode> visit_block_stmt(std::shared_ptr<Statements::Block> stmt) override {
+    walk(stmt->statements, id_counter - 1);
+    return {};
+  }
+
+  std::vector<ExprNode> visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) override {
+    return {stmt->expression};
+  }
+
+  std::vector<ExprNode> visit_pass_stmt(std::shared_ptr<Statements::Pass> stmt) override {
+    return {};
+  }
+};
+
+class ExprChildrenVisitor : public ExprVisitor<std::vector<ExprNode>> {
   std::vector<ExprNode> visit_binary_expr(std::shared_ptr<Expressions::Binary> binary) override {
     return {binary->left, binary->right};
   }
@@ -84,7 +105,21 @@ class NodeChildrenVisitor : public ExprVisitor<std::vector<ExprNode>> {
 };
 
 // Returns the node's name as a string.
-class NodeNameVisitor : public ExprVisitor<std::string> {
+class StmtNameVisitor : public StmtVisitor<std::string> {
+  std::string visit_block_stmt(std::shared_ptr<Statements::Block> stmt) override {
+    return "block";
+  }
+
+  std::string visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) override {
+    return "expression";
+  }
+
+  std::string visit_pass_stmt(std::shared_ptr<Statements::Pass> stmt) override {
+    return "pass";
+  }
+};
+
+class ExprNameVisitor : public ExprVisitor<std::string> {
   std::string visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) override {
     const std::string blah {expr->fn_name};
     return "binary " + blah;
@@ -121,36 +156,47 @@ class NodeNameVisitor : public ExprVisitor<std::string> {
   }
 
   std::string visit_print_expr(std::shared_ptr<Expressions::Print> print) override {
-    const std::string blah {print->fn_name};
-    return "print (" + blah + ")";
+    return std::string {print->fn_name};
   }
 };
 
-static void walk(
-  const ExprNode& node, std::ostringstream& out, int& id_counter, int parent_id, NodeNameVisitor& name_visitor,
-  NodeChildrenVisitor& children_visitor
-) {
+static StmtNameVisitor snv {};
+static StmtChildrenVisitor scv {};
+static ExprNameVisitor env {};
+static ExprChildrenVisitor ecv {};
+
+static void walk(const ExprNode& node, int parent_id) {
   const int my_id = id_counter++;
-  const std::string label {node->accept(name_visitor)};
+  const std::string label {node->accept(env)};
 
   out << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=cornflowerblue, fontcolor=blue];\n";
+  out << "  n" << parent_id << " -> n" << my_id << ";\n";
 
-  if (parent_id != -1)
-    out << "  n" << parent_id << " -> n" << my_id << ";\n";
-
-  for (const auto& child : node->accept(children_visitor))
-    walk(child, out, id_counter, my_id, name_visitor, children_visitor);
+  for (const auto& child : node->accept(ecv))
+    walk(child, my_id);
 }
 
-std::string to_dot(const ExprNode& tree) {
-  NodeNameVisitor name_visitor {};
-  NodeChildrenVisitor children_visitor {};
-  std::ostringstream out;
-  out << "digraph Expr {\n";
+static void walk(const std::vector<StmtNode>& vec, int parent_id) {
+  for (const auto& stmt : vec) {
+    const int my_id = id_counter++;
+    const std::string label {stmt->accept(snv)};
+
+    out << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=red, fontcolor=maroon];\n";
+    out << "  n" << parent_id << " -> n" << my_id << ";\n";
+
+    for (const auto& child : stmt->accept(scv))
+      walk(child, my_id);
+  }
+}
+
+std::string to_dot(const std::vector<StmtNode>& tree) {
+  out.clear(); // Make sure to reset the static vars.
+  out << "digraph Program {\n";
   out << "  rankdir=TB;\n";
   out << "  node [fontname=\"Iosevka Term SS09\"];\n";
-  int id_counter {};
-  walk(tree, out, id_counter, -1, name_visitor, children_visitor);
+  out << "  n0 [label=\"program\", shape=box, color=purple, fontcolor=black];\n";
+  id_counter = 1; // Another static var.
+  walk(tree, 0);
   out << "}\n";
   return out.str();
 }
