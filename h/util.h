@@ -35,4 +35,4 @@ void print_error(const Lexer& lexer, const ParserError& err, std::string_view mo
  * @param tree The parse tree to export
  * @return A string containing the DOT representation of the tree
  */
-std::string to_dot(const std::shared_ptr<Expr>& tree);
+std::string to_dot(const ExprNode& tree);

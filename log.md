@@ -156,6 +156,10 @@ name of this function so it can be resolved then called. There are still some if
 
 And, because it has more benefits than drawbacks, `print` is now an expression.
 
+## March 25, 2026
+
+The script from yesterday now creates `Stmt` AST node classes as well! That means next time I get a chance to work on this, Flicker programs will actually be a list of statements instead of a single expression. It may be worth noting that all statements can do right now is serve as a wrapper around an expression.
+
 [learncpp]: https://learncpp.com
 
 [thing]: https://github.com/

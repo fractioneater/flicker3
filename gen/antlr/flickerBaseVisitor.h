@@ -177,14 +177,6 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitPrintStmt(flicker::PrintStmtContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitConsoleErrorStmt(flicker::ConsoleErrorStmtContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual std::any visitPassStmt(flicker::PassStmtContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -262,6 +254,10 @@ public:
   }
 
   virtual std::any visitIsExpr(flicker::IsExprContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitPrintExpr(flicker::PrintExprContext *ctx) override {
     return visitChildren(ctx);
   }
 

@@ -45,62 +45,62 @@ antlr::flicker::ProgramContext* Parser::parse_antlr() {
 
 // Non-ANTLR --------------------------------------------------
 
-Expression Parser::binary_right_assoc(const Expression& left) {
+ExprNode Parser::binary_right_assoc(const ExprNode& left) {
   const Precedence prec {static_cast<int>(rules[previous_->type].prec)};
-  return std::make_shared<Binary>(*previous_, rules[previous_->type].fn_name, left, parse_expression(prec));
+  return std::make_shared<Expressions::Binary>(*previous_, rules[previous_->type].fn_name, left, parse_expression(prec));
 }
 
-Expression Parser::binary(const Expression& left) {
+ExprNode Parser::binary(const ExprNode& left) {
   const Precedence prec {static_cast<int>(rules[previous_->type].prec) + 1};
-  return std::make_shared<Binary>(*previous_, rules[previous_->type].fn_name, left, parse_expression(prec));
+  return std::make_shared<Expressions::Binary>(*previous_, rules[previous_->type].fn_name, left, parse_expression(prec));
 }
 
-Expression Parser::infix_not(const Expression& left) {
+ExprNode Parser::infix_not(const ExprNode& left) {
   expect(TOKEN_IN, "Cannot use 'not' as an infix operator by itself; try 'not in' or 'is not'", previous_);
   constexpr Precedence prec {static_cast<int>(Precedence::IN) + 1};
-  return std::make_shared<Binary>(*(previous_ - 1), "not_in", left, parse_expression(prec));
+  return std::make_shared<Expressions::Binary>(*(previous_ - 1), "not_in", left, parse_expression(prec));
 }
 
-Expression Parser::binary_is(const Expression& left) {
+ExprNode Parser::binary_is(const ExprNode& left) {
   constexpr Precedence prec {static_cast<int>(Precedence::IS) + 1};
   if (match(TOKEN_NOT))
-    return std::make_shared<Binary>(*(previous_ - 1), "is_not", left, parse_expression(prec));
-  return std::make_shared<Binary>(*previous_, "is", left, parse_expression(prec));
+    return std::make_shared<Expressions::Binary>(*(previous_ - 1), "is_not", left, parse_expression(prec));
+  return std::make_shared<Expressions::Binary>(*previous_, "is", left, parse_expression(prec));
 }
 
-Expression Parser::unary() {
-  return std::make_shared<Unary>(*previous_, rules[previous_->type].fn_name, parse_expression(Precedence::PREFIX));
+ExprNode Parser::unary() {
+  return std::make_shared<Expressions::Unary>(*previous_, rules[previous_->type].fn_name, parse_expression(Precedence::PREFIX));
 }
 
-Expression Parser::prefix_not() {
-  return std::make_shared<Unary>(*previous_, "!", parse_expression(Precedence::NOT));
+ExprNode Parser::prefix_not() {
+  return std::make_shared<Expressions::Unary>(*previous_, "!", parse_expression(Precedence::NOT));
 }
 
-Expression Parser::print() {
-  return std::make_shared<Print>(*previous_, parse_expression(Precedence::PRINT));
+ExprNode Parser::print() {
+  return std::make_shared<Expressions::Print>(*previous_, rules[previous_->type].fn_name, parse_expression(Precedence::PRINT));
 }
 
 // ReSharper disable once CppMemberFunctionMayBeConst
-Expression Parser::literal() {
+ExprNode Parser::literal() {
   switch (previous_->type) {
-    case TOKEN_TRUE: return std::make_shared<Literal>(true);
-    case TOKEN_FALSE: return std::make_shared<Literal>(false);
-    case TOKEN_NIL: return std::make_shared<Literal>(nullptr);
+    case TOKEN_TRUE: return std::make_shared<Expressions::Literal>(true);
+    case TOKEN_FALSE: return std::make_shared<Expressions::Literal>(false);
+    case TOKEN_NIL: return std::make_shared<Expressions::Literal>(nullptr);
     case TOKEN_NUMBER:
     case TOKEN_STRING:
-    case TOKEN_CHAR: return std::make_shared<Literal>(previous_->value);
+    case TOKEN_CHAR: return std::make_shared<Expressions::Literal>(previous_->value);
     default: throw std::logic_error {"unreachable"};
   }
 }
 
-Expression Parser::grouping() {
+ExprNode Parser::grouping() {
   ParserError start_context {previous_, "To match this one"};
-  const auto grouping {std::make_shared<Grouping>(parse_expression(Precedence::BEGIN))};
+  const auto grouping {std::make_shared<Expressions::Grouping>(parse_expression(Precedence::BEGIN))};
   expect(TOKEN_RIGHT_PAREN, "Expecting a closing parenthesis", start_context);
   return grouping;
 }
 
-Expression Parser::parse_expression(Precedence precedence) {
+ExprNode Parser::parse_expression(Precedence precedence) {
   advance();
   const PrefixFn prefix_rule {rules[previous_->type].prefix};
   if (prefix_rule == nullptr) {

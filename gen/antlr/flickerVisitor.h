@@ -100,10 +100,6 @@ public:
 
     virtual std::any visitReturnStmt(flicker::ReturnStmtContext *context) = 0;
 
-    virtual std::any visitPrintStmt(flicker::PrintStmtContext *context) = 0;
-
-    virtual std::any visitConsoleErrorStmt(flicker::ConsoleErrorStmtContext *context) = 0;
-
     virtual std::any visitPassStmt(flicker::PassStmtContext *context) = 0;
 
     virtual std::any visitWhenBody(flicker::WhenBodyContext *context) = 0;
@@ -143,6 +139,8 @@ public:
     virtual std::any visitListOrMap(flicker::ListOrMapContext *context) = 0;
 
     virtual std::any visitIsExpr(flicker::IsExprContext *context) = 0;
+
+    virtual std::any visitPrintExpr(flicker::PrintExprContext *context) = 0;
 
     virtual std::any visitIdentifier(flicker::IdentifierContext *context) = 0;
 
