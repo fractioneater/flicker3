@@ -23,6 +23,7 @@ namespace Statements {
 
 namespace Expressions {
   class Binary;
+  class Comparison;
   class Unary;
   class Grouping;
   class Literal;
@@ -46,6 +47,7 @@ public:
 class ExprVisitorAny {
 public:
   virtual std::any visit_binary_expr_any(std::shared_ptr<Expressions::Binary> expr) = 0;
+  virtual std::any visit_comparison_expr_any(std::shared_ptr<Expressions::Comparison> expr) = 0;
   virtual std::any visit_unary_expr_any(std::shared_ptr<Expressions::Unary> expr) = 0;
   virtual std::any visit_grouping_expr_any(std::shared_ptr<Expressions::Grouping> expr) = 0;
   virtual std::any visit_literal_expr_any(std::shared_ptr<Expressions::Literal> expr) = 0;
@@ -92,6 +94,7 @@ template <typename R>
 class ExprVisitor : public ExprVisitorAny {
 public:
   virtual R visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) = 0;
+  virtual R visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) = 0;
   virtual R visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) = 0;
   virtual R visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) = 0;
   virtual R visit_literal_expr(std::shared_ptr<Expressions::Literal> expr) = 0;
@@ -100,6 +103,10 @@ public:
 private:
   std::any visit_binary_expr_any(std::shared_ptr<Expressions::Binary> expr) final {
     return visit_binary_expr(std::move(expr));
+  }
+
+  std::any visit_comparison_expr_any(std::shared_ptr<Expressions::Comparison> expr) final {
+    return visit_comparison_expr(std::move(expr));
   }
 
   std::any visit_unary_expr_any(std::shared_ptr<Expressions::Unary> expr) final {
@@ -213,27 +220,37 @@ public:
 // Expressions --------------------------------------------------
 class Expressions::Binary : public Expr, public std::enable_shared_from_this<Binary> {
 public:
-  Binary(const Token& op, NamedFunction fn_name, ExprNode left, ExprNode right) : op {op}, fn_name {fn_name}, left {std::move(left)}, right {std::move(right)} {}
+  Binary(NamedFunction fn_name, ExprNode left, ExprNode right) : fn_name {fn_name}, left {std::move(left)}, right {std::move(right)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_binary_expr_any(shared_from_this());
   }
 
-  const Token op {};
   const NamedFunction fn_name {};
   const ExprNode left {};
   const ExprNode right {};
 };
 
+class Expressions::Comparison : public Expr, public std::enable_shared_from_this<Comparison> {
+public:
+  Comparison(std::vector<NamedFunction> fn_names, std::vector<ExprNode> expressions) : fn_names {std::move(fn_names)}, expressions {std::move(expressions)} {}
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_comparison_expr_any(shared_from_this());
+  }
+
+  const std::vector<NamedFunction> fn_names {};
+  const std::vector<ExprNode> expressions {};
+};
+
 class Expressions::Unary : public Expr, public std::enable_shared_from_this<Unary> {
 public:
-  Unary(const Token& op, NamedFunction fn_name, ExprNode expr) : op {op}, fn_name {fn_name}, expr {std::move(expr)} {}
+  Unary(NamedFunction fn_name, ExprNode expr) : fn_name {fn_name}, expr {std::move(expr)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_unary_expr_any(shared_from_this());
   }
 
-  const Token op {};
   const NamedFunction fn_name {};
   const ExprNode expr {};
 };
@@ -262,13 +279,12 @@ public:
 
 class Expressions::Print : public Expr, public std::enable_shared_from_this<Print> {
 public:
-  Print(const Token& op, NamedFunction fn_name, ExprNode expr) : op {op}, fn_name {fn_name}, expr {std::move(expr)} {}
+  Print(NamedFunction fn_name, ExprNode expr) : fn_name {fn_name}, expr {std::move(expr)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_print_expr_any(shared_from_this());
   }
 
-  const Token op {};
   const NamedFunction fn_name {};
   const ExprNode expr {};
 };

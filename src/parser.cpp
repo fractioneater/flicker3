@@ -74,37 +74,50 @@ StmtNode Parser::block_or_statement() {
 
 ExprNode Parser::binary_right_assoc(const ExprNode& left) {
   const Precedence prec {static_cast<int>(rules[previous_->type].prec)};
-  return std::make_shared<Expressions::Binary>(*previous_, rules[previous_->type].fn_name, left, parse_expression(prec));
+  return std::make_shared<Expressions::Binary>(rules[previous_->type].fn_name, left, parse_expression(prec));
 }
 
 ExprNode Parser::binary(const ExprNode& left) {
   const Precedence prec {static_cast<int>(rules[previous_->type].prec) + 1};
-  return std::make_shared<Expressions::Binary>(*previous_, rules[previous_->type].fn_name, left, parse_expression(prec));
+  return std::make_shared<Expressions::Binary>(rules[previous_->type].fn_name, left, parse_expression(prec));
 }
 
 ExprNode Parser::infix_not(const ExprNode& left) {
   expect(TOKEN_IN, "Cannot use 'not' as an infix operator by itself; try 'not in' or 'is not'", previous_);
   constexpr Precedence prec {static_cast<int>(Precedence::IN) + 1};
-  return std::make_shared<Expressions::Binary>(*(previous_ - 1), "not_in", left, parse_expression(prec));
+  return std::make_shared<Expressions::Binary>("not_in", left, parse_expression(prec));
 }
 
 ExprNode Parser::binary_is(const ExprNode& left) {
   constexpr Precedence prec {static_cast<int>(Precedence::IS) + 1};
   if (match(TOKEN_NOT))
-    return std::make_shared<Expressions::Binary>(*(previous_ - 1), "is_not", left, parse_expression(prec));
-  return std::make_shared<Expressions::Binary>(*previous_, "is", left, parse_expression(prec));
+    return std::make_shared<Expressions::Binary>("is_not", left, parse_expression(prec));
+  return std::make_shared<Expressions::Binary>("is", left, parse_expression(prec));
+}
+
+ExprNode Parser::comparison(const ExprNode& left) {
+  constexpr Precedence prec {static_cast<int>(Precedence::COMPARISON) + 1};
+  std::vector<NamedFunction> comparison_funcs {};
+  std::vector operands {left};
+
+  do {
+    comparison_funcs.emplace_back(rules[previous_->type].fn_name);
+    operands.emplace_back(parse_expression(prec));
+  } while (match_precedence(Precedence::COMPARISON));
+
+  return std::make_shared<Expressions::Comparison>(comparison_funcs, operands);
 }
 
 ExprNode Parser::unary() {
-  return std::make_shared<Expressions::Unary>(*previous_, rules[previous_->type].fn_name, parse_expression(Precedence::PREFIX));
+  return std::make_shared<Expressions::Unary>(rules[previous_->type].fn_name, parse_expression(Precedence::PREFIX));
 }
 
 ExprNode Parser::prefix_not() {
-  return std::make_shared<Expressions::Unary>(*previous_, "!", parse_expression(Precedence::NOT));
+  return std::make_shared<Expressions::Unary>("!", parse_expression(Precedence::NOT));
 }
 
 ExprNode Parser::print() {
-  return std::make_shared<Expressions::Print>(*previous_, rules[previous_->type].fn_name, parse_expression(Precedence::PRINT));
+  return std::make_shared<Expressions::Print>(rules[previous_->type].fn_name, parse_expression(Precedence::PRINT));
 }
 
 // ReSharper disable once CppMemberFunctionMayBeConst
