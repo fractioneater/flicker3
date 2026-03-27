@@ -82,16 +82,12 @@ class StmtChildrenVisitor : public StmtVisitor<std::vector<ExprNode>> {
   }
 
   std::vector<ExprNode> visit_if_stmt(std::shared_ptr<Statements::If> stmt) override {
-    const auto this_id {id_counter - 1};
-    walk(std::vector {stmt->then_body}, this_id);
-    walk(std::vector {stmt->else_body}, this_id);
+    walk(std::vector {stmt->then_body, stmt->else_body}, id_counter - 1);
     return {stmt->condition};
   }
 
   std::vector<ExprNode> visit_while_stmt(std::shared_ptr<Statements::While> stmt) override {
-    const auto this_id {id_counter - 1};
-    walk(std::vector {stmt->loop_body}, this_id);
-    walk(std::vector {stmt->else_body}, this_id);
+    walk(std::vector {stmt->loop_body, stmt->else_body}, id_counter - 1);
     return {stmt->condition};
   }
 };
