@@ -2,7 +2,7 @@
 
 Flicker 1 was written in Kotlin. It used an AST and an interpreter. It was painfully slow and wasn't even finished.
 
-Flicker 2 was written in C. It used bytecode in a VM. It was nice and fast, and it had lots of nice features.
+[Flicker 2] was written in C. It used bytecode in a VM. It was nice and fast, and it had lots of useful features.
 
 Flicker 3 will be...
 
@@ -48,3 +48,5 @@ few circulating fan theories (it is important that I clarify **these are only ru
 3. The Developer chose a random two-syllable word that was not taken.
 4. A flicker is a bird (_Colaptes auratus_). The Developer has been documented reading _Crafting Interpreters_ by Bob Nystrom. Bob Nystrom occasionally names
    his programming languages after birds (Wren, Magpie, Finch, and Lark). Okay, I admit this is a stretch.
+
+[Flicker 2]: https://github.com/fractioneater/flicker
