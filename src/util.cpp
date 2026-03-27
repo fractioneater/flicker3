@@ -93,24 +93,28 @@ class StmtChildrenVisitor : public StmtVisitor<std::vector<ExprNode>> {
 };
 
 class ExprChildrenVisitor : public ExprVisitor<std::vector<ExprNode>> {
-  std::vector<ExprNode> visit_binary_expr(std::shared_ptr<Expressions::Binary> binary) override {
-    return {binary->left, binary->right};
+  std::vector<ExprNode> visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) override {
+    return {expr->left, expr->right};
   }
 
-  std::vector<ExprNode> visit_unary_expr(std::shared_ptr<Expressions::Unary> unary) override {
-    return {unary->expr};
+  std::vector<ExprNode> visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) override {
+    return expr->expressions;
   }
 
-  std::vector<ExprNode> visit_grouping_expr(std::shared_ptr<Expressions::Grouping> group) override {
-    return {group->expr};
+  std::vector<ExprNode> visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) override {
+    return {expr->expr};
   }
 
-  std::vector<ExprNode> visit_literal_expr(std::shared_ptr<Expressions::Literal> literal) override {
+  std::vector<ExprNode> visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) override {
+    return {expr->expr};
+  }
+
+  std::vector<ExprNode> visit_literal_expr(std::shared_ptr<Expressions::Literal> expr) override {
     return {};
   }
 
-  std::vector<ExprNode> visit_print_expr(std::shared_ptr<Expressions::Print> print) override {
-    return {print->expr};
+  std::vector<ExprNode> visit_print_expr(std::shared_ptr<Expressions::Print> expr) override {
+    return {expr->expr};
   }
 };
 
@@ -147,6 +151,16 @@ class ExprNameVisitor : public ExprVisitor<std::string> {
     return "binary " + blah;
   }
 
+  std::string visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) override {
+    std::string blah {"..."};
+    for (const auto& comparison : expr->fn_names) {
+      blah += " ";
+      blah += static_cast<std::string>(comparison);
+      blah += " ...";
+    }
+    return blah;
+  }
+
   std::string visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) override {
     const std::string blah {expr->fn_name};
     return "unary " + blah;
@@ -177,8 +191,8 @@ class ExprNameVisitor : public ExprVisitor<std::string> {
     return "unknown literal";
   }
 
-  std::string visit_print_expr(std::shared_ptr<Expressions::Print> print) override {
-    return std::string {print->fn_name};
+  std::string visit_print_expr(std::shared_ptr<Expressions::Print> expr) override {
+    return std::string {expr->fn_name};
   }
 };
 

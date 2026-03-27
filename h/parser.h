@@ -104,6 +104,17 @@ public:
   }
 
   /**
+   * Advances if the next token matches a certain operator precedence, otherwise returns false.
+   * @param prec Precedence to check for
+   * @return A boolean, true if the token's precedence matches prec
+   */
+  bool match_precedence(Precedence prec) {
+    if (rules[current_->type].prec != prec) return false;
+    advance();
+    return true;
+  }
+
+  /**
    * If the next token matches a certain type, advances, otherwise creates an error.
    * @param type Expected type of the next token
    * @param message Error message in case the expected type is not found
@@ -149,6 +160,7 @@ public:
   ExprNode binary(const ExprNode& left);
   ExprNode infix_not(const ExprNode& left);
   ExprNode binary_is(const ExprNode& left);
+  ExprNode comparison(const ExprNode& left);
   ExprNode unary();
   ExprNode prefix_not();
   ExprNode print();
@@ -223,12 +235,12 @@ public:
     /* TOKEN_QUEST         */ UNUSED,
     /* TOKEN_QUEST_COLON   */ INFIX_RULE(binary, "?:", NIL_COALESCING),
     /* TOKEN_QUEST_DOT     *//* INFIX_RULE(dot, POSTFIX),*/ UNUSED,
-    /* TOKEN_GT            */ INFIX_RULE(binary, ">", COMPARISON),
+    /* TOKEN_GT            */ INFIX_RULE(comparison, ">", COMPARISON),
     /* TOKEN_GT_GT         */ INFIX_RULE(binary, ">>", BIT_SHIFT),
-    /* TOKEN_GT_EQ         */ INFIX_RULE(binary, ">=", COMPARISON),
-    /* TOKEN_LT            */ INFIX_RULE(binary, "<", COMPARISON),
+    /* TOKEN_GT_EQ         */ INFIX_RULE(comparison, ">=", COMPARISON),
+    /* TOKEN_LT            */ INFIX_RULE(comparison, "<", COMPARISON),
     /* TOKEN_LT_LT         */ INFIX_RULE(binary, "<<", BIT_SHIFT),
-    /* TOKEN_LT_EQ         */ INFIX_RULE(binary, "<=", COMPARISON),
+    /* TOKEN_LT_EQ         */ INFIX_RULE(comparison, "<=", COMPARISON),
     /* TOKEN_COLON         */ UNUSED,
     /* TOKEN_COLON_COLON   *//* INFIX_RULE(scope_access, ATOM),*/ UNUSED,
     /* TOKEN_SLASH         */ INFIX_RULE(binary, "/", FACTOR),
@@ -242,9 +254,9 @@ public:
     /* TOKEN_AMPERSAND     */ INFIX_RULE(binary, "&", BIT_AND),
     /* TOKEN_AMPERSAND_EQ  */ UNUSED,
     /* TOKEN_BANG          */ PREFIX_RULE(unary, "!", PREFIX),
-    /* TOKEN_BANG_EQ       */ INFIX_RULE(binary, "!=", COMPARISON),
+    /* TOKEN_BANG_EQ       */ INFIX_RULE(comparison, "!=", COMPARISON),
     /* TOKEN_EQ            */ UNUSED,
-    /* TOKEN_EQ_EQ         */ INFIX_RULE(binary, "==", COMPARISON),
+    /* TOKEN_EQ_EQ         */ INFIX_RULE(comparison, "==", COMPARISON),
     /* TOKEN_IDENTIFIER    *//* PREFIX_RULE(identifier, NONE),*/ UNUSED,
     /* TOKEN_STRING        */ PREFIX_RULE(literal, "", NONE),
     /* TOKEN_INTERPOLATION *//* PREFIX_RULE(string_interpolation, NONE),*/ UNUSED,

@@ -74,16 +74,21 @@ DEFAULT_SPEC = {
     {
       "name": "Binary",
       "fields": [
-        {"type": "Token", "name": "op", "ref": True},
         {"type": "NamedFunction", "name": "fn_name"},
         {"type": "ExprNode", "name": "left", "move": True},
         {"type": "ExprNode", "name": "right", "move": True},
       ],
     },
     {
+      "name": "Comparison",
+      "fields": [
+        {"type": "std::vector<NamedFunction>", "name": "fn_names", "move": True},
+        {"type": "std::vector<ExprNode>", "name": "expressions", "move": True},
+      ]
+    },
+    {
       "name": "Unary",
       "fields": [
-        {"type": "Token", "name": "op", "ref": True},
         {"type": "NamedFunction", "name": "fn_name"},
         {"type": "ExprNode", "name": "expr", "move": True},
       ],
@@ -93,7 +98,6 @@ DEFAULT_SPEC = {
     {
       "name": "Print",
       "fields": [
-        {"type": "Token", "name": "op", "ref": True},
         {"type": "NamedFunction", "name": "fn_name"},
         {"type": "ExprNode", "name": "expr", "move": True},
       ],

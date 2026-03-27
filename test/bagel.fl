@@ -1,6 +1,1 @@
-if true
-  if false
-    if true do 3
-    else do while true do print 'L'
-else
-  error "H"
+3 <= 92 <= false >= 3 + 2 != 9
