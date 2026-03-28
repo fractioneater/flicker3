@@ -94,7 +94,12 @@ DEFAULT_SPEC = {
       ],
     },
     {"name": "Grouping", "fields": [{"type": "ExprNode", "name": "expr", "move": True}]},
-    {"name": "Literal", "fields": [{"type": "std::any", "name": "value", "move": True}]},
+    {"name": "Number", "fields": [{"type": "double", "name": "value"}]},
+    {"name": "Boolean", "fields": [{"type": "bool", "name": "value"}]},
+    {"name": "Nil", "fields": []},
+    {"name": "Char", "fields": [{"type": "char", "name": "value"}]},
+    {"name": "String", "fields": [{"type": "std::string", "name": "value", "move": True}]},
+    {"name": "Variable", "fields": [{"type": "Token", "name": "identifier", "ref": True}]},
     {
       "name": "Print",
       "fields": [

@@ -26,7 +26,12 @@ namespace Expressions {
   class Comparison;
   class Unary;
   class Grouping;
-  class Literal;
+  class Number;
+  class Boolean;
+  class Char;
+  class String;
+  class Nil;
+  class Variable;
   class Print;
 }
 
@@ -50,7 +55,12 @@ public:
   virtual std::any visit_comparison_expr_any(std::shared_ptr<Expressions::Comparison> expr) = 0;
   virtual std::any visit_unary_expr_any(std::shared_ptr<Expressions::Unary> expr) = 0;
   virtual std::any visit_grouping_expr_any(std::shared_ptr<Expressions::Grouping> expr) = 0;
-  virtual std::any visit_literal_expr_any(std::shared_ptr<Expressions::Literal> expr) = 0;
+  virtual std::any visit_number_expr_any(std::shared_ptr<Expressions::Number> expr) = 0;
+  virtual std::any visit_boolean_expr_any(std::shared_ptr<Expressions::Boolean> expr) = 0;
+  virtual std::any visit_char_expr_any(std::shared_ptr<Expressions::Char> expr) = 0;
+  virtual std::any visit_string_expr_any(std::shared_ptr<Expressions::String> expr) = 0;
+  virtual std::any visit_nil_expr_any(std::shared_ptr<Expressions::Nil> expr) = 0;
+  virtual std::any visit_variable_expr_any(std::shared_ptr<Expressions::Variable> expr) = 0;
   virtual std::any visit_print_expr_any(std::shared_ptr<Expressions::Print> expr) = 0;
   virtual ~ExprVisitorAny() = default;
 };
@@ -97,7 +107,12 @@ public:
   virtual R visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) = 0;
   virtual R visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) = 0;
   virtual R visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) = 0;
-  virtual R visit_literal_expr(std::shared_ptr<Expressions::Literal> expr) = 0;
+  virtual R visit_number_expr(std::shared_ptr<Expressions::Number> expr) = 0;
+  virtual R visit_boolean_expr(std::shared_ptr<Expressions::Boolean> expr) = 0;
+  virtual R visit_char_expr(std::shared_ptr<Expressions::Char> expr) = 0;
+  virtual R visit_string_expr(std::shared_ptr<Expressions::String> expr) = 0;
+  virtual R visit_nil_expr(std::shared_ptr<Expressions::Nil> expr) = 0;
+  virtual R visit_variable_expr(std::shared_ptr<Expressions::Variable> expr) = 0;
   virtual R visit_print_expr(std::shared_ptr<Expressions::Print> expr) = 0;
 
 private:
@@ -117,8 +132,28 @@ private:
     return visit_grouping_expr(std::move(expr));
   }
 
-  std::any visit_literal_expr_any(std::shared_ptr<Expressions::Literal> expr) final {
-    return visit_literal_expr(std::move(expr));
+  std::any visit_number_expr_any(std::shared_ptr<Expressions::Number> expr) final {
+    return visit_number_expr(std::move(expr));
+  }
+
+  std::any visit_boolean_expr_any(std::shared_ptr<Expressions::Boolean> expr) final {
+    return visit_boolean_expr(std::move(expr));
+  }
+
+  std::any visit_char_expr_any(std::shared_ptr<Expressions::Char> expr) final {
+    return visit_char_expr(std::move(expr));
+  }
+
+  std::any visit_string_expr_any(std::shared_ptr<Expressions::String> expr) final {
+    return visit_string_expr(std::move(expr));
+  }
+
+  std::any visit_nil_expr_any(std::shared_ptr<Expressions::Nil> expr) final {
+    return visit_nil_expr(std::move(expr));
+  }
+
+  std::any visit_variable_expr_any(std::shared_ptr<Expressions::Variable> expr) final {
+    return visit_variable_expr(std::move(expr));
   }
 
   std::any visit_print_expr_any(std::shared_ptr<Expressions::Print> expr) final {
@@ -266,15 +301,69 @@ public:
   const ExprNode expr {};
 };
 
-class Expressions::Literal : public Expr, public std::enable_shared_from_this<Literal> {
+class Expressions::Number : public Expr, public std::enable_shared_from_this<Number> {
 public:
-  explicit Literal(std::any value) : value {std::move(value)} {}
+  explicit Number(double value) : value {value} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_literal_expr_any(shared_from_this());
+    return visitor.visit_number_expr_any(shared_from_this());
   }
 
-  const std::any value {};
+  const double value {};
+};
+
+class Expressions::Boolean : public Expr, public std::enable_shared_from_this<Boolean> {
+public:
+  explicit Boolean(bool value) : value {value} {}
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_boolean_expr_any(shared_from_this());
+  }
+
+  const bool value {};
+};
+
+class Expressions::Char : public Expr, public std::enable_shared_from_this<Char> {
+public:
+  explicit Char(char value) : value {value} {}
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_char_expr_any(shared_from_this());
+  }
+
+  const char value {};
+};
+
+class Expressions::String : public Expr, public std::enable_shared_from_this<String> {
+public:
+  explicit String(std::string value) : value {std::move(value)} {}
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_string_expr_any(shared_from_this());
+  }
+
+  const std::string value {};
+};
+
+class Expressions::Nil : public Expr, public std::enable_shared_from_this<Nil> {
+public:
+  Nil() = default;
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_nil_expr_any(shared_from_this());
+  }
+
+};
+
+class Expressions::Variable : public Expr, public std::enable_shared_from_this<Variable> {
+public:
+  explicit Variable(const Token& identifier) : identifier {identifier} {}
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_variable_expr_any(shared_from_this());
+  }
+
+  const Token identifier {};
 };
 
 class Expressions::Print : public Expr, public std::enable_shared_from_this<Print> {
