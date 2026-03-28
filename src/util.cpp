@@ -73,13 +73,9 @@ class StmtChildrenVisitor : public StmtVisitor<std::vector<ExprNode>> {
     return {};
   }
 
-  std::vector<ExprNode> visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) override {
-    return {stmt->expression};
-  }
+  std::vector<ExprNode> visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) override { return {stmt->expression}; }
 
-  std::vector<ExprNode> visit_pass_stmt(std::shared_ptr<Statements::Pass> stmt) override {
-    return {};
-  }
+  std::vector<ExprNode> visit_pass_stmt(std::shared_ptr<Statements::Pass> stmt) override { return {}; }
 
   std::vector<ExprNode> visit_if_stmt(std::shared_ptr<Statements::If> stmt) override {
     walk(std::vector {stmt->then_body, stmt->else_body}, id_counter - 1);
@@ -93,25 +89,21 @@ class StmtChildrenVisitor : public StmtVisitor<std::vector<ExprNode>> {
 };
 
 class ExprChildrenVisitor : public ExprVisitor<std::vector<ExprNode>> {
-  std::vector<ExprNode> visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) override {
-    return {expr->left, expr->right};
-  }
+  std::vector<ExprNode> visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) override { return {expr->left, expr->right}; }
 
-  std::vector<ExprNode> visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) override {
-    return expr->expressions;
-  }
+  std::vector<ExprNode> visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) override { return expr->expressions; }
 
-  std::vector<ExprNode> visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) override {
-    return {expr->expr};
-  }
+  std::vector<ExprNode> visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) override { return {expr->expr}; }
 
-  std::vector<ExprNode> visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) override {
-    return {expr->expr};
-  }
+  std::vector<ExprNode> visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) override { return {expr->expr}; }
 
-  std::vector<ExprNode> visit_literal_expr(std::shared_ptr<Expressions::Literal> expr) override {
-    return {};
-  }
+  std::vector<ExprNode> visit_number_expr(std::shared_ptr<Expressions::Number> expr) override { return {}; }
+  std::vector<ExprNode> visit_boolean_expr(std::shared_ptr<Expressions::Boolean> expr) override { return {}; }
+  std::vector<ExprNode> visit_nil_expr(std::shared_ptr<Expressions::Nil> expr) override { return {}; }
+  std::vector<ExprNode> visit_char_expr(std::shared_ptr<Expressions::Char> expr) override { return {}; }
+  std::vector<ExprNode> visit_string_expr(std::shared_ptr<Expressions::String> expr) override { return {}; }
+
+  std::vector<std::shared_ptr<Expr>> visit_variable_expr(std::shared_ptr<Expressions::Variable> expr) override { return {}; }
 
   std::vector<ExprNode> visit_print_expr(std::shared_ptr<Expressions::Print> expr) override {
     return {expr->expr};
@@ -120,17 +112,11 @@ class ExprChildrenVisitor : public ExprVisitor<std::vector<ExprNode>> {
 
 // Returns the node's name as a string.
 class StmtNameVisitor : public StmtVisitor<std::string> {
-  std::string visit_block_stmt(std::shared_ptr<Statements::Block> stmt) override {
-    return "block";
-  }
+  std::string visit_block_stmt(std::shared_ptr<Statements::Block> stmt) override { return "block"; }
 
-  std::string visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) override {
-    return "expression";
-  }
+  std::string visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) override { return "expression"; }
 
-  std::string visit_pass_stmt(std::shared_ptr<Statements::Pass> stmt) override {
-    return "pass";
-  }
+  std::string visit_pass_stmt(std::shared_ptr<Statements::Pass> stmt) override { return "pass"; }
 
   std::string visit_if_stmt(std::shared_ptr<Statements::If> stmt) override {
     if (std::dynamic_pointer_cast<Statements::Pass>(stmt->else_body))
@@ -166,34 +152,17 @@ class ExprNameVisitor : public ExprVisitor<std::string> {
     return "unary " + blah;
   }
 
-  std::string visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) override {
-    return "( )";
-  }
+  std::string visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) override { return "( )"; }
 
-  std::string visit_literal_expr(std::shared_ptr<Expressions::Literal> expr) override {
-    if (expr->value.type() == typeid(double)) {
-      return std::to_string(std::any_cast<double>(expr->value));
-    }
-    if (expr->value.type() == typeid(char)) {
-      return std::to_string(std::any_cast<char>(expr->value));
-    }
-    if (expr->value.type() == typeid(std::string)) {
-      return std::any_cast<std::string>(expr->value);
-    }
-    if (expr->value.type() == typeid(bool)) {
-      if (std::any_cast<bool>(expr->value))
-        return "true";
-      return "false";
-    }
-    if (expr->value.type() == typeid(nullptr)) {
-      return "nil";
-    }
-    return "unknown literal";
-  }
+  std::string visit_number_expr(std::shared_ptr<Expressions::Number> expr) override { return std::to_string(expr->value); }
+  std::string visit_boolean_expr(std::shared_ptr<Expressions::Boolean> expr) override { return expr->value ? "true" : "false"; }
+  std::string visit_nil_expr(std::shared_ptr<Expressions::Nil> expr) override { return "nil"; }
+  std::string visit_char_expr(std::shared_ptr<Expressions::Char> expr) override { return std::string {expr->value}; }
+  std::string visit_string_expr(std::shared_ptr<Expressions::String> expr) override { return expr->value; }
 
-  std::string visit_print_expr(std::shared_ptr<Expressions::Print> expr) override {
-    return std::string {expr->fn_name};
-  }
+  std::string visit_variable_expr(std::shared_ptr<Expressions::Variable> expr) override { return "variable"; }
+
+  std::string visit_print_expr(std::shared_ptr<Expressions::Print> expr) override { return std::string {expr->fn_name}; }
 };
 
 static StmtNameVisitor snv {};

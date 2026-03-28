@@ -120,17 +120,22 @@ ExprNode Parser::print() {
   return std::make_shared<Expressions::Print>(rules[previous_->type].fn_name, parse_expression(Precedence::PRINT));
 }
 
-// ReSharper disable once CppMemberFunctionMayBeConst
+// ReSharper disable once CppMemberFunctionMayBeConst because it needs to match the PrefixFn signature.
 ExprNode Parser::literal() {
   switch (previous_->type) {
-    case TOKEN_TRUE: return std::make_shared<Expressions::Literal>(true);
-    case TOKEN_FALSE: return std::make_shared<Expressions::Literal>(false);
-    case TOKEN_NIL: return std::make_shared<Expressions::Literal>(nullptr);
-    case TOKEN_NUMBER:
-    case TOKEN_STRING:
-    case TOKEN_CHAR: return std::make_shared<Expressions::Literal>(previous_->value);
+    case TOKEN_TRUE: return std::make_shared<Expressions::Boolean>(true);
+    case TOKEN_FALSE: return std::make_shared<Expressions::Boolean>(false);
+    case TOKEN_NIL: return std::make_shared<Expressions::Nil>();
+    case TOKEN_NUMBER: return std::make_shared<Expressions::Number>(std::any_cast<double>(previous_->value));
+    case TOKEN_STRING: return std::make_shared<Expressions::String>(std::any_cast<std::string>(previous_->value));
+    case TOKEN_CHAR: return std::make_shared<Expressions::Char>(std::any_cast<char>(previous_->value));
     default: throw std::logic_error {"unreachable"};
   }
+}
+
+// ReSharper disable once CppMemberFunctionMayBeConst because it needs to match the PrefixFn signature.
+ExprNode Parser::variable() {
+  return std::make_shared<Expressions::Variable>(*previous_);
 }
 
 ExprNode Parser::grouping() {
