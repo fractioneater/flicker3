@@ -20,7 +20,6 @@ namespace Statements {
   class While;
   class Each;
   class For;
-  class When;
   class Break;
   class Continue;
   class Return;
@@ -53,7 +52,6 @@ public:
   virtual std::any visit_while_stmt_any(std::shared_ptr<Statements::While> stmt) = 0;
   virtual std::any visit_each_stmt_any(std::shared_ptr<Statements::Each> stmt) = 0;
   virtual std::any visit_for_stmt_any(std::shared_ptr<Statements::For> stmt) = 0;
-  virtual std::any visit_when_stmt_any(std::shared_ptr<Statements::When> stmt) = 0;
   virtual std::any visit_break_stmt_any(std::shared_ptr<Statements::Break> stmt) = 0;
   virtual std::any visit_continue_stmt_any(std::shared_ptr<Statements::Continue> stmt) = 0;
   virtual std::any visit_return_stmt_any(std::shared_ptr<Statements::Return> stmt) = 0;
@@ -90,7 +88,6 @@ public:
   virtual R visit_while_stmt(std::shared_ptr<Statements::While> stmt) = 0;
   virtual R visit_each_stmt(std::shared_ptr<Statements::Each> stmt) = 0;
   virtual R visit_for_stmt(std::shared_ptr<Statements::For> stmt) = 0;
-  virtual R visit_when_stmt(std::shared_ptr<Statements::When> stmt) = 0;
   virtual R visit_break_stmt(std::shared_ptr<Statements::Break> stmt) = 0;
   virtual R visit_continue_stmt(std::shared_ptr<Statements::Continue> stmt) = 0;
   virtual R visit_return_stmt(std::shared_ptr<Statements::Return> stmt) = 0;
@@ -119,10 +116,6 @@ private:
 
   std::any visit_for_stmt_any(std::shared_ptr<Statements::For> stmt) final {
     return visit_for_stmt(std::move(stmt));
-  }
-
-  std::any visit_when_stmt_any(std::shared_ptr<Statements::When> stmt) final {
-    return visit_when_stmt(std::move(stmt));
   }
 
   std::any visit_break_stmt_any(std::shared_ptr<Statements::Break> stmt) final {
@@ -315,16 +308,6 @@ public:
   const ExprNode end {};
   const StmtNode loop_body {};
   const StmtNode else_body {};
-};
-
-class Statements::When : public Stmt, public std::enable_shared_from_this<When> {
-public:
-  When() = default;
-
-  std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_when_stmt_any(shared_from_this());
-  }
-
 };
 
 class Statements::Break : public Stmt, public std::enable_shared_from_this<Break> {

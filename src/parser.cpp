@@ -29,7 +29,6 @@ StmtNode Parser::statement() {
   if (match(TOKEN_WHILE)) return while_statement();
   if (match(TOKEN_EACH)) return each_statement();
   if (match(TOKEN_FOR)) return for_statement();
-  if (match(TOKEN_WHEN)) return when_statement();
   if (match(TOKEN_BREAK)) return break_statement();
   if (match(TOKEN_CONTINUE)) return continue_statement();
   if (match(TOKEN_RETURN)) return return_statement();
@@ -107,11 +106,6 @@ StmtNode Parser::for_statement() {
   const StmtNode else_body {optional_else_body()};
 
   return std::make_shared<Statements::For>(label, begin, condition, end, loop_body, else_body);
-}
-
-StmtNode Parser::when_statement() {
-  // TODO.
-  return std::make_shared<Statements::When>();
 }
 
 StmtNode Parser::break_statement() {

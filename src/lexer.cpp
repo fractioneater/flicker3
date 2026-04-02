@@ -50,7 +50,6 @@ namespace Helpers {
     {"using", TOKEN_USING},
     {"val", TOKEN_VAL},
     {"var", TOKEN_VAR},
-    {"when", TOKEN_WHEN},
     {"while", TOKEN_WHILE},
   };
 
