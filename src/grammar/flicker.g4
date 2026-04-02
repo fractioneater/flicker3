@@ -46,6 +46,7 @@ codeItem : statement | expression ;
 
 type : IDENTIFIER QUEST? ((OF | FOR) IDENTIFIER QUEST?)? ;
 // List of Int, Bagel?, List? of Bagel?, FunctionWrapper? for SpecialFunction
+// TODO: I need things like "map for A, B"
 
 // Statement ------------------------------
 
@@ -55,9 +56,9 @@ statement
 	| whileStmt
 	| eachStmt
 	| forStmt
+	| whenStmt
 	| breakStmt
 	| continueStmt
-	| whenStmt
 	| returnStmt
 	| passStmt
 	;
