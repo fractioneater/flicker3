@@ -74,7 +74,7 @@ public:
   }
 
   /**
-   * Returns a boolean of whether the next token is a certain type.
+   * Returns a Boolean, true if the next token is a certain type.
    * @param type Type to check for
    * @return A boolean, true if the token matches 'type'
    */
@@ -157,10 +157,10 @@ public:
   StmtNode while_statement();
   StmtNode each_statement();
   StmtNode for_statement();
-  StmtNode when_statement();
   StmtNode break_statement();
   StmtNode continue_statement();
   StmtNode return_statement();
+
   StmtNode block();
   StmtNode block_or_statement();
   StmtNode optional_else_body();
@@ -219,7 +219,7 @@ public:
   #define BOTH(pre, in, name, prec)   ParseRule {&Parser::pre, &Parser::in, name, Precedence::prec}
 
   // @formatter:off
-  std::array<ParseRule, 91> rules {{
+  std::array<ParseRule, 90> rules {{
     /* TOKEN_LEFT_PAREN    *//* BOTH(grouping, call, "", POSTFIX),*/ PREFIX_RULE(grouping, "", NONE),
     /* TOKEN_RIGHT_PAREN   */ UNUSED,
     /* TOKEN_LEFT_BRACKET  *//* BOTH(collection, subscript, "", POSTFIX),*/ UNUSED,
@@ -305,7 +305,6 @@ public:
     /* TOKEN_USING         */ UNUSED,
     /* TOKEN_VAL           */ UNUSED,
     /* TOKEN_VAR           */ UNUSED,
-    /* TOKEN_WHEN          */ UNUSED,
     /* TOKEN_WHILE         */ UNUSED,
     /* TOKEN_INDENT        */ UNUSED,
     /* TOKEN_DEDENT        */ UNUSED,

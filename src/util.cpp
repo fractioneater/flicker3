@@ -68,6 +68,7 @@ static std::ostringstream out {};
 
 // Returns a vector of a node's EXPRESSION children.
 class StmtChildrenVisitor : public StmtVisitor<std::vector<ExprNode>> {
+public:
   std::vector<ExprNode> visit_block_stmt(std::shared_ptr<Statements::Block> stmt) override {
     walk(stmt->statements, id_counter - 1);
     return {};
@@ -95,8 +96,6 @@ class StmtChildrenVisitor : public StmtVisitor<std::vector<ExprNode>> {
     return {stmt->condition, stmt->end};
   }
 
-  std::vector<ExprNode> visit_when_stmt(std::shared_ptr<Statements::When> stmt) override { return {/* TODO */}; }
-
   std::vector<ExprNode> visit_break_stmt(std::shared_ptr<Statements::Break> stmt) override { return {}; }
   std::vector<ExprNode> visit_continue_stmt(std::shared_ptr<Statements::Continue> stmt) override { return {}; }
   std::vector<ExprNode> visit_return_stmt(std::shared_ptr<Statements::Return> stmt) override { return {}; }
@@ -104,6 +103,7 @@ class StmtChildrenVisitor : public StmtVisitor<std::vector<ExprNode>> {
 };
 
 class ExprChildrenVisitor : public ExprVisitor<std::vector<ExprNode>> {
+public:
   std::vector<ExprNode> visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) override { return {expr->left, expr->right}; }
 
   std::vector<ExprNode> visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) override { return expr->expressions; }
@@ -127,6 +127,7 @@ class ExprChildrenVisitor : public ExprVisitor<std::vector<ExprNode>> {
 
 // Returns the node's name as a string.
 class StmtNameVisitor : public StmtVisitor<std::string> {
+public:
   std::string visit_block_stmt(std::shared_ptr<Statements::Block> stmt) override { return "block"; }
   std::string visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) override { return "expression"; }
 
@@ -145,7 +146,6 @@ class StmtNameVisitor : public StmtVisitor<std::string> {
   // TODO: Include labels and other nice things (needs Lexer data...)
   std::string visit_each_stmt(std::shared_ptr<Statements::Each> stmt) override { return "each"; }
   std::string visit_for_stmt(std::shared_ptr<Statements::For> stmt) override { return "for"; }
-  std::string visit_when_stmt(std::shared_ptr<Statements::When> stmt) override { return "when"; }
   std::string visit_break_stmt(std::shared_ptr<Statements::Break> stmt) override { return "break"; }
   std::string visit_continue_stmt(std::shared_ptr<Statements::Continue> stmt) override { return "continue"; }
   std::string visit_return_stmt(std::shared_ptr<Statements::Return> stmt) override { return "return"; }
@@ -153,6 +153,7 @@ class StmtNameVisitor : public StmtVisitor<std::string> {
 };
 
 class ExprNameVisitor : public ExprVisitor<std::string> {
+public:
   std::string visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) override {
     const std::string blah {expr->fn_name};
     return "binary " + blah;

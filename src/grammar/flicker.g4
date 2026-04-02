@@ -30,7 +30,7 @@ tokens {
   // Keywords
   AND, BREAK, CLASS, CONTINUE, DO, EACH, ELIF, ELSE, FALSE, FOR, FUN, IF,
   IN, IS, NAMESPACE, NIL, NOT, OF, OR, OVERRIDE, PASS, PRINT, PRINT_ERROR, PRIVATE,
-  RETURN, STATIC, SUPER, THIS, TRUE, USING, VAL, VAR, WHEN, WHILE,
+  RETURN, STATIC, SUPER, THIS, TRUE, USING, VAL, VAR, WHILE,
   // Whitespace
   INDENT, DEDENT, LINE
 }
@@ -56,7 +56,6 @@ statement
 	| whileStmt
 	| eachStmt
 	| forStmt
-	| whenStmt
 	| breakStmt
 	| continueStmt
 	| returnStmt
@@ -122,14 +121,8 @@ eachStmt : EACH loopLabel? IDENTIFIER (LEFT_BRACKET IDENTIFIER RIGHT_BRACKET)? I
 forStmt : FOR loopLabel? (variableDecl | expression)? SEMICOLON (expression)? SEMICOLON (expression)? blockOrStatement ;
 breakStmt : BREAK loopLabel? ;
 continueStmt : CONTINUE loopLabel? ;
-whenStmt : WHEN expression whenBody ;
 returnStmt : RETURN (expression)? ;
 passStmt : PASS ;
-
-whenBody : newline INDENT whenContents DEDENT ;
-whenContents : (whenCase newline)+ (whenCase | elseCase)? newline? ;
-whenCase : expression blockOrStatement ;
-elseCase : ELSE blockOrStatement ;
 
 // Expression ------------------------------
 

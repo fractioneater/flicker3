@@ -85,9 +85,6 @@ DEFAULT_SPEC = {
       {"type": "StmtNode", "name": "loop_body", "move": True},
       {"type": "StmtNode", "name": "else_body", "move": True},
     ]},
-    {"name": "When", "fields": [
-
-    ]},
     {"name": "Break", "fields": [
       {"type": "Token*", "name": "label"}
     ]},
