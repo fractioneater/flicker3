@@ -16,9 +16,15 @@
 namespace Statements {
   class Block;
   class Expression;
-  class Pass;
   class If;
   class While;
+  class Each;
+  class For;
+  class When;
+  class Break;
+  class Continue;
+  class Return;
+  class Pass;
 }
 
 namespace Expressions {
@@ -28,9 +34,9 @@ namespace Expressions {
   class Grouping;
   class Number;
   class Boolean;
+  class Nil;
   class Char;
   class String;
-  class Nil;
   class Variable;
   class Print;
 }
@@ -43,9 +49,15 @@ class StmtVisitorAny {
 public:
   virtual std::any visit_block_stmt_any(std::shared_ptr<Statements::Block> stmt) = 0;
   virtual std::any visit_expression_stmt_any(std::shared_ptr<Statements::Expression> stmt) = 0;
-  virtual std::any visit_pass_stmt_any(std::shared_ptr<Statements::Pass> stmt) = 0;
   virtual std::any visit_if_stmt_any(std::shared_ptr<Statements::If> stmt) = 0;
   virtual std::any visit_while_stmt_any(std::shared_ptr<Statements::While> stmt) = 0;
+  virtual std::any visit_each_stmt_any(std::shared_ptr<Statements::Each> stmt) = 0;
+  virtual std::any visit_for_stmt_any(std::shared_ptr<Statements::For> stmt) = 0;
+  virtual std::any visit_when_stmt_any(std::shared_ptr<Statements::When> stmt) = 0;
+  virtual std::any visit_break_stmt_any(std::shared_ptr<Statements::Break> stmt) = 0;
+  virtual std::any visit_continue_stmt_any(std::shared_ptr<Statements::Continue> stmt) = 0;
+  virtual std::any visit_return_stmt_any(std::shared_ptr<Statements::Return> stmt) = 0;
+  virtual std::any visit_pass_stmt_any(std::shared_ptr<Statements::Pass> stmt) = 0;
   virtual ~StmtVisitorAny() = default;
 };
 
@@ -57,9 +69,9 @@ public:
   virtual std::any visit_grouping_expr_any(std::shared_ptr<Expressions::Grouping> expr) = 0;
   virtual std::any visit_number_expr_any(std::shared_ptr<Expressions::Number> expr) = 0;
   virtual std::any visit_boolean_expr_any(std::shared_ptr<Expressions::Boolean> expr) = 0;
+  virtual std::any visit_nil_expr_any(std::shared_ptr<Expressions::Nil> expr) = 0;
   virtual std::any visit_char_expr_any(std::shared_ptr<Expressions::Char> expr) = 0;
   virtual std::any visit_string_expr_any(std::shared_ptr<Expressions::String> expr) = 0;
-  virtual std::any visit_nil_expr_any(std::shared_ptr<Expressions::Nil> expr) = 0;
   virtual std::any visit_variable_expr_any(std::shared_ptr<Expressions::Variable> expr) = 0;
   virtual std::any visit_print_expr_any(std::shared_ptr<Expressions::Print> expr) = 0;
   virtual ~ExprVisitorAny() = default;
@@ -74,9 +86,15 @@ class StmtVisitor : public StmtVisitorAny {
 public:
   virtual R visit_block_stmt(std::shared_ptr<Statements::Block> stmt) = 0;
   virtual R visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) = 0;
-  virtual R visit_pass_stmt(std::shared_ptr<Statements::Pass> stmt) = 0;
   virtual R visit_if_stmt(std::shared_ptr<Statements::If> stmt) = 0;
   virtual R visit_while_stmt(std::shared_ptr<Statements::While> stmt) = 0;
+  virtual R visit_each_stmt(std::shared_ptr<Statements::Each> stmt) = 0;
+  virtual R visit_for_stmt(std::shared_ptr<Statements::For> stmt) = 0;
+  virtual R visit_when_stmt(std::shared_ptr<Statements::When> stmt) = 0;
+  virtual R visit_break_stmt(std::shared_ptr<Statements::Break> stmt) = 0;
+  virtual R visit_continue_stmt(std::shared_ptr<Statements::Continue> stmt) = 0;
+  virtual R visit_return_stmt(std::shared_ptr<Statements::Return> stmt) = 0;
+  virtual R visit_pass_stmt(std::shared_ptr<Statements::Pass> stmt) = 0;
 
 private:
   std::any visit_block_stmt_any(std::shared_ptr<Statements::Block> stmt) final {
@@ -87,16 +105,40 @@ private:
     return visit_expression_stmt(std::move(stmt));
   }
 
-  std::any visit_pass_stmt_any(std::shared_ptr<Statements::Pass> stmt) final {
-    return visit_pass_stmt(std::move(stmt));
-  }
-
   std::any visit_if_stmt_any(std::shared_ptr<Statements::If> stmt) final {
     return visit_if_stmt(std::move(stmt));
   }
 
   std::any visit_while_stmt_any(std::shared_ptr<Statements::While> stmt) final {
     return visit_while_stmt(std::move(stmt));
+  }
+
+  std::any visit_each_stmt_any(std::shared_ptr<Statements::Each> stmt) final {
+    return visit_each_stmt(std::move(stmt));
+  }
+
+  std::any visit_for_stmt_any(std::shared_ptr<Statements::For> stmt) final {
+    return visit_for_stmt(std::move(stmt));
+  }
+
+  std::any visit_when_stmt_any(std::shared_ptr<Statements::When> stmt) final {
+    return visit_when_stmt(std::move(stmt));
+  }
+
+  std::any visit_break_stmt_any(std::shared_ptr<Statements::Break> stmt) final {
+    return visit_break_stmt(std::move(stmt));
+  }
+
+  std::any visit_continue_stmt_any(std::shared_ptr<Statements::Continue> stmt) final {
+    return visit_continue_stmt(std::move(stmt));
+  }
+
+  std::any visit_return_stmt_any(std::shared_ptr<Statements::Return> stmt) final {
+    return visit_return_stmt(std::move(stmt));
+  }
+
+  std::any visit_pass_stmt_any(std::shared_ptr<Statements::Pass> stmt) final {
+    return visit_pass_stmt(std::move(stmt));
   }
 };
 
@@ -109,9 +151,9 @@ public:
   virtual R visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) = 0;
   virtual R visit_number_expr(std::shared_ptr<Expressions::Number> expr) = 0;
   virtual R visit_boolean_expr(std::shared_ptr<Expressions::Boolean> expr) = 0;
+  virtual R visit_nil_expr(std::shared_ptr<Expressions::Nil> expr) = 0;
   virtual R visit_char_expr(std::shared_ptr<Expressions::Char> expr) = 0;
   virtual R visit_string_expr(std::shared_ptr<Expressions::String> expr) = 0;
-  virtual R visit_nil_expr(std::shared_ptr<Expressions::Nil> expr) = 0;
   virtual R visit_variable_expr(std::shared_ptr<Expressions::Variable> expr) = 0;
   virtual R visit_print_expr(std::shared_ptr<Expressions::Print> expr) = 0;
 
@@ -140,16 +182,16 @@ private:
     return visit_boolean_expr(std::move(expr));
   }
 
+  std::any visit_nil_expr_any(std::shared_ptr<Expressions::Nil> expr) final {
+    return visit_nil_expr(std::move(expr));
+  }
+
   std::any visit_char_expr_any(std::shared_ptr<Expressions::Char> expr) final {
     return visit_char_expr(std::move(expr));
   }
 
   std::any visit_string_expr_any(std::shared_ptr<Expressions::String> expr) final {
     return visit_string_expr(std::move(expr));
-  }
-
-  std::any visit_nil_expr_any(std::shared_ptr<Expressions::Nil> expr) final {
-    return visit_nil_expr(std::move(expr));
   }
 
   std::any visit_variable_expr_any(std::shared_ptr<Expressions::Variable> expr) final {
@@ -216,16 +258,6 @@ public:
   const ExprNode expression {};
 };
 
-class Statements::Pass : public Stmt, public std::enable_shared_from_this<Pass> {
-public:
-  Pass() = default;
-
-  std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_pass_stmt_any(shared_from_this());
-  }
-
-};
-
 class Statements::If : public Stmt, public std::enable_shared_from_this<If> {
 public:
   If(ExprNode condition, StmtNode then_body, StmtNode else_body) : condition {std::move(condition)}, then_body {std::move(then_body)}, else_body {std::move(else_body)} {}
@@ -241,15 +273,101 @@ public:
 
 class Statements::While : public Stmt, public std::enable_shared_from_this<While> {
 public:
-  While(ExprNode condition, StmtNode loop_body, StmtNode else_body) : condition {std::move(condition)}, loop_body {std::move(loop_body)}, else_body {std::move(else_body)} {}
+  While(const Token* label, ExprNode condition, StmtNode loop_body, StmtNode else_body) : label {label}, condition {std::move(condition)}, loop_body {std::move(loop_body)}, else_body {std::move(else_body)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_while_stmt_any(shared_from_this());
   }
 
+  const Token* label {};
   const ExprNode condition {};
   const StmtNode loop_body {};
   const StmtNode else_body {};
+};
+
+class Statements::Each : public Stmt, public std::enable_shared_from_this<Each> {
+public:
+  Each(const Token* label, const Token* iter_var, const Token* index_var, ExprNode iterator, StmtNode loop_body, StmtNode else_body) : label {label}, iter_var {iter_var}, index_var {index_var}, iterator {std::move(iterator)}, loop_body {std::move(loop_body)}, else_body {std::move(else_body)} {}
+
+  std::any accept(StmtVisitorAny& visitor) override {
+    return visitor.visit_each_stmt_any(shared_from_this());
+  }
+
+  const Token* label {};
+  const Token* iter_var {};
+  const Token* index_var {};
+  const ExprNode iterator {};
+  const StmtNode loop_body {};
+  const StmtNode else_body {};
+};
+
+class Statements::For : public Stmt, public std::enable_shared_from_this<For> {
+public:
+  For(const Token* label, StmtNode begin, ExprNode condition, ExprNode end, StmtNode loop_body, StmtNode else_body) : label {label}, begin {std::move(begin)}, condition {std::move(condition)}, end {std::move(end)}, loop_body {std::move(loop_body)}, else_body {std::move(else_body)} {}
+
+  std::any accept(StmtVisitorAny& visitor) override {
+    return visitor.visit_for_stmt_any(shared_from_this());
+  }
+
+  const Token* label {};
+  const StmtNode begin {};
+  const ExprNode condition {};
+  const ExprNode end {};
+  const StmtNode loop_body {};
+  const StmtNode else_body {};
+};
+
+class Statements::When : public Stmt, public std::enable_shared_from_this<When> {
+public:
+  When() = default;
+
+  std::any accept(StmtVisitorAny& visitor) override {
+    return visitor.visit_when_stmt_any(shared_from_this());
+  }
+
+};
+
+class Statements::Break : public Stmt, public std::enable_shared_from_this<Break> {
+public:
+  explicit Break(const Token* label) : label {label} {}
+
+  std::any accept(StmtVisitorAny& visitor) override {
+    return visitor.visit_break_stmt_any(shared_from_this());
+  }
+
+  const Token* label {};
+};
+
+class Statements::Continue : public Stmt, public std::enable_shared_from_this<Continue> {
+public:
+  explicit Continue(const Token* label) : label {label} {}
+
+  std::any accept(StmtVisitorAny& visitor) override {
+    return visitor.visit_continue_stmt_any(shared_from_this());
+  }
+
+  const Token* label {};
+};
+
+class Statements::Return : public Stmt, public std::enable_shared_from_this<Return> {
+public:
+  explicit Return(ExprNode value) : value {std::move(value)} {}
+
+  std::any accept(StmtVisitorAny& visitor) override {
+    return visitor.visit_return_stmt_any(shared_from_this());
+  }
+
+  const ExprNode value {};
+};
+
+class Statements::Pass : public Stmt, public std::enable_shared_from_this<Pass> {
+public:
+  Pass() = default;
+
+  std::any accept(StmtVisitorAny& visitor) override {
+    return visitor.visit_pass_stmt_any(shared_from_this());
+  }
+
 };
 
 // Expressions --------------------------------------------------
@@ -323,6 +441,16 @@ public:
   const bool value {};
 };
 
+class Expressions::Nil : public Expr, public std::enable_shared_from_this<Nil> {
+public:
+  Nil() = default;
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_nil_expr_any(shared_from_this());
+  }
+
+};
+
 class Expressions::Char : public Expr, public std::enable_shared_from_this<Char> {
 public:
   explicit Char(char value) : value {value} {}
@@ -345,25 +473,15 @@ public:
   const std::string value {};
 };
 
-class Expressions::Nil : public Expr, public std::enable_shared_from_this<Nil> {
-public:
-  Nil() = default;
-
-  std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_nil_expr_any(shared_from_this());
-  }
-
-};
-
 class Expressions::Variable : public Expr, public std::enable_shared_from_this<Variable> {
 public:
-  explicit Variable(const Token& identifier) : identifier {identifier} {}
+  explicit Variable(const Token* identifier) : identifier {identifier} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_variable_expr_any(shared_from_this());
   }
 
-  const Token identifier {};
+  const Token* identifier {};
 };
 
 class Expressions::Print : public Expr, public std::enable_shared_from_this<Print> {

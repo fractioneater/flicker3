@@ -75,8 +75,6 @@ class StmtChildrenVisitor : public StmtVisitor<std::vector<ExprNode>> {
 
   std::vector<ExprNode> visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) override { return {stmt->expression}; }
 
-  std::vector<ExprNode> visit_pass_stmt(std::shared_ptr<Statements::Pass> stmt) override { return {}; }
-
   std::vector<ExprNode> visit_if_stmt(std::shared_ptr<Statements::If> stmt) override {
     walk(std::vector {stmt->then_body, stmt->else_body}, id_counter - 1);
     return {stmt->condition};
@@ -86,6 +84,23 @@ class StmtChildrenVisitor : public StmtVisitor<std::vector<ExprNode>> {
     walk(std::vector {stmt->loop_body, stmt->else_body}, id_counter - 1);
     return {stmt->condition};
   }
+
+  std::vector<ExprNode> visit_each_stmt(std::shared_ptr<Statements::Each> stmt) override {
+    walk(std::vector {stmt->loop_body, stmt->else_body}, id_counter - 1);
+    return {stmt->iterator};
+  }
+
+  std::vector<ExprNode> visit_for_stmt(std::shared_ptr<Statements::For> stmt) override {
+    walk(std::vector {stmt->begin, stmt->loop_body, stmt->else_body}, id_counter - 1);
+    return {stmt->condition, stmt->end};
+  }
+
+  std::vector<ExprNode> visit_when_stmt(std::shared_ptr<Statements::When> stmt) override { return {/* TODO */}; }
+
+  std::vector<ExprNode> visit_break_stmt(std::shared_ptr<Statements::Break> stmt) override { return {}; }
+  std::vector<ExprNode> visit_continue_stmt(std::shared_ptr<Statements::Continue> stmt) override { return {}; }
+  std::vector<ExprNode> visit_return_stmt(std::shared_ptr<Statements::Return> stmt) override { return {}; }
+  std::vector<ExprNode> visit_pass_stmt(std::shared_ptr<Statements::Pass> stmt) override { return {}; }
 };
 
 class ExprChildrenVisitor : public ExprVisitor<std::vector<ExprNode>> {
@@ -113,10 +128,7 @@ class ExprChildrenVisitor : public ExprVisitor<std::vector<ExprNode>> {
 // Returns the node's name as a string.
 class StmtNameVisitor : public StmtVisitor<std::string> {
   std::string visit_block_stmt(std::shared_ptr<Statements::Block> stmt) override { return "block"; }
-
   std::string visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) override { return "expression"; }
-
-  std::string visit_pass_stmt(std::shared_ptr<Statements::Pass> stmt) override { return "pass"; }
 
   std::string visit_if_stmt(std::shared_ptr<Statements::If> stmt) override {
     if (std::dynamic_pointer_cast<Statements::Pass>(stmt->else_body))
@@ -129,6 +141,15 @@ class StmtNameVisitor : public StmtVisitor<std::string> {
       return "while";
     return "while else";
   }
+
+  // TODO: Include labels and other nice things (needs Lexer data...)
+  std::string visit_each_stmt(std::shared_ptr<Statements::Each> stmt) override { return "each"; }
+  std::string visit_for_stmt(std::shared_ptr<Statements::For> stmt) override { return "for"; }
+  std::string visit_when_stmt(std::shared_ptr<Statements::When> stmt) override { return "when"; }
+  std::string visit_break_stmt(std::shared_ptr<Statements::Break> stmt) override { return "break"; }
+  std::string visit_continue_stmt(std::shared_ptr<Statements::Continue> stmt) override { return "continue"; }
+  std::string visit_return_stmt(std::shared_ptr<Statements::Return> stmt) override { return "return"; }
+  std::string visit_pass_stmt(std::shared_ptr<Statements::Pass> stmt) override { return "pass"; }
 };
 
 class ExprNameVisitor : public ExprVisitor<std::string> {

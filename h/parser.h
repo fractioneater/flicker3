@@ -150,11 +150,21 @@ public:
   }
 
   StmtNode declaration();
+  StmtNode variable_declaration(bool is_mutable);
+
   StmtNode statement();
   StmtNode if_statement();
   StmtNode while_statement();
+  StmtNode each_statement();
+  StmtNode for_statement();
+  StmtNode when_statement();
+  StmtNode break_statement();
+  StmtNode continue_statement();
+  StmtNode return_statement();
   StmtNode block();
   StmtNode block_or_statement();
+  StmtNode optional_else_body();
+  Token* loop_label();
 
   ExprNode binary_right_assoc(const ExprNode& left);
   ExprNode binary(const ExprNode& left);

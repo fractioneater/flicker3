@@ -58,17 +58,46 @@ DEFAULT_SPEC = {
   "statements": [
     {"name": "Block", "fields": [{"type": "std::vector<StmtNode>", "name": "statements", "move": True}]},
     {"name": "Expression", "fields": [{"type": "ExprNode", "name": "expression", "move": True}]},
-    {"name": "Pass", "fields": []},
     {"name": "If", "fields": [
       {"type": "ExprNode", "name": "condition", "move": True},
       {"type": "StmtNode", "name": "then_body", "move": True},
       {"type": "StmtNode", "name": "else_body", "move": True},
     ]},
     {"name": "While", "fields": [
+      {"type": "Token*", "name": "label"},
       {"type": "ExprNode", "name": "condition", "move": True},
       {"type": "StmtNode", "name": "loop_body", "move": True},
       {"type": "StmtNode", "name": "else_body", "move": True},
     ]},
+    {"name": "Each", "fields": [
+      {"type": "Token*", "name": "label"},
+      {"type": "Token*", "name": "iter_var"},
+      {"type": "Token*", "name": "index_var"},
+      {"type": "ExprNode", "name": "iterator", "move": True},
+      {"type": "StmtNode", "name": "loop_body", "move": True},
+      {"type": "StmtNode", "name": "else_body", "move": True},
+    ]},
+    {"name": "For", "fields": [
+      {"type": "Token*", "name": "label"},
+      {"type": "StmtNode", "name": "begin", "move": True},
+      {"type": "ExprNode", "name": "condition", "move": True},
+      {"type": "ExprNode", "name": "end", "move": True},
+      {"type": "StmtNode", "name": "loop_body", "move": True},
+      {"type": "StmtNode", "name": "else_body", "move": True},
+    ]},
+    {"name": "When", "fields": [
+
+    ]},
+    {"name": "Break", "fields": [
+      {"type": "Token*", "name": "label"}
+    ]},
+    {"name": "Continue", "fields": [
+      {"type": "Token*", "name": "label"}
+    ]},
+    {"name": "Return", "fields": [
+      {"type": "ExprNode", "name": "value", "move": True}
+    ]},
+    {"name": "Pass", "fields": []},
   ],
   "expressions": [
     {
@@ -99,7 +128,7 @@ DEFAULT_SPEC = {
     {"name": "Nil", "fields": []},
     {"name": "Char", "fields": [{"type": "char", "name": "value"}]},
     {"name": "String", "fields": [{"type": "std::string", "name": "value", "move": True}]},
-    {"name": "Variable", "fields": [{"type": "Token", "name": "identifier", "ref": True}]},
+    {"name": "Variable", "fields": [{"type": "Token*", "name": "identifier"}]},
     {
       "name": "Print",
       "fields": [
@@ -118,7 +147,7 @@ class Field:
   ref: bool = False
 
   def ctor_param(self) -> str:
-    param_type = self.type if (not self.ref) else f"const {self.type}&"
+    param_type = f"const {self.type}&" if self.ref else f"const {self.type}" if self.type.endswith("*") else self.type
     return f"{param_type} {self.name}"
 
   def init_expr(self) -> str:
