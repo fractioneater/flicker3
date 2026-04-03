@@ -150,7 +150,7 @@ public:
   }
 
   StmtNode declaration();
-  StmtNode variable_declaration(bool is_mutable);
+  // StmtNode variable_declaration(bool is_mutable);
 
   StmtNode statement();
   StmtNode if_statement();

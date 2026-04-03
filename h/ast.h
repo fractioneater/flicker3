@@ -40,6 +40,40 @@ namespace Expressions {
   class Print;
 }
 
+// Non-returning visitor base classes --------------------------------------------------
+// std::any prefers a copy-constructible object, which void is not. So for a visitor that doesn't return anything, something like this is necessary.
+
+class StmtVisitorVoid {
+public:
+  virtual void visit_block_stmt(std::shared_ptr<Statements::Block> stmt) = 0;
+  virtual void visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) = 0;
+  virtual void visit_if_stmt(std::shared_ptr<Statements::If> stmt) = 0;
+  virtual void visit_while_stmt(std::shared_ptr<Statements::While> stmt) = 0;
+  virtual void visit_each_stmt(std::shared_ptr<Statements::Each> stmt) = 0;
+  virtual void visit_for_stmt(std::shared_ptr<Statements::For> stmt) = 0;
+  virtual void visit_break_stmt(std::shared_ptr<Statements::Break> stmt) = 0;
+  virtual void visit_continue_stmt(std::shared_ptr<Statements::Continue> stmt) = 0;
+  virtual void visit_return_stmt(std::shared_ptr<Statements::Return> stmt) = 0;
+  virtual void visit_pass_stmt(std::shared_ptr<Statements::Pass> stmt) = 0;
+  virtual ~StmtVisitorVoid() = default;
+};
+
+class ExprVisitorVoid {
+public:
+  virtual void visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) = 0;
+  virtual void visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) = 0;
+  virtual void visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) = 0;
+  virtual void visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) = 0;
+  virtual void visit_number_expr(std::shared_ptr<Expressions::Number> expr) = 0;
+  virtual void visit_boolean_expr(std::shared_ptr<Expressions::Boolean> expr) = 0;
+  virtual void visit_nil_expr(std::shared_ptr<Expressions::Nil> expr) = 0;
+  virtual void visit_char_expr(std::shared_ptr<Expressions::Char> expr) = 0;
+  virtual void visit_string_expr(std::shared_ptr<Expressions::String> expr) = 0;
+  virtual void visit_variable_expr(std::shared_ptr<Expressions::Variable> expr) = 0;
+  virtual void visit_print_expr(std::shared_ptr<Expressions::Print> expr) = 0;
+  virtual ~ExprVisitorVoid() = default;
+};
+
 // Type-erased visitor base classes --------------------------------------------------
 // These are type-erased so Stmt and Expr can accept any visitor; concrete visitors still type their result via StmtVisitor<R> or ExprVisitor<R>.
 // This class only serves to bridge between a concrete visitor and an Expr.
@@ -200,6 +234,7 @@ private:
 class Stmt {
 public:
   virtual std::any accept(StmtVisitorAny& visitor) = 0;
+  virtual void accept(StmtVisitorVoid& visitor) = 0;
 
   // To call a typed/concrete visitor without having to write the ugly std::any stuff.
   template <typename R>
@@ -213,6 +248,7 @@ public:
 class Expr {
 public:
   virtual std::any accept(ExprVisitorAny& visitor) = 0;
+  virtual void accept(ExprVisitorVoid& visitor) = 0;
 
   // To call a typed/concrete visitor without having to write the ugly std::any stuff.
   template <typename R>
@@ -237,6 +273,10 @@ public:
     return visitor.visit_block_stmt_any(shared_from_this());
   }
 
+  void accept(StmtVisitorVoid& visitor) override {
+    visitor.visit_block_stmt(shared_from_this());
+  }
+
   const std::vector<StmtNode> statements {};
 };
 
@@ -248,6 +288,10 @@ public:
     return visitor.visit_expression_stmt_any(shared_from_this());
   }
 
+  void accept(StmtVisitorVoid& visitor) override {
+    visitor.visit_expression_stmt(shared_from_this());
+  }
+
   const ExprNode expression {};
 };
 
@@ -257,6 +301,10 @@ public:
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_if_stmt_any(shared_from_this());
+  }
+
+  void accept(StmtVisitorVoid& visitor) override {
+    visitor.visit_if_stmt(shared_from_this());
   }
 
   const ExprNode condition {};
@@ -272,6 +320,10 @@ public:
     return visitor.visit_while_stmt_any(shared_from_this());
   }
 
+  void accept(StmtVisitorVoid& visitor) override {
+    visitor.visit_while_stmt(shared_from_this());
+  }
+
   const Token* label {};
   const ExprNode condition {};
   const StmtNode loop_body {};
@@ -284,6 +336,10 @@ public:
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_each_stmt_any(shared_from_this());
+  }
+
+  void accept(StmtVisitorVoid& visitor) override {
+    visitor.visit_each_stmt(shared_from_this());
   }
 
   const Token* label {};
@@ -302,6 +358,10 @@ public:
     return visitor.visit_for_stmt_any(shared_from_this());
   }
 
+  void accept(StmtVisitorVoid& visitor) override {
+    visitor.visit_for_stmt(shared_from_this());
+  }
+
   const Token* label {};
   const StmtNode begin {};
   const ExprNode condition {};
@@ -318,6 +378,10 @@ public:
     return visitor.visit_break_stmt_any(shared_from_this());
   }
 
+  void accept(StmtVisitorVoid& visitor) override {
+    visitor.visit_break_stmt(shared_from_this());
+  }
+
   const Token* label {};
 };
 
@@ -327,6 +391,10 @@ public:
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_continue_stmt_any(shared_from_this());
+  }
+
+  void accept(StmtVisitorVoid& visitor) override {
+    visitor.visit_continue_stmt(shared_from_this());
   }
 
   const Token* label {};
@@ -340,6 +408,10 @@ public:
     return visitor.visit_return_stmt_any(shared_from_this());
   }
 
+  void accept(StmtVisitorVoid& visitor) override {
+    visitor.visit_return_stmt(shared_from_this());
+  }
+
   const ExprNode value {};
 };
 
@@ -351,6 +423,10 @@ public:
     return visitor.visit_pass_stmt_any(shared_from_this());
   }
 
+  void accept(StmtVisitorVoid& visitor) override {
+    visitor.visit_pass_stmt(shared_from_this());
+  }
+
 };
 
 // Expressions --------------------------------------------------
@@ -360,6 +436,10 @@ public:
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_binary_expr_any(shared_from_this());
+  }
+
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_binary_expr(shared_from_this());
   }
 
   const NamedFunction fn_name {};
@@ -375,6 +455,10 @@ public:
     return visitor.visit_comparison_expr_any(shared_from_this());
   }
 
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_comparison_expr(shared_from_this());
+  }
+
   const std::vector<NamedFunction> fn_names {};
   const std::vector<ExprNode> expressions {};
 };
@@ -385,6 +469,10 @@ public:
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_unary_expr_any(shared_from_this());
+  }
+
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_unary_expr(shared_from_this());
   }
 
   const NamedFunction fn_name {};
@@ -399,6 +487,10 @@ public:
     return visitor.visit_grouping_expr_any(shared_from_this());
   }
 
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_grouping_expr(shared_from_this());
+  }
+
   const ExprNode expr {};
 };
 
@@ -408,6 +500,10 @@ public:
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_number_expr_any(shared_from_this());
+  }
+
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_number_expr(shared_from_this());
   }
 
   const double value {};
@@ -421,6 +517,10 @@ public:
     return visitor.visit_boolean_expr_any(shared_from_this());
   }
 
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_boolean_expr(shared_from_this());
+  }
+
   const bool value {};
 };
 
@@ -432,6 +532,10 @@ public:
     return visitor.visit_nil_expr_any(shared_from_this());
   }
 
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_nil_expr(shared_from_this());
+  }
+
 };
 
 class Expressions::Char : public Expr, public std::enable_shared_from_this<Char> {
@@ -440,6 +544,10 @@ public:
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_char_expr_any(shared_from_this());
+  }
+
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_char_expr(shared_from_this());
   }
 
   const char value {};
@@ -453,6 +561,10 @@ public:
     return visitor.visit_string_expr_any(shared_from_this());
   }
 
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_string_expr(shared_from_this());
+  }
+
   const std::string value {};
 };
 
@@ -464,6 +576,10 @@ public:
     return visitor.visit_variable_expr_any(shared_from_this());
   }
 
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_variable_expr(shared_from_this());
+  }
+
   const Token* identifier {};
 };
 
@@ -473,6 +589,10 @@ public:
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_print_expr_any(shared_from_this());
+  }
+
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_print_expr(shared_from_this());
   }
 
   const NamedFunction fn_name {};

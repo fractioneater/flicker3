@@ -44,98 +44,6 @@ LICENSE = """/**
  */
 """
 
-DEFAULT_SPEC = {
-  "includes": ["<any>", "<memory>", "\"lexer.h\""],
-  "aliases": [
-    "using StmtNode      = std::shared_ptr<Stmt>;",
-    "using ExprNode      = std::shared_ptr<Expr>;",
-    "using NamedFunction = std::string_view;",
-  ],
-  "namespaces": {
-    "statements": "Statements",
-    "expressions": "Expressions",
-  },
-  "statements": [
-    {"name": "Block", "fields": [{"type": "std::vector<StmtNode>", "name": "statements", "move": True}]},
-    {"name": "Expression", "fields": [{"type": "ExprNode", "name": "expression", "move": True}]},
-    {"name": "If", "fields": [
-      {"type": "ExprNode", "name": "condition", "move": True},
-      {"type": "StmtNode", "name": "then_body", "move": True},
-      {"type": "StmtNode", "name": "else_body", "move": True},
-    ]},
-    {"name": "While", "fields": [
-      {"type": "Token*", "name": "label"},
-      {"type": "ExprNode", "name": "condition", "move": True},
-      {"type": "StmtNode", "name": "loop_body", "move": True},
-      {"type": "StmtNode", "name": "else_body", "move": True},
-    ]},
-    {"name": "Each", "fields": [
-      {"type": "Token*", "name": "label"},
-      {"type": "Token*", "name": "iter_var"},
-      {"type": "Token*", "name": "index_var"},
-      {"type": "ExprNode", "name": "iterator", "move": True},
-      {"type": "StmtNode", "name": "loop_body", "move": True},
-      {"type": "StmtNode", "name": "else_body", "move": True},
-    ]},
-    {"name": "For", "fields": [
-      {"type": "Token*", "name": "label"},
-      {"type": "StmtNode", "name": "begin", "move": True},
-      {"type": "ExprNode", "name": "condition", "move": True},
-      {"type": "ExprNode", "name": "end", "move": True},
-      {"type": "StmtNode", "name": "loop_body", "move": True},
-      {"type": "StmtNode", "name": "else_body", "move": True},
-    ]},
-    {"name": "Break", "fields": [
-      {"type": "Token*", "name": "label"}
-    ]},
-    {"name": "Continue", "fields": [
-      {"type": "Token*", "name": "label"}
-    ]},
-    {"name": "Return", "fields": [
-      {"type": "ExprNode", "name": "value", "move": True}
-    ]},
-    {"name": "Pass", "fields": []},
-  ],
-  "expressions": [
-    {
-      "name": "Binary",
-      "fields": [
-        {"type": "NamedFunction", "name": "fn_name"},
-        {"type": "ExprNode", "name": "left", "move": True},
-        {"type": "ExprNode", "name": "right", "move": True},
-      ],
-    },
-    {
-      "name": "Comparison",
-      "fields": [
-        {"type": "std::vector<NamedFunction>", "name": "fn_names", "move": True},
-        {"type": "std::vector<ExprNode>", "name": "expressions", "move": True},
-      ]
-    },
-    {
-      "name": "Unary",
-      "fields": [
-        {"type": "NamedFunction", "name": "fn_name"},
-        {"type": "ExprNode", "name": "expr", "move": True},
-      ],
-    },
-    {"name": "Grouping", "fields": [{"type": "ExprNode", "name": "expr", "move": True}]},
-    {"name": "Number", "fields": [{"type": "double", "name": "value"}]},
-    {"name": "Boolean", "fields": [{"type": "bool", "name": "value"}]},
-    {"name": "Nil", "fields": []},
-    {"name": "Char", "fields": [{"type": "char", "name": "value"}]},
-    {"name": "String", "fields": [{"type": "std::string", "name": "value", "move": True}]},
-    {"name": "Variable", "fields": [{"type": "Token*", "name": "identifier"}]},
-    {
-      "name": "Print",
-      "fields": [
-        {"type": "NamedFunction", "name": "fn_name"},
-        {"type": "ExprNode", "name": "expr", "move": True},
-      ],
-    },
-  ],
-}
-
 @dataclass
 class Field:
   type: str
@@ -211,14 +119,14 @@ def load_spec(path: Optional[Path]) -> Spec:
     with path.open("r", encoding="utf-8") as handle:
       raw = json.load(handle)
   else:
-    raw = DEFAULT_SPEC
+    raise ValueError("A spec file is required.")
 
-  includes = raw.get("includes") or DEFAULT_SPEC["includes"]
-  aliases = raw.get("aliases") or DEFAULT_SPEC["aliases"]
-  namespaces = {**DEFAULT_SPEC["namespaces"], **raw.get("namespaces", {})}
+  includes = raw.get("includes")
+  aliases = raw.get("aliases")
+  namespaces = raw.get("namespaces")
 
-  statements = parse_types(raw.get("statements", DEFAULT_SPEC["statements"]))
-  expressions = parse_types(raw.get("expressions", DEFAULT_SPEC["expressions"]))
+  statements = parse_types(raw.get("statements"))
+  expressions = parse_types(raw.get("expressions"))
 
   stmt_category = NodeCategory(label="Stmt", namespace=namespaces["statements"], suffix="stmt", types=statements)
   expr_category = NodeCategory(label="Expr", namespace=namespaces["expressions"], suffix="expr", types=expressions)
@@ -250,6 +158,25 @@ def render_forward_declarations(categories: List[NodeCategory]) -> str:
 def visitor_method_suffix(node: NodeType, category: NodeCategory) -> str:
   base = node.snake_name
   return base if base.endswith(category.suffix) else f"{base}_{category.suffix}"
+
+def render_void_visitors(categories: List[NodeCategory]) -> str:
+  lines = [
+    "// Non-returning visitor base classes --------------------------------------------------",
+    "// std::any prefers a copy-constructible object, which void is not. So for a visitor that doesn't return anything, something like this is necessary.",
+    "",
+  ]
+  for index, category in enumerate(categories):
+    param_id = "stmt" if category.label == "Stmt" else "expr"
+    lines.append(f"class {category.label}VisitorVoid {{")
+    lines.append("public:")
+    for node in category.types:
+      suffix = visitor_method_suffix(node, category)
+      lines.append(f"  virtual void visit_{suffix}(std::shared_ptr<{category.namespace}::{node.name}> {param_id}) = 0;")
+    lines.append(f"  virtual ~{category.label}VisitorVoid() = default;")
+    lines.append("};")
+    if index != len(categories) - 1:
+      lines.append("")
+  return "\n".join(lines)
 
 def render_type_erased_visitors(categories: List[NodeCategory]) -> str:
   lines = [
@@ -308,6 +235,7 @@ def render_base_nodes(categories: List[NodeCategory]) -> str:
         f"class {category.label} {{",
         "public:",
         f"  virtual std::any accept({category.label}VisitorAny& visitor) = 0;",
+        f"  virtual void accept({category.label}VisitorVoid& visitor) = 0;",
         "",
         "  // To call a typed/concrete visitor without having to write the ugly std::any stuff.",
         "  template <typename R>",
@@ -344,6 +272,10 @@ def render_node_class(category: NodeCategory, node: NodeType) -> str:
   lines.append(f"    return visitor.visit_{suffix}_any(shared_from_this());")
   lines.append("  }")
   lines.append("")
+  lines.append(f"  void accept({category.label}VisitorVoid& visitor) override {{")
+  lines.append(f"    visitor.visit_{suffix}(shared_from_this());")
+  lines.append("  }")
+  lines.append("")
   for field in node.fields:
     lines.append(f"  const {field.type} {field.name} {{}};")
   lines.append("};")
@@ -365,6 +297,8 @@ def render_file(spec: Spec) -> str:
     render_includes(spec.includes),
     "",
     render_forward_declarations(spec.categories),
+    "",
+    render_void_visitors(spec.categories),
     "",
     render_type_erased_visitors(spec.categories),
     "",

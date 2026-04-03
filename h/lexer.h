@@ -291,10 +291,19 @@ public:
   [[nodiscard]] std::pair<size_t, size_t> offset_to_line_col(size_t offset) const;
   /**
    * Returns a string of the whole line that contains a given offset.
-   * @param offset The beginning of the range, as a char index in the source file
+   * @param offset Beginning of the range, as a char index in the source file
    * @return A string_view WITHOUT a trailing newline, viewing the source
    */
   [[nodiscard]] std::string_view offset_to_line_string(size_t offset) const;
+  /**
+   * Read the text of a token from the source.
+   * @param token Token to read the text of
+   * @return A string viewing the source, starting at the token's start offset, and reading the number of characters equal to the token's length
+   */
+  [[nodiscard]] std::string_view token_to_string(const Token& token) const {
+    const std::string_view src_view {src_};
+    return src_view.substr(token.start_offset, token.length);
+  }
 
   [[nodiscard]] const std::vector<LexerError>& get_errors() const { return errors_; }
   [[nodiscard]] const std::vector<LexerError>& get_warnings() const { return warnings_; }
