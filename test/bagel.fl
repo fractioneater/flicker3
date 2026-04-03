@@ -1,1 +1,9 @@
-a != 4
+for ;;
+  print true
+else do pass
+
+each a[ode_] in salmon
+  print `a`
+else do print 30
+
+return

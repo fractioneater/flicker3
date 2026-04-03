@@ -15,12 +15,12 @@
 // Declarations --------------------------------------------------
 
 StmtNode Parser::declaration() {
-  if (match(TOKEN_VAL)) return variable_declaration(false);
-  if (match(TOKEN_VAR)) return variable_declaration(true);
+  // if (match(TOKEN_VAL)) return variable_declaration(false);
+  // if (match(TOKEN_VAR)) return variable_declaration(true);
   return statement();
 }
 
-StmtNode Parser::variable_declaration(bool is_mutable) {/* TODO (also needs an AST node) */}
+// StmtNode Parser::variable_declaration(bool is_mutable) {/* TODO (also needs an AST node) */}
 
 // Other Statements --------------------------------------------------
 
@@ -80,14 +80,19 @@ StmtNode Parser::for_statement() {
   Token* label {loop_label()};
 
   // Either a variable declaration or an expression is acceptable (or nothing, of course).
+  // StmtNode begin {
+  //   match(TOKEN_VAL)
+  //   ? variable_declaration(false)
+  //   : match(TOKEN_VAR)
+  //     ? variable_declaration(true)
+  //     : check(TOKEN_SEMICOLON)
+  //       ? std::make_shared<Statements::Expression>(std::make_shared<Expressions::Nil>()) // No beginning clause.
+  //       : std::make_shared<Statements::Expression>(parse_expression(Precedence::BEGIN))
+  // };
   StmtNode begin {
-    match(TOKEN_VAL)
-    ? variable_declaration(false)
-    : match(TOKEN_VAR)
-      ? variable_declaration(true)
-      : check(TOKEN_SEMICOLON)
-        ? std::make_shared<Statements::Expression>(std::make_shared<Expressions::Nil>()) // No beginning clause.
-        : std::make_shared<Statements::Expression>(parse_expression(Precedence::BEGIN))
+    check(TOKEN_SEMICOLON)
+    ? std::make_shared<Statements::Expression>(std::make_shared<Expressions::Nil>()) // No beginning clause.
+    : std::make_shared<Statements::Expression>(parse_expression(Precedence::BEGIN))
   };
 
   ParserError context {for_token, "'for' creates a C-style for loop; use 'each' for iteration"};
@@ -100,7 +105,7 @@ StmtNode Parser::for_statement() {
   expect(TOKEN_SEMICOLON, "Expecting ';' between for loop clauses");
 
   ExprNode end {std::make_shared<Expressions::Nil>()};
-  if (!check(TOKEN_LINE) || !check(TOKEN_DO)) end = parse_expression(Precedence::BEGIN);
+  if (!check(TOKEN_LINE) && !check(TOKEN_DO)) end = parse_expression(Precedence::BEGIN);
 
   const StmtNode loop_body {block_or_statement()};
   const StmtNode else_body {optional_else_body()};
@@ -144,7 +149,7 @@ StmtNode Parser::block_or_statement() {
 }
 
 StmtNode Parser::optional_else_body() {
-  match_line(); // TODO: Is it bad to use match_line? (could it prevent the compiler from finding the line later in cases where there is no 'else'?
+  match_line(); // TODO: IT IS BAD TO USE match_line! (it prevents the compiler from finding the line later in cases where there is no 'else')
   if (match(TOKEN_ELSE))
     return block_or_statement();
   return std::make_shared<Statements::Pass>();
@@ -286,7 +291,7 @@ void Parser::output_dot() const {
   }
 
   if (std::ofstream out {DEBUG_DOT_FILENAME}) {
-    out << to_dot(program_) << '\n';
+    out << to_dot(program_, lexer_) << '\n';
     out.close();
     std::cout << "Parse tree exported to " << DEBUG_DOT_FILENAME << '\n';
   } else {

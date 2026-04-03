@@ -1,0 +1,107 @@
+{
+	"includes": ["<any>", "<memory>", "\"lexer.h\""],
+	"aliases": [
+		"using StmtNode      = std::shared_ptr<Stmt>;",
+		"using ExprNode      = std::shared_ptr<Expr>;",
+		"using NamedFunction = std::string_view;"
+	],
+	"namespaces": {
+		"statements": "Statements", "expressions": "Expressions"
+	},
+	"statements": [
+		{
+			"name": "Block",
+			"fields": [{"type": "std::vector<StmtNode>", "name": "statements", "move": true}]
+		}, {
+			"name": "Expression",
+			"fields": [{"type": "ExprNode", "name": "expression", "move": true}]
+		}, {
+			"name": "If", "fields": [
+				{"type": "ExprNode", "name": "condition", "move": true},
+				{"type": "StmtNode", "name": "then_body", "move": true},
+				{"type": "StmtNode", "name": "else_body", "move": true}
+			]
+		}, {
+			"name": "While", "fields": [
+				{"type": "Token*", "name": "label"},
+				{"type": "ExprNode", "name": "condition", "move": true},
+				{"type": "StmtNode", "name": "loop_body", "move": true},
+				{"type": "StmtNode", "name": "else_body", "move": true}
+			]
+		}, {
+			"name": "Each", "fields": [
+				{"type": "Token*", "name": "label"},
+				{"type": "Token*", "name": "iter_var"},
+				{"type": "Token*", "name": "index_var"},
+				{"type": "ExprNode", "name": "iterator", "move": true},
+				{"type": "StmtNode", "name": "loop_body", "move": true},
+				{"type": "StmtNode", "name": "else_body", "move": true}
+			]
+		}, {
+			"name": "For", "fields": [
+				{"type": "Token*", "name": "label"},
+				{"type": "StmtNode", "name": "begin", "move": true},
+				{"type": "ExprNode", "name": "condition", "move": true},
+				{"type": "ExprNode", "name": "end", "move": true},
+				{"type": "StmtNode", "name": "loop_body", "move": true},
+				{"type": "StmtNode", "name": "else_body", "move": true}
+			]
+		}, {
+			"name": "Break",
+			"fields": [{"type": "Token*", "name": "label"}]
+		}, {
+			"name": "Continue",
+			"fields": [{"type": "Token*", "name": "label"}]
+		}, {
+			"name": "Return",
+			"fields": [{"type": "ExprNode", "name": "value", "move": true}]
+		}, {
+			"name": "Pass", "fields": []
+		}
+	],
+	"expressions": [
+		{
+			"name": "Binary",
+			"fields": [
+				{"type": "NamedFunction", "name": "fn_name"},
+				{"type": "ExprNode", "name": "left", "move": true},
+				{"type": "ExprNode", "name": "right", "move": true}
+			]
+		}, {
+			"name": "Comparison", "fields": [
+				{"type": "std::vector<NamedFunction>", "name": "fn_names", "move": true},
+				{"type": "std::vector<ExprNode>", "name": "expressions", "move": true}
+			]
+		}, {
+			"name": "Unary", "fields": [
+				{"type": "NamedFunction", "name": "fn_name"},
+				{"type": "ExprNode", "name": "expr", "move": true}
+			]
+		}, {
+			"name": "Grouping",
+			"fields": [{"type": "ExprNode", "name": "expr", "move": true}]
+		}, {
+			"name": "Number",
+			"fields": [{"type": "double", "name": "value"}]
+		}, {
+			"name": "Boolean",
+			"fields": [{"type": "bool", "name": "value"}]
+		}, {
+			"name": "Nil", "fields": []
+		}, {
+			"name": "Char",
+			"fields": [{"type": "char", "name": "value"}]
+		}, {
+			"name": "String",
+			"fields": [{"type": "std::string", "name": "value", "move": true}]
+		}, {
+			"name": "Variable",
+			"fields": [{"type": "Token*", "name": "identifier"}]
+		}, {
+			"name": "Print", "fields": [
+				{"type": "NamedFunction", "name": "fn_name"},
+				{"type": "ExprNode", "name": "expr", "move": true}
+			]
+		}
+	]
+}
