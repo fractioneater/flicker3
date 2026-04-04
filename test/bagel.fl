@@ -1,9 +1,1 @@
-for ;;
-  print true
-else do pass
-
-each a[ode_] in salmon
-  print `a`
-else do print 30
-
-return
+for ; a < 30; do print 3

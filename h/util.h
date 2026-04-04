@@ -152,9 +152,15 @@ class DotTreeWalker {
     }
 
     std::string visit_while_stmt(std::shared_ptr<Statements::While> stmt) override {
-      if (std::dynamic_pointer_cast<Statements::Pass>(stmt->else_body))
-        return "while ... do ...";
-      return "while ... do ... else ..."; // TODO: label
+      std::string blah {"while"};
+      if (stmt->label) {
+        blah += ":";
+        blah += owner_.lexer_.token_to_string(*stmt->label);
+      }
+      blah += " ... do ...";
+      if (!std::dynamic_pointer_cast<Statements::Pass>(stmt->else_body))
+        blah += " else ...";
+      return blah;
     }
 
     std::string visit_each_stmt(std::shared_ptr<Statements::Each> stmt) override {
@@ -177,9 +183,15 @@ class DotTreeWalker {
     }
 
     std::string visit_for_stmt(std::shared_ptr<Statements::For> stmt) override {
-      if (std::dynamic_pointer_cast<Statements::Pass>(stmt->else_body))
-        return "for";
-      return "for else"; // TODO: "..."s and label
+      std::string blah {"for"};
+      if (stmt->label) {
+        blah += ":";
+        blah += owner_.lexer_.token_to_string(*stmt->label);
+      }
+      blah += " ...; ...; ... do ...";
+      if (!std::dynamic_pointer_cast<Statements::Pass>(stmt->else_body))
+        blah += " else ...";
+      return blah;
     }
 
     std::string visit_break_stmt(std::shared_ptr<Statements::Break> stmt) override {
