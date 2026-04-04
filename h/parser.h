@@ -94,12 +94,28 @@ public:
   }
 
   /**
-   * Match as many TOKEN_LINEs as are available, returning true if one was found.
+   * Consume as many TOKEN_LINEs as are available, returning true if one was found.
    * @return Whether at least one newline was found
    */
   bool match_line() {
     if (!check(TOKEN_LINE)) return false;
     while (match(TOKEN_LINE)) {}
+    return true;
+  }
+
+  /**
+   * Consume as many TOKEN_LINES as are available, as well as the token afterward, BUT CONSUME NOTHING IF THE TOKEN AFTER A SET OF LINES IS NOT 'type'.
+   * @param type Type to check for
+   * @return A boolean, true if the token after newlines matches 'type'
+   */
+  bool match_after_newlines(TokenType type) {
+    // Taking advantage of infinite lookahead here.
+    const Token* token = current_;
+    while (token->type == TOKEN_LINE) ++token;
+    if (token->type != type) return false;
+
+    while (current_->type == TOKEN_LINE) advance();
+    advance();
     return true;
   }
 
