@@ -1,1 +1,14 @@
-for ; a < 30; do print 3
+if false
+  error "bad."
+elif 3 == 2
+  false
+elif A or B
+  89982 + 3
+else
+  print "none of the above"
+
+
+if nil do nil elif false do false
+
+if '4' do print 3 else do print 9
+

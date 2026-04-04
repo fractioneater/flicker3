@@ -41,7 +41,11 @@ StmtNode Parser::statement() {
 StmtNode Parser::if_statement() {
   const ExprNode condition {parse_expression(Precedence::BEGIN)};
   const StmtNode then_body {block_or_statement()};
-  const StmtNode else_body {optional_else_body()}; // TODO: elif.
+  StmtNode else_body {std::make_shared<Statements::Pass>()};
+  if (match_after_newlines(TOKEN_ELIF))
+    else_body = if_statement();
+  else // The final else (if existent) will be handled by the nested/recursed if.
+    else_body = optional_else_body();
   return std::make_shared<Statements::If>(condition, then_body, else_body);
 }
 
@@ -149,8 +153,7 @@ StmtNode Parser::block_or_statement() {
 }
 
 StmtNode Parser::optional_else_body() {
-  match_line(); // TODO: IT IS BAD TO USE match_line! (it prevents the compiler from finding the line later in cases where there is no 'else')
-  if (match(TOKEN_ELSE))
+  if (match_after_newlines(TOKEN_ELSE)) // Won't consume newlines if there isn't an ELSE afterward
     return block_or_statement();
   return std::make_shared<Statements::Pass>();
 }
