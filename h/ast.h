@@ -306,7 +306,7 @@ public:
 
 class Statements::Variable : public Stmt, public std::enable_shared_from_this<Variable> {
 public:
-  Variable(bool is_mutable, const Token* identifier, Type type, ExprNode initializer) : is_mutable {is_mutable}, identifier {identifier}, type {std::move(type)}, initializer {std::move(initializer)} {}
+  Variable(bool is_mutable, const Token* identifier, TypePtr type, ExprNode initializer) : is_mutable {is_mutable}, identifier {identifier}, type {std::move(type)}, initializer {std::move(initializer)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_variable_stmt_any(shared_from_this());
@@ -318,7 +318,7 @@ public:
 
   const bool is_mutable {};
   const Token* identifier {};
-  const Type type {};
+  const TypePtr type {};
   const ExprNode initializer {};
 };
 

@@ -48,6 +48,11 @@ void print_error(size_t line, size_t col, const std::string_view module, const s
   #endif
 }
 
+void print_positionless_error(const char* message, int type) {
+  formatting(type);
+  std::cout << CLEAR_FORMAT << message << '\n';
+}
+
 void print_error(const Lexer& lexer, const LexerError& err, const std::string_view module, int type) {
   const auto [line, col] {lexer.offset_to_line_col(err.offset)};
   print_error(line, col, module, lexer.offset_to_line_string(err.offset), err.what(), type);
@@ -55,8 +60,12 @@ void print_error(const Lexer& lexer, const LexerError& err, const std::string_vi
 }
 
 void print_error(const Lexer& lexer, const ParserError& err, const std::string_view module, int type) {
-  const auto [line, col] {lexer.offset_to_line_col(err.token->start_offset)};
-  print_error(line, col, module, lexer.offset_to_line_string(err.token->start_offset), err.what(), type);
+  if (err.token) {
+    const auto [line, col] {lexer.offset_to_line_col(err.token->start_offset)};
+    print_error(line, col, module, lexer.offset_to_line_string(err.token->start_offset), err.what(), type);
+  } else
+    print_positionless_error(err.what(), type);
+
   if (err.context) print_error(lexer, *err.context, module, 2);
 }
 
@@ -88,21 +97,50 @@ void DotTreeWalker::walk(const std::vector<StmtNode>& vec, int parent_id) {
   }
 }
 
-void DotTreeWalker::walk(const Type& type, int parent_id) {
+void DotTreeWalker::walk(const TypePtr& type, int parent_id) {
   const int my_id = id_counter_++;
-  std::string label {type.name() ? lexer_.token_to_string(*type.name()) : "inferred"};
-  if (type.is_optional()) label += "?";
+
+  if (!type) {
+    out_ << "  n" << my_id << " [label=\"inferred\", shape=box, color=purple, fontcolor=black];\n";
+    out_ << "  n" << parent_id << " -> n" << my_id << ";\n";
+    return;
+  }
+
+  std::string label {};
+  switch (type->kind()) {
+    case TypeKind::NAMED: {
+      const auto named = std::dynamic_pointer_cast<NamedType>(type);
+      label            = named && !named->name().empty() ? named->name() : "named";
+      break;
+    }
+    case TypeKind::APPLIED: label = "applied";
+      break;
+    case TypeKind::OPTIONAL: label = "optional";
+      break;
+    case TypeKind::FUNCTION: label = "function (...+) -> ...";
+      break;
+    case TypeKind::TYPE_VAR: {
+      const auto type_var = std::dynamic_pointer_cast<TypeVar>(type);
+      label               = type_var ? type_var->name() : "type_var";
+      break;
+    }
+    case TypeKind::OVERLOAD_SET: label = "overload set";
+      break;
+  }
 
   out_ << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=purple, fontcolor=black];\n";
   out_ << "  n" << parent_id << " -> n" << my_id << ";\n";
 
-  for (const auto& [name, is_optional] : type.type_params()) {
-    const int param_id = id_counter_++;
-    std::string param_label {lexer_.token_to_string(*name)};
-    if (is_optional) param_label += "?";
-
-    out_ << "  n" << param_id << " [label=\"" << param_label << "\", shape=box, color=purple, fontcolor=black];\n";
-    out_ << "  n" << my_id << " -> n" << param_id << ";\n";
+  if (const auto applied = std::dynamic_pointer_cast<AppliedType>(type)) {
+    walk(applied->constructor(), my_id);
+    for (const auto& arg : applied->args()) walk(arg, my_id);
+  } else if (const auto optional = std::dynamic_pointer_cast<OptionalType>(type)) {
+    walk(optional->inner(), my_id);
+  } else if (const auto fn = std::dynamic_pointer_cast<FunctionType>(type)) {
+    for (const auto& param : fn->params()) walk(param, my_id);
+    walk(fn->result(), my_id);
+  } else if (const auto overload_set = std::dynamic_pointer_cast<OverloadSetType>(type)) {
+    for (const auto& signature : overload_set->functions()) walk(signature, my_id);
   }
 }
 

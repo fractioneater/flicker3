@@ -19,7 +19,7 @@
 			"name": "Variable", "fields": [
 				{"type": "bool", "name":  "is_mutable"},
 				{"type": "Token*", "name": "identifier"},
-				{"type": "Type", "name": "type", "move": true},
+				{"type": "TypePtr", "name": "type", "move": true},
 				{"type": "ExprNode", "name": "initializer", "move": true}
 			]
 		}, {

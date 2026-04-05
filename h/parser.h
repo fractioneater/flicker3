@@ -170,7 +170,9 @@ public:
   StmtNode val_declaration();
   StmtNode var_declaration();
 
-  Type parse_type();
+  TypePtr parse_type();
+  TypePtr function_type();
+  TypePtr basic_type(const std::string& thing_to_look_for);
 
   StmtNode statement();
   StmtNode if_statement();
