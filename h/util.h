@@ -54,6 +54,7 @@ class DotTreeWalker {
     }
 
     void visit_variable_stmt(std::shared_ptr<Statements::Variable> stmt) override {
+      owner_.walk(stmt->type, owner_.current_parent_id_);
       owner_.walk(stmt->initializer, owner_.current_parent_id_);
     }
 
@@ -152,8 +153,7 @@ class DotTreeWalker {
     std::string visit_variable_stmt(std::shared_ptr<Statements::Variable> stmt) override {
       std::string blah {stmt->is_mutable ? "var " : "val "};
       blah += owner_.lexer_.token_to_string(*stmt->identifier);
-      // TODO: Type.
-      blah += " = ...";
+      blah += ": ... = ...";
       return blah;
     }
 
@@ -276,6 +276,7 @@ class DotTreeWalker {
 
   void walk(const ExprNode& node, int parent_id);
   void walk(const std::vector<StmtNode>& vec, int parent_id);
+  void walk(const Type& type, int parent_id);
 
 public:
   explicit DotTreeWalker(const Lexer& lexer) : lexer_ {lexer} {}

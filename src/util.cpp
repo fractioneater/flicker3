@@ -88,6 +88,24 @@ void DotTreeWalker::walk(const std::vector<StmtNode>& vec, int parent_id) {
   }
 }
 
+void DotTreeWalker::walk(const Type& type, int parent_id) {
+  const int my_id = id_counter_++;
+  std::string label {type.name() ? lexer_.token_to_string(*type.name()) : "inferred"};
+  if (type.is_optional()) label += "?";
+
+  out_ << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=purple, fontcolor=black];\n";
+  out_ << "  n" << parent_id << " -> n" << my_id << ";\n";
+
+  for (const auto& [name, is_optional] : type.type_params()) {
+    const int param_id = id_counter_++;
+    std::string param_label {lexer_.token_to_string(*name)};
+    if (is_optional) param_label += "?";
+
+    out_ << "  n" << param_id << " [label=\"" << param_label << "\", shape=box, color=purple, fontcolor=black];\n";
+    out_ << "  n" << my_id << " -> n" << param_id << ";\n";
+  }
+}
+
 std::string DotTreeWalker::render(const std::vector<StmtNode>& tree) {
   out_.str("");
   out_.clear();
