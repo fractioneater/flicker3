@@ -24,21 +24,26 @@ StmtNode Parser::val_declaration() {
   expect(TOKEN_IDENTIFIER, "Expecting a variable name after 'val'");
   const Token* identifier {previous_};
 
-  const Type type {match(TOKEN_COLON) ? parse_type() : Type {}};
+  const TypePtr type {match(TOKEN_COLON) ? parse_type() : nullptr};
 
-  expect(TOKEN_EQ, "Val declarations must have an initializer");
+  ParserError context {nullptr, "You probably don't want an immutable variable just to hold 'nil'"};
+  if (type && type->kind() != TypeKind::OPTIONAL)
+    context.add_context({nullptr, "Your type isn't even able to hold 'nil'!"});
+  expect(TOKEN_EQ, "Val declarations must have an initializer", context);
   return std::make_shared<Statements::Variable>(false, identifier, type, parse_expression(Precedence::BEGIN));
 }
 
 StmtNode Parser::var_declaration() {
   expect(TOKEN_IDENTIFIER, "Expecting a variable name after 'var'");
   const Token* identifier {previous_};
-  Type type {};
+  TypePtr type {};
   ExprNode initializer {std::make_shared<Expressions::Nil>()};
 
   if (match(TOKEN_COLON)) {
     type = parse_type();
     if (match(TOKEN_EQ)) initializer = parse_expression(Precedence::BEGIN);
+    else if (type && type->kind() != TypeKind::OPTIONAL)
+      errors_.emplace_back(current_, "Non-optional variable must have an initializer; the default value of 'nil' is not allowed");
   } else {
     expect(TOKEN_EQ, "Var declaration with no type must have an initializer");
     initializer = parse_expression(Precedence::BEGIN);
@@ -46,17 +51,74 @@ StmtNode Parser::var_declaration() {
   return std::make_shared<Statements::Variable>(true, identifier, type, initializer);
 }
 
-Type Parser::parse_type() {
-  expect(TOKEN_IDENTIFIER, "Expecting a type name");
-  Type type {previous_, match(TOKEN_QUEST)};
+TypePtr Parser::parse_type() {
+  // Check for function type first.
+  if (match(TOKEN_LEFT_PAREN)) return function_type();
 
-  // Handle type params (each can be optional—it's possible to have a List of String? which is different from a List? of String).
-  if (match(TOKEN_FOR) || match(TOKEN_OF)) {
-    do {
-      expect(TOKEN_IDENTIFIER, "Expecting a type parameter name");
-      type.add_type_param(previous_, match(TOKEN_QUEST));
-    } while (match(TOKEN_COMMA));
+  if (match(TOKEN_RIGHT_ARROW)) {
+    errors_.emplace_back(previous_, "Place empty parentheses for a function type with no parameters");
+    return nullptr;
   }
+
+  expect(TOKEN_IDENTIFIER, "Expecting either a type name or '(' for a function type");
+  const std::string name {lexer_.token_to_string(*previous_)};
+  const bool is_optional {match(TOKEN_QUEST)};
+  TypePtr type {std::make_shared<NamedType>(name)};
+
+  if (match(TOKEN_FOR) || match(TOKEN_OF)) {
+    std::vector<TypePtr> args {};
+    do {
+      args.emplace_back(basic_type("a type parameter (a type name)"));
+    } while (match(TOKEN_COMMA));
+    type = std::make_shared<AppliedType>(type, std::move(args));
+  }
+
+  if (is_optional) type = std::make_shared<OptionalType>(type);
+
+  return type;
+}
+
+TypePtr Parser::function_type() {
+  std::vector<TypePtr> param_types {};
+  do {
+    if (check(TOKEN_RIGHT_PAREN)) break;
+    param_types.emplace_back(basic_type("a parameter type"));
+  } while (match(TOKEN_COMMA));
+
+  expect(TOKEN_RIGHT_PAREN, "Expecting ')' after parameter list in function type");
+
+  if (match(TOKEN_RIGHT_ARROW)) {
+    return std::make_shared<FunctionType>(std::move(param_types), basic_type("a return type"));
+  }
+  // Non-returning function.
+  return std::make_shared<FunctionType>(std::move(param_types), std::make_shared<NamedType>("Unit"));
+}
+
+TypePtr Parser::basic_type(const std::string& thing_to_look_for) {
+  if (match(TOKEN_LEFT_PAREN)) {
+    errors_.emplace_back(
+      ParserError {
+        previous_,
+        "For readability's sake, inside a complex type, you must define other complex types with an alias",
+        {nullptr, "How to create an alias: 'using YourAliasName = (...) -> ...'"}
+      }
+    );
+  }
+
+  expect(TOKEN_IDENTIFIER, "Expecting " + thing_to_look_for);
+  const std::string name {lexer_.token_to_string(*previous_)};
+  TypePtr type {std::make_shared<NamedType>(name)};
+
+  if (match(TOKEN_QUEST)) return std::make_shared<OptionalType>(type);
+
+  if (match(TOKEN_OF) || match(TOKEN_FOR))
+    errors_.emplace_back(
+      ParserError {
+        previous_,
+        "For readability's sake, inside a complex type, you must define other complex types with an alias",
+        {nullptr, "How to create an alias: 'using YourAliasName = ... for/of ...'"}
+      }
+    );
 
   return type;
 }

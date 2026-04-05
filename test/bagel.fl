@@ -1,11 +1,1 @@
-while:whatever a > 3
-  var n: Pair of A?, B = 32323258953
-  if n != 3232848953
-    print "wrong"
-  else
-    print "you just got lucky"
-    break:whatever
-
-print "all done"
-
-val g = 3
+var g: Coat of Arms = 32

@@ -276,7 +276,7 @@ class DotTreeWalker {
 
   void walk(const ExprNode& node, int parent_id);
   void walk(const std::vector<StmtNode>& vec, int parent_id);
-  void walk(const Type& type, int parent_id);
+  void walk(const TypePtr& type, int parent_id);
 
 public:
   explicit DotTreeWalker(const Lexer& lexer) : lexer_ {lexer} {}
