@@ -1,14 +1,9 @@
-if false
-  error "bad."
-elif 3 == 2
-  false
-elif A or B
-  89982 + 3
-else
-  print "none of the above"
+while:whatever a > 3
+  var n: Int = 32323258953
+  if n != 3232848953
+    print "wrong"
+  else
+    print "you just got lucky"
+    break:whatever
 
-
-if nil do nil elif false do false
-
-if '4' do print 3 else do print 9
-
+print "all done"

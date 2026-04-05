@@ -53,6 +53,10 @@ class DotTreeWalker {
       owner_.walk(stmt->expression, owner_.current_parent_id_);
     }
 
+    void visit_variable_stmt(std::shared_ptr<Statements::Variable> stmt) override {
+      owner_.walk(stmt->initializer, owner_.current_parent_id_);
+    }
+
     void visit_if_stmt(std::shared_ptr<Statements::If> stmt) override {
       const int parent_id {owner_.current_parent_id_};
       owner_.walk(stmt->condition, parent_id);
@@ -144,6 +148,14 @@ class DotTreeWalker {
 
     std::string visit_block_stmt(std::shared_ptr<Statements::Block> stmt) override { return "BLOCK"; }
     std::string visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) override { return "EXPRESSION"; }
+
+    std::string visit_variable_stmt(std::shared_ptr<Statements::Variable> stmt) override {
+      std::string blah {stmt->is_mutable ? "var " : "val "};
+      blah += owner_.lexer_.token_to_string(*stmt->identifier);
+      // TODO: Type.
+      blah += " = ...";
+      return blah;
+    }
 
     std::string visit_if_stmt(std::shared_ptr<Statements::If> stmt) override {
       if (std::dynamic_pointer_cast<Statements::Pass>(stmt->else_body))

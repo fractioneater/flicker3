@@ -15,12 +15,51 @@
 // Declarations --------------------------------------------------
 
 StmtNode Parser::declaration() {
-  // if (match(TOKEN_VAL)) return variable_declaration(false);
-  // if (match(TOKEN_VAR)) return variable_declaration(true);
+  if (match(TOKEN_VAL)) return val_declaration();
+  if (match(TOKEN_VAR)) return var_declaration();
   return statement();
 }
 
-// StmtNode Parser::variable_declaration(bool is_mutable) {/* TODO (also needs an AST node) */}
+StmtNode Parser::val_declaration() {
+  expect(TOKEN_IDENTIFIER, "Expecting a variable name after 'val'");
+  const Token* identifier {previous_};
+
+  const Type type {match(TOKEN_COLON) ? parse_type() : Type {}};
+
+  expect(TOKEN_EQ, "Val declarations must have an initializer");
+  return std::make_shared<Statements::Variable>(false, identifier, type, parse_expression(Precedence::BEGIN));
+}
+
+StmtNode Parser::var_declaration() {
+  expect(TOKEN_IDENTIFIER, "Expecting a variable name after 'var'");
+  const Token* identifier {previous_};
+  Type type {};
+  ExprNode initializer {std::make_shared<Expressions::Nil>()};
+
+  if (match(TOKEN_COLON)) {
+    type = parse_type();
+    if (match(TOKEN_EQ)) initializer = parse_expression(Precedence::BEGIN);
+  } else {
+    expect(TOKEN_EQ, "Var declaration with no type must have an initializer");
+    initializer = parse_expression(Precedence::BEGIN);
+  }
+  return std::make_shared<Statements::Variable>(true, identifier, type, initializer);
+}
+
+Type Parser::parse_type() {
+  expect(TOKEN_IDENTIFIER, "Expecting a type name");
+  Type type {previous_, match(TOKEN_QUEST)};
+
+  // Handle type params (each can be optional—it's possible to have a List of String? which is different from a List? of String).
+  if (match(TOKEN_FOR) || match(TOKEN_OF)) {
+    do {
+      expect(TOKEN_IDENTIFIER, "Expecting a type parameter name");
+      type.add_type_param(previous_, match(TOKEN_QUEST));
+    } while (match(TOKEN_COMMA));
+  }
+
+  return type;
+}
 
 // Other Statements --------------------------------------------------
 
@@ -60,17 +99,17 @@ StmtNode Parser::while_statement() {
 StmtNode Parser::each_statement() {
   Token* label {loop_label()};
 
-  expect(TOKEN_IDENTIFIER, "Expecting a loop variable");
+  expect(TOKEN_IDENTIFIER, "Expecting a loop variable name");
   Token* iter_var {previous_};
 
   Token* index_var {};
   if (match(TOKEN_LEFT_BRACKET)) {
-    expect(TOKEN_IDENTIFIER, "Expecting a loop index variable");
+    expect(TOKEN_IDENTIFIER, "Expecting a loop index variable name");
     index_var = previous_;
     expect(TOKEN_RIGHT_BRACKET, "Expecting ']' after loop index variable");
   }
 
-  expect(TOKEN_IN, "Each loops must follow the format: each ___ in ___");
+  expect(TOKEN_IN, "Iterator loops must follow the format: each ___ in ___");
 
   const ExprNode expr {parse_expression(Precedence::BEGIN)};
   const StmtNode loop_body {block_or_statement()};
@@ -84,19 +123,14 @@ StmtNode Parser::for_statement() {
   Token* label {loop_label()};
 
   // Either a variable declaration or an expression is acceptable (or nothing, of course).
-  // StmtNode begin {
-  //   match(TOKEN_VAL)
-  //   ? variable_declaration(false)
-  //   : match(TOKEN_VAR)
-  //     ? variable_declaration(true)
-  //     : check(TOKEN_SEMICOLON)
-  //       ? std::make_shared<Statements::Expression>(std::make_shared<Expressions::Nil>()) // No beginning clause.
-  //       : std::make_shared<Statements::Expression>(parse_expression(Precedence::BEGIN))
-  // };
   StmtNode begin {
-    check(TOKEN_SEMICOLON)
-    ? std::make_shared<Statements::Expression>(std::make_shared<Expressions::Nil>()) // No beginning clause.
-    : std::make_shared<Statements::Expression>(parse_expression(Precedence::BEGIN))
+    match(TOKEN_VAL)
+    ? val_declaration()
+    : match(TOKEN_VAR)
+      ? var_declaration()
+      : check(TOKEN_SEMICOLON)
+        ? std::make_shared<Statements::Expression>(std::make_shared<Expressions::Nil>()) // No beginning clause.
+        : std::make_shared<Statements::Expression>(parse_expression(Precedence::BEGIN))
   };
 
   ParserError context {for_token, "'for' creates a C-style for loop; use 'each' for iteration"};
