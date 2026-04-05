@@ -6,7 +6,6 @@
 
 #pragma once
 
-// TODO: How do I handle type aliases? (using)
 class Type {
   struct TypeElement {
     Token* name {};
@@ -23,7 +22,7 @@ public:
 
   [[nodiscard]] Token* name() const { return base_.name; }
   [[nodiscard]] bool is_optional() const { return base_.optional; }
-  [[nodiscard]] std::vector<TypeElement>& type_params() { return type_params_; }
+  [[nodiscard]] const std::vector<TypeElement>& type_params() const { return type_params_; }
 
   void add_type_param(Token* token, bool optional) {
     type_params_.emplace_back(token, optional);

@@ -1,5 +1,5 @@
 while:whatever a > 3
-  var n: Int = 32323258953
+  var n: Pair of A?, B = 32323258953
   if n != 3232848953
     print "wrong"
   else
@@ -7,3 +7,5 @@ while:whatever a > 3
     break:whatever
 
 print "all done"
+
+val g = 3
