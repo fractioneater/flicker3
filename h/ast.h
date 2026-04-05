@@ -12,10 +12,12 @@
 #include <memory>
 
 #include "lexer.h"
+#include "type.h"
 
 namespace Statements {
   class Block;
   class Expression;
+  class Variable;
   class If;
   class While;
   class Each;
@@ -47,6 +49,7 @@ class StmtVisitorVoid {
 public:
   virtual void visit_block_stmt(std::shared_ptr<Statements::Block> stmt) = 0;
   virtual void visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) = 0;
+  virtual void visit_variable_stmt(std::shared_ptr<Statements::Variable> stmt) = 0;
   virtual void visit_if_stmt(std::shared_ptr<Statements::If> stmt) = 0;
   virtual void visit_while_stmt(std::shared_ptr<Statements::While> stmt) = 0;
   virtual void visit_each_stmt(std::shared_ptr<Statements::Each> stmt) = 0;
@@ -82,6 +85,7 @@ class StmtVisitorAny {
 public:
   virtual std::any visit_block_stmt_any(std::shared_ptr<Statements::Block> stmt) = 0;
   virtual std::any visit_expression_stmt_any(std::shared_ptr<Statements::Expression> stmt) = 0;
+  virtual std::any visit_variable_stmt_any(std::shared_ptr<Statements::Variable> stmt) = 0;
   virtual std::any visit_if_stmt_any(std::shared_ptr<Statements::If> stmt) = 0;
   virtual std::any visit_while_stmt_any(std::shared_ptr<Statements::While> stmt) = 0;
   virtual std::any visit_each_stmt_any(std::shared_ptr<Statements::Each> stmt) = 0;
@@ -118,6 +122,7 @@ class StmtVisitor : public StmtVisitorAny {
 public:
   virtual R visit_block_stmt(std::shared_ptr<Statements::Block> stmt) = 0;
   virtual R visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) = 0;
+  virtual R visit_variable_stmt(std::shared_ptr<Statements::Variable> stmt) = 0;
   virtual R visit_if_stmt(std::shared_ptr<Statements::If> stmt) = 0;
   virtual R visit_while_stmt(std::shared_ptr<Statements::While> stmt) = 0;
   virtual R visit_each_stmt(std::shared_ptr<Statements::Each> stmt) = 0;
@@ -134,6 +139,10 @@ private:
 
   std::any visit_expression_stmt_any(std::shared_ptr<Statements::Expression> stmt) final {
     return visit_expression_stmt(std::move(stmt));
+  }
+
+  std::any visit_variable_stmt_any(std::shared_ptr<Statements::Variable> stmt) final {
+    return visit_variable_stmt(std::move(stmt));
   }
 
   std::any visit_if_stmt_any(std::shared_ptr<Statements::If> stmt) final {
@@ -293,6 +302,24 @@ public:
   }
 
   const ExprNode expression {};
+};
+
+class Statements::Variable : public Stmt, public std::enable_shared_from_this<Variable> {
+public:
+  Variable(bool is_mutable, const Token* identifier, Type type, ExprNode initializer) : is_mutable {is_mutable}, identifier {identifier}, type {std::move(type)}, initializer {std::move(initializer)} {}
+
+  std::any accept(StmtVisitorAny& visitor) override {
+    return visitor.visit_variable_stmt_any(shared_from_this());
+  }
+
+  void accept(StmtVisitorVoid& visitor) override {
+    visitor.visit_variable_stmt(shared_from_this());
+  }
+
+  const bool is_mutable {};
+  const Token* identifier {};
+  const Type type {};
+  const ExprNode initializer {};
 };
 
 class Statements::If : public Stmt, public std::enable_shared_from_this<If> {

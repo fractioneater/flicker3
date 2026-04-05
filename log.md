@@ -165,9 +165,54 @@ an expression.
 And just like predicted, statements are now working beautifully. There are pass statements, if statements, while statements, block statements (a wrapper around
 _more_ statements), and the fallback: expression statements.
 
-It's hard to convey how easy it is to add a new AST node type—_and parse it._ Flicker 3 is coming along really nicely. The parser isn't going to be overwhelmed by the duties of resolving identifiers, storing locals, and all that stuff (that's the typechecker's job), so I may be able to focus more on error messages in the parser.
+It's hard to convey how easy it is to add a new AST node type—_and parse it._ Flicker 3 is coming along really nicely. The parser isn't going to be overwhelmed
+by the duties of resolving identifiers, storing locals, and all that stuff (that's the typechecker's job), so I may be able to focus more on error messages in
+the parser.
 
 Speaking of error messages, I haven't even started on error recovery yet.
+
+## April 2, 2026
+
+Statement parsing!
+
+I've taken out `when` statements; they don't feel like idiomatic Flicker, and I'm too lazy to implement parsing for them. No, in reality,
+they're really not worth it if all they do is create an if-elif-elif-elif-else AST internally. If they're something special (jump tables), they should have
+special syntax, but syntactic sugar is misleading.
+
+Something like this will parse now:
+
+```
+each item[index] in list
+  print "item " + index + " is " + item
+
+for:label ;;
+  break:label
+```
+
+## April 4, 2026
+
+And now work has begun on declarations. Types are parsed (as completely as they should ever be unless I add algebraic types—see the first snippet below).
+Variable declarations are also implemented, at least as far as the the parser will see them go.
+
+I'm pleasantly surprised by the amount of work I get to put off to the analyzer pass. In Flicker 2, the parser took almost the entire burden of syntactic and
+semantic analysis. In Flicker 3, it is pretty much solely syntactic (I have yet to find a counterpoint).
+
+But yes, now I'm dreading writing an analyzer.
+
+```
+String
+String?
+List of String   # There is a list with strings
+List? of String  # If there is a list, it has non-optional strings
+List of String?  # There is a list, but it has optional strings
+List? of String? # There may be a list, and it may have strings or Nil
+Pair of Int, Int
+```
+```
+var a: Int?
+val b: Banana    # Errors because vals need an initializer
+val c = 32
+```
 
 [learncpp]: https://learncpp.com
 

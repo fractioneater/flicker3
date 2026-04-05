@@ -1,5 +1,5 @@
 {
-	"includes": ["<any>", "<memory>", "\"lexer.h\""],
+	"includes": ["<any>", "<memory>", "\"lexer.h\"", "\"type.h\""],
 	"aliases": [
 		"using StmtNode      = std::shared_ptr<Stmt>;",
 		"using ExprNode      = std::shared_ptr<Expr>;",
@@ -15,6 +15,13 @@
 		}, {
 			"name": "Expression",
 			"fields": [{"type": "ExprNode", "name": "expression", "move": true}]
+		}, {
+			"name": "Variable", "fields": [
+				{"type": "bool", "name":  "is_mutable"},
+				{"type": "Token*", "name": "identifier"},
+				{"type": "Type", "name": "type", "move": true},
+				{"type": "ExprNode", "name": "initializer", "move": true}
+			]
 		}, {
 			"name": "If", "fields": [
 				{"type": "ExprNode", "name": "condition", "move": true},

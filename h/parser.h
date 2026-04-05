@@ -7,6 +7,7 @@
 #pragma once
 
 #include "ast.h"
+#include "type.h"
 
 class ParserError {
 public:
@@ -166,7 +167,10 @@ public:
   }
 
   StmtNode declaration();
-  // StmtNode variable_declaration(bool is_mutable);
+  StmtNode val_declaration();
+  StmtNode var_declaration();
+
+  Type parse_type();
 
   StmtNode statement();
   StmtNode if_statement();
