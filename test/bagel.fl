@@ -1,1 +1,2 @@
-var g: Coat of Arms = 32
+namespace ONION
+  var g: Int = 32

@@ -18,6 +18,7 @@ namespace Statements {
   class Block;
   class Expression;
   class Variable;
+  class Namespace;
   class If;
   class While;
   class Each;
@@ -50,6 +51,7 @@ public:
   virtual void visit_block_stmt(std::shared_ptr<Statements::Block> stmt) = 0;
   virtual void visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) = 0;
   virtual void visit_variable_stmt(std::shared_ptr<Statements::Variable> stmt) = 0;
+  virtual void visit_namespace_stmt(std::shared_ptr<Statements::Namespace> stmt) = 0;
   virtual void visit_if_stmt(std::shared_ptr<Statements::If> stmt) = 0;
   virtual void visit_while_stmt(std::shared_ptr<Statements::While> stmt) = 0;
   virtual void visit_each_stmt(std::shared_ptr<Statements::Each> stmt) = 0;
@@ -86,6 +88,7 @@ public:
   virtual std::any visit_block_stmt_any(std::shared_ptr<Statements::Block> stmt) = 0;
   virtual std::any visit_expression_stmt_any(std::shared_ptr<Statements::Expression> stmt) = 0;
   virtual std::any visit_variable_stmt_any(std::shared_ptr<Statements::Variable> stmt) = 0;
+  virtual std::any visit_namespace_stmt_any(std::shared_ptr<Statements::Namespace> stmt) = 0;
   virtual std::any visit_if_stmt_any(std::shared_ptr<Statements::If> stmt) = 0;
   virtual std::any visit_while_stmt_any(std::shared_ptr<Statements::While> stmt) = 0;
   virtual std::any visit_each_stmt_any(std::shared_ptr<Statements::Each> stmt) = 0;
@@ -123,6 +126,7 @@ public:
   virtual R visit_block_stmt(std::shared_ptr<Statements::Block> stmt) = 0;
   virtual R visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) = 0;
   virtual R visit_variable_stmt(std::shared_ptr<Statements::Variable> stmt) = 0;
+  virtual R visit_namespace_stmt(std::shared_ptr<Statements::Namespace> stmt) = 0;
   virtual R visit_if_stmt(std::shared_ptr<Statements::If> stmt) = 0;
   virtual R visit_while_stmt(std::shared_ptr<Statements::While> stmt) = 0;
   virtual R visit_each_stmt(std::shared_ptr<Statements::Each> stmt) = 0;
@@ -143,6 +147,10 @@ private:
 
   std::any visit_variable_stmt_any(std::shared_ptr<Statements::Variable> stmt) final {
     return visit_variable_stmt(std::move(stmt));
+  }
+
+  std::any visit_namespace_stmt_any(std::shared_ptr<Statements::Namespace> stmt) final {
+    return visit_namespace_stmt(std::move(stmt));
   }
 
   std::any visit_if_stmt_any(std::shared_ptr<Statements::If> stmt) final {
@@ -320,6 +328,22 @@ public:
   const Token* identifier {};
   const TypePtr type {};
   const ExprNode initializer {};
+};
+
+class Statements::Namespace : public Stmt, public std::enable_shared_from_this<Namespace> {
+public:
+  Namespace(const Token* identifier, std::vector<StmtNode> declarations) : identifier {identifier}, declarations {std::move(declarations)} {}
+
+  std::any accept(StmtVisitorAny& visitor) override {
+    return visitor.visit_namespace_stmt_any(shared_from_this());
+  }
+
+  void accept(StmtVisitorVoid& visitor) override {
+    visitor.visit_namespace_stmt(shared_from_this());
+  }
+
+  const Token* identifier {};
+  const std::vector<StmtNode> declarations {};
 };
 
 class Statements::If : public Stmt, public std::enable_shared_from_this<If> {

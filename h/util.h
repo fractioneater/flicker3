@@ -58,6 +58,10 @@ class DotTreeWalker {
       owner_.walk(stmt->initializer, owner_.current_parent_id_);
     }
 
+    void visit_namespace_stmt(std::shared_ptr<Statements::Namespace> stmt) override {
+      owner_.walk(stmt->declarations, owner_.current_parent_id_);
+    }
+
     void visit_if_stmt(std::shared_ptr<Statements::If> stmt) override {
       const int parent_id {owner_.current_parent_id_};
       owner_.walk(stmt->condition, parent_id);
@@ -154,6 +158,12 @@ class DotTreeWalker {
       std::string blah {stmt->is_mutable ? "var " : "val "};
       blah += owner_.lexer_.token_to_string(*stmt->identifier);
       blah += ": ... = ...";
+      return blah;
+    }
+
+    std::string visit_namespace_stmt(std::shared_ptr<Statements::Namespace> stmt) override {
+      std::string blah {"namespace "};
+      blah += owner_.lexer_.token_to_string(*stmt->identifier);
       return blah;
     }
 

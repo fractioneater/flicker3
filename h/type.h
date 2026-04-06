@@ -14,11 +14,11 @@
 /**
  * Identifies the kind (type-kind is easier to say than type-type) of a resolved type.
  *
- * - Named: A concrete, simple type. Example: String.
- * - Apply: Generic instantiation of a named constructor—like a container. Example: List of String.
+ * - Named: A simple type or type alias. Example: String.
+ * - Applied: Generic instantiation of a named constructor—like a container. Example: List of String.
  * - Optional: Wrapper to add possibility of nil value. Example: String?.
  * - Function: Callable type. Example: (String, String) -> String.
- * - TypeVar: A type parameter or inference variable. Example: A in `class Thing of A`.
+ * - TypeVar: A type parameter or inference variable. Example: A in `class Thing of A` or `fun do_something for A ().
  * - OverloadSet: A value with multiple callable signatures. Example: (Int) -> Int | (Double) -> Double.
  */
 enum class TypeKind {

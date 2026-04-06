@@ -14,10 +14,28 @@
 
 // Declarations --------------------------------------------------
 
-StmtNode Parser::declaration() {
+std::optional<StmtNode> Parser::declaration() {
   if (match(TOKEN_VAL)) return val_declaration();
   if (match(TOKEN_VAR)) return var_declaration();
+  // if (match(TOKEN_FUN)) return function_declaration();
+  // if (match(TOKEN_CLASS)) return class_declaration();
+  if (match(TOKEN_NAMESPACE)) return namespace_declaration();
+  // if (match(TOKEN_USING)) return using_declaration();
+
+  // Each of the places that use this handle the "there is no declaration" case differently.
+  return {};
+}
+
+StmtNode Parser::declaration_or_statement() {
+  if (const auto decl {declaration()}) return *decl;
   return statement();
+}
+
+StmtNode Parser::declaration_in_namespace() {
+  if (const auto decl {declaration()}) return *decl;
+
+  errors_.emplace_back(current_, "Expected a declaration");
+  return std::make_shared<Statements::Pass>();
 }
 
 StmtNode Parser::val_declaration() {
@@ -50,6 +68,37 @@ StmtNode Parser::var_declaration() {
   }
   return std::make_shared<Statements::Variable>(true, identifier, type, initializer);
 }
+
+// StmtNode Parser::function_declaration() {
+//
+// }
+
+// StmtNode Parser::class_declaration() {
+//
+// }
+
+StmtNode Parser::namespace_declaration() {
+  expect(TOKEN_IDENTIFIER, "Expecting a name for this namespace");
+  Token* name {previous_};
+  match_line();
+  expect(TOKEN_INDENT, "Expecting indentation to increase when namespace block begins");
+
+  std::vector<StmtNode> contents {};
+  while (!check(TOKEN_DEDENT)) {
+    contents.emplace_back(declaration_in_namespace());
+    if (!match_line()) break;
+  }
+  // TODO: This error will be shown if there are two statements on one line. Same issue in block().
+  expect(TOKEN_DEDENT, "Expecting indentation to decrease after namespace block ends");
+
+  return std::make_shared<Statements::Namespace>(name, std::move(contents));
+}
+
+// StmtNode Parser::using_declaration() {
+//
+// }
+
+// Type parsing (for declarations) --------------------------------------------------
 
 TypePtr Parser::parse_type() {
   // Check for function type first.
@@ -228,11 +277,11 @@ StmtNode Parser::return_statement() {
 }
 
 StmtNode Parser::block() {
-  expect_line("Place a newline before beginning a block");
+  match_line();
   expect(TOKEN_INDENT, "Expecting indentation to increase when block begins");
   std::vector<StmtNode> contents {};
   while (!check(TOKEN_EOF) && !check(TOKEN_DEDENT)) {
-    contents.emplace_back(declaration());
+    contents.emplace_back(declaration_or_statement());
     if (!match_line()) break;
   }
   expect(TOKEN_DEDENT, "Expecting indentation to decrease after block ends"); // Users shouldn't see this error if Lexer is doing its job.
@@ -377,7 +426,7 @@ void Parser::parse() {
   // program : newline? (codeItem newline)* codeItem? EOF ;
   match_line();
   while (!check(TOKEN_EOF)) {
-    program_.emplace_back(declaration());
+    program_.emplace_back(declaration_or_statement());
     if (!match_line()) break;
   }
   expect(TOKEN_EOF, "Expecting newline or EOF after statement");
