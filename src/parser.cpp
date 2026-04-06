@@ -110,7 +110,7 @@ TypePtr Parser::parse_type() {
   }
 
   expect(TOKEN_IDENTIFIER, "Expecting either a type name or '(' for a function type");
-  const std::string name {lexer_.token_to_string(*previous_)};
+  const std::string name {previous_->src_string};
   const bool is_optional {match(TOKEN_QUEST)};
   TypePtr type {std::make_shared<NamedType>(name)};
 
@@ -155,7 +155,7 @@ TypePtr Parser::basic_type(const std::string& thing_to_look_for) {
   }
 
   expect(TOKEN_IDENTIFIER, "Expecting " + thing_to_look_for);
-  const std::string name {lexer_.token_to_string(*previous_)};
+  const std::string name {previous_->src_string};
   TypePtr type {std::make_shared<NamedType>(name)};
 
   if (match(TOKEN_QUEST)) return std::make_shared<OptionalType>(type);
@@ -439,7 +439,7 @@ void Parser::output_dot() const {
   }
 
   if (std::ofstream out {DEBUG_DOT_FILENAME}) {
-    out << to_dot(program_, lexer_) << '\n';
+    out << to_dot(program_) << '\n';
     out.close();
     std::cout << "Parse tree exported to " << DEBUG_DOT_FILENAME << '\n';
   } else {
