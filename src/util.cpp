@@ -159,7 +159,7 @@ std::string DotTreeWalker::render(const std::vector<StmtNode>& tree) {
   return out_.str();
 }
 
-std::string to_dot(const std::vector<StmtNode>& tree, const Lexer& lexer) {
-  DotTreeWalker walker {lexer};
+std::string to_dot(const std::vector<StmtNode>& tree) {
+  DotTreeWalker walker {};
   return walker.render(tree);
 }

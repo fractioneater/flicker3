@@ -34,7 +34,6 @@ void print_error(const Lexer& lexer, const LexerError& err, std::string_view mod
 void print_error(const Lexer& lexer, const ParserError& err, std::string_view module, int type);
 
 class DotTreeWalker {
-  const Lexer& lexer_;
   int id_counter_ {};
   int current_parent_id_ {};
   std::ostringstream out_ {};
@@ -146,7 +145,7 @@ class DotTreeWalker {
   };
 
   class StmtNameVisitor : public StmtVisitor<std::string> {
-    DotTreeWalker& owner_;
+    [[maybe_unused]] DotTreeWalker& owner_;
 
   public:
     explicit StmtNameVisitor(DotTreeWalker& owner) : owner_ {owner} {}
@@ -156,14 +155,14 @@ class DotTreeWalker {
 
     std::string visit_variable_stmt(std::shared_ptr<Statements::Variable> stmt) override {
       std::string blah {stmt->is_mutable ? "var " : "val "};
-      blah += owner_.lexer_.token_to_string(*stmt->identifier);
+      blah += stmt->identifier->src_string;
       blah += ": ... = ...";
       return blah;
     }
 
     std::string visit_namespace_stmt(std::shared_ptr<Statements::Namespace> stmt) override {
       std::string blah {"namespace "};
-      blah += owner_.lexer_.token_to_string(*stmt->identifier);
+      blah += stmt->identifier->src_string;
       return blah;
     }
 
@@ -177,7 +176,7 @@ class DotTreeWalker {
       std::string blah {"while"};
       if (stmt->label) {
         blah += ":";
-        blah += owner_.lexer_.token_to_string(*stmt->label);
+        blah += stmt->label->src_string;
       }
       blah += " ... do ...";
       if (!std::dynamic_pointer_cast<Statements::Pass>(stmt->else_body))
@@ -189,13 +188,13 @@ class DotTreeWalker {
       std::string blah {"each"};
       if (stmt->label) {
         blah += ":";
-        blah += owner_.lexer_.token_to_string(*stmt->label);
+        blah += stmt->label->src_string;
       }
       blah += " ";
-      blah += owner_.lexer_.token_to_string(*stmt->iter_var);
+      blah += stmt->iter_var->src_string;
       if (stmt->index_var) {
         blah += "[";
-        blah += owner_.lexer_.token_to_string(*stmt->index_var);
+        blah += stmt->index_var->src_string;
         blah += "]";
       }
       blah += " in ... do ...";
@@ -208,7 +207,7 @@ class DotTreeWalker {
       std::string blah {"for"};
       if (stmt->label) {
         blah += ":";
-        blah += owner_.lexer_.token_to_string(*stmt->label);
+        blah += stmt->label->src_string;
       }
       blah += " ...; ...; ... do ...";
       if (!std::dynamic_pointer_cast<Statements::Pass>(stmt->else_body))
@@ -220,7 +219,7 @@ class DotTreeWalker {
       std::string blah {"break"};
       if (stmt->label) {
         blah += ":";
-        blah += owner_.lexer_.token_to_string(*stmt->label);
+        blah += stmt->label->src_string;
       }
       return blah;
     }
@@ -229,7 +228,7 @@ class DotTreeWalker {
       std::string blah {"continue"};
       if (stmt->label) {
         blah += ":";
-        blah += owner_.lexer_.token_to_string(*stmt->label);
+        blah += stmt->label->src_string;
       }
       return blah;
     }
@@ -239,7 +238,7 @@ class DotTreeWalker {
   };
 
   class ExprNameVisitor : public ExprVisitor<std::string> {
-    DotTreeWalker& owner_;
+    [[maybe_unused]] DotTreeWalker& owner_;
 
   public:
     explicit ExprNameVisitor(DotTreeWalker& owner) : owner_ {owner} {}
@@ -273,7 +272,7 @@ class DotTreeWalker {
     std::string visit_string_expr(std::shared_ptr<Expressions::String> expr) override { return expr->value; }
 
     std::string visit_variable_expr(std::shared_ptr<Expressions::Variable> expr) override {
-      return std::string {owner_.lexer_.token_to_string(*expr->identifier)};
+      return std::string {expr->identifier->src_string};
     }
 
     std::string visit_print_expr(std::shared_ptr<Expressions::Print> expr) override { return std::string {expr->fn_name}; }
@@ -289,15 +288,12 @@ class DotTreeWalker {
   void walk(const TypePtr& type, int parent_id);
 
 public:
-  explicit DotTreeWalker(const Lexer& lexer) : lexer_ {lexer} {}
-
   std::string render(const std::vector<StmtNode>& tree);
 };
 
 /**
  * Exports a  parse tree to GraphViz DOT format.
  * @param tree Parse tree to export
- * @param lexer Lexer, so the tree-walker can read from the source associated with a token's position
  * @return A string containing the DOT representation of the tree
  */
-std::string to_dot(const std::vector<StmtNode>& tree, const Lexer& lexer);
+std::string to_dot(const std::vector<StmtNode>& tree);

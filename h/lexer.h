@@ -70,14 +70,18 @@ enum TokenType {
 struct Token {
   TokenType type {TOKEN_EOF};
   size_t start_offset {};
-  size_t length {}; // Number of chars that belong to this token.
-  // End column can be computed with (col + length). End char can be computed with (start_char + length)
+  size_t length {};                  // Number of chars that belong to this token.
+  const std::string_view src_string; // String viewing the lexer's source at this token's position.
 
   std::any value {};
+
+  Token(TokenType type, size_t start, size_t length, const std::string_view src) : type {type}, start_offset {start}, length {length},
+    src_string {src.substr(start_offset, length)} {}
 };
 
 class Lexer {
   const std::string src_ {};
+  const std::string_view src_view_ {};
   const long src_length_ {};
 
   size_t start_offset_ {};               // Current token's start position — char index in src.
@@ -143,7 +147,7 @@ class Lexer {
   [[nodiscard]] Token make_token(TokenType type) {
     prev_type_        = type;
     const auto length = offset_ - start_offset_;
-    return Token {type, start_offset_, length};
+    return Token {type, start_offset_, length, src_view_};
   }
 
   /**
@@ -265,7 +269,7 @@ class Lexer {
   [[nodiscard]] Token eof();
 
 public:
-  explicit Lexer(std::string src) : src_ {std::move(src)}, src_length_ {std::ssize(src_)} {
+  explicit Lexer(std::string src) : src_ {std::move(src)}, src_view_ {src_}, src_length_ {std::ssize(src_)} {
     indents_.emplace_back(0);
   }
 
@@ -295,15 +299,6 @@ public:
    * @return A string_view WITHOUT a trailing newline, viewing the source
    */
   [[nodiscard]] std::string_view offset_to_line_string(size_t offset) const;
-  /**
-   * Read the text of a token from the source.
-   * @param token Token to read the text of
-   * @return A string viewing the source, starting at the token's start offset, and reading the number of characters equal to the token's length
-   */
-  [[nodiscard]] std::string_view token_to_string(const Token& token) const {
-    const std::string_view src_view {src_};
-    return src_view.substr(token.start_offset, token.length);
-  }
 
   [[nodiscard]] const std::vector<LexerError>& get_errors() const { return errors_; }
   [[nodiscard]] const std::vector<LexerError>& get_warnings() const { return warnings_; }
