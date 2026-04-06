@@ -17,10 +17,15 @@
 			"fields": [{"type": "ExprNode", "name": "expression", "move": true}]
 		}, {
 			"name": "Variable", "fields": [
-				{"type": "bool", "name":  "is_mutable"},
+				{"type": "bool", "name": "is_mutable"},
 				{"type": "Token*", "name": "identifier"},
 				{"type": "TypePtr", "name": "type", "move": true},
 				{"type": "ExprNode", "name": "initializer", "move": true}
+			]
+		}, {
+			"name": "Namespace", "fields": [
+				{"type": "Token*", "name": "identifier"},
+				{"type": "std::vector<StmtNode>", "name": "declarations", "move": true}
 			]
 		}, {
 			"name": "If", "fields": [

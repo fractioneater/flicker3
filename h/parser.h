@@ -166,12 +166,34 @@ public:
       errors_.emplace_back(error_token, std::string(message), std::move(context));
   }
 
-  StmtNode declaration();
+  std::optional<StmtNode> declaration();
+  StmtNode declaration_or_statement();
+  StmtNode declaration_in_namespace();
   StmtNode val_declaration();
   StmtNode var_declaration();
+  // StmtNode function_declaration();
+  // StmtNode class_declaration();
+  StmtNode namespace_declaration();
+  // StmtNode using_declaration();
 
+  /**
+   * Interprets and parses the next few tokens as a user-representable type of any complexity.
+   * This includes optionals, applied types, function types, and named types (see h/type.h for explanation).
+   * @return Type parsed (possibly nullptr in error case)
+   */
   TypePtr parse_type();
+  /**
+   * Parses a function type, like this: (String, String) -> String.
+   * Does not allow applied types or function types nested inside (only basic_type calls).
+   * @return Function type parsed (possibly nullptr in error case)
+   */
   TypePtr function_type();
+  /**
+   * Parses a basic type only, no applied types (no 'for' or 'of') and no function types allowed.
+   * Will show helpful errors if an applied or function type is found.
+   * @param thing_to_look_for For the error message of the expect(IDENTIFIER)—this type always starts with an identifier—which are "Expecting " + thing_to_look_for
+   * @return Basic type parsed (possibly nullptr in error case)
+   */
   TypePtr basic_type(const std::string& thing_to_look_for);
 
   StmtNode statement();

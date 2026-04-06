@@ -73,7 +73,7 @@ void DotTreeWalker::walk(const ExprNode& node, int parent_id) {
   const int my_id = id_counter_++;
   const std::string label {node->accept(expr_name_visitor_)};
 
-  out_ << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=cornflowerblue, fontcolor=blue];\n";
+  out_ << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=royalblue, fontcolor=royalblue4];\n";
   out_ << "  n" << parent_id << " -> n" << my_id << ";\n";
 
   const int previous_parent {current_parent_id_};
@@ -87,7 +87,7 @@ void DotTreeWalker::walk(const std::vector<StmtNode>& vec, int parent_id) {
     const int my_id = id_counter_++;
     const std::string label {node->accept(stmt_name_visitor_)};
 
-    out_ << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=red, fontcolor=maroon];\n";
+    out_ << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=indianred, fontcolor=maroon];\n";
     out_ << "  n" << parent_id << " -> n" << my_id << ";\n";
 
     const int previous_parent {current_parent_id_};
@@ -97,11 +97,12 @@ void DotTreeWalker::walk(const std::vector<StmtNode>& vec, int parent_id) {
   }
 }
 
+// Types aren't AST nodes, but they behave similarly. Instead of using a visitor pattern, they're just handled with a switch.
 void DotTreeWalker::walk(const TypePtr& type, int parent_id) {
   const int my_id = id_counter_++;
 
   if (!type) {
-    out_ << "  n" << my_id << " [label=\"inferred\", shape=box, color=purple, fontcolor=black];\n";
+    out_ << "  n" << my_id << " [label=\"inferred\", shape=box, color=plum4, fontcolor=rebeccapurple];\n";
     out_ << "  n" << parent_id << " -> n" << my_id << ";\n";
     return;
   }
@@ -128,7 +129,7 @@ void DotTreeWalker::walk(const TypePtr& type, int parent_id) {
       break;
   }
 
-  out_ << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=purple, fontcolor=black];\n";
+  out_ << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=plum4, fontcolor=rebeccapurple];\n";
   out_ << "  n" << parent_id << " -> n" << my_id << ";\n";
 
   if (const auto applied = std::dynamic_pointer_cast<AppliedType>(type)) {
@@ -150,7 +151,7 @@ std::string DotTreeWalker::render(const std::vector<StmtNode>& tree) {
   out_ << "digraph Program {\n";
   out_ << "  rankdir=TB;\n";
   out_ << "  node [fontname=\"Iosevka Term SS09\"];\n";
-  out_ << "  n0 [label=\"PROGRAM\", shape=box, color=purple, fontcolor=black];\n";
+  out_ << "  n0 [label=\"PROGRAM\", shape=box, color=darkorange2, fontcolor=black];\n";
   id_counter_        = 1;
   current_parent_id_ = 0;
   walk(tree, 0);
