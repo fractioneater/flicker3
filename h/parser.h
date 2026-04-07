@@ -30,7 +30,7 @@ class ParserError {
 };
 
 enum class Precedence {
-  NONE,
+  NONE,           // so the compiler doesn't destroy itself trying to call the infix rule of a prefix-only token
   BEGIN,          // used when calling parse_expression() at top level, or in parentheses
   PRINT,          // yes, print is an expression
   ASSIGNMENT,     // = | -= | += | *= | /= | **= | |= | &= | ^= | %=
@@ -50,8 +50,8 @@ enum class Precedence {
   PREFIX,         // ++ | -- | ! | ~ | -
   EXPONENT,       // **
   NIL_COALESCING, // ?:
-  POSTFIX,        // ++ | -- | . | ?. | () | {} | []
   RANGE,          // .. | ..<
+  POSTFIX,        // . | ?. | () | {} | [] | ++ | -- (the last two are exceptions, because they're not supposed to be postfix)
   ATOM
 };
 
@@ -210,14 +210,20 @@ class Parser {
   StmtNode optional_else_body();
   Token* loop_label();
 
+  // Infix
   ExprNode binary_right_assoc(const ExprNode& left);
   ExprNode binary(const ExprNode& left);
   ExprNode infix_not(const ExprNode& left);
   ExprNode binary_is(const ExprNode& left);
   ExprNode comparison(const ExprNode& left);
+  ExprNode if_expr(const ExprNode& left);
+  // Postfix (treated as InfixFn)
+  ExprNode postfix_inc_dec(const ExprNode& expr);
+  // Prefix
   ExprNode unary();
   ExprNode prefix_not();
   ExprNode print();
+  // Primary/atom
   ExprNode literal();
   ExprNode variable();
   ExprNode grouping();
@@ -257,14 +263,16 @@ class Parser {
     Precedence prec {};
   };
 
-  #define UNUSED                      ParseRule {nullptr, nullptr, "", Precedence::NONE}
-  #define INFIX_RULE(fn, name, prec)  ParseRule {nullptr, &Parser::fn, name, Precedence::prec}
-  #define PREFIX_RULE(fn, name, prec) ParseRule {&Parser::fn, nullptr, name, Precedence::prec}
-  #define BOTH(pre, in, name, prec)   ParseRule {&Parser::pre, &Parser::in, name, Precedence::prec}
+  #define UNUSED                     ParseRule {nullptr, nullptr, "", Precedence::NONE}
+  #define INFIX_RULE(fn, name, prec) ParseRule {nullptr, &Parser::fn, name, Precedence::prec}
+  #define PREFIX_RULE(fn, name)      ParseRule {&Parser::fn, nullptr, name, Precedence::NONE}
+  #define BOTH(pre, in, name, prec)  ParseRule {&Parser::pre, &Parser::in, name, Precedence::prec}
 
   // @formatter:off
+  // IMPORTANT: Prefix rules always have a precedence of none! Their precedence is decided by the parse_expression(prec) call inside them, not the parse rule table!
+  // This means that for "BOTH" rules, the precedence only applies to the infix rule.
   std::array<ParseRule, 90> rules {{
-    /* TOKEN_LEFT_PAREN    *//* BOTH(grouping, call, "", POSTFIX),*/ PREFIX_RULE(grouping, "", NONE),
+    /* TOKEN_LEFT_PAREN    *//* BOTH(grouping, call, "", POSTFIX),*/ PREFIX_RULE(grouping, ""),
     /* TOKEN_RIGHT_PAREN   */ UNUSED,
     /* TOKEN_LEFT_BRACKET  *//* BOTH(collection, subscript, "", POSTFIX),*/ UNUSED,
     /* TOKEN_RIGHT_BRACKET */ UNUSED,
@@ -272,17 +280,17 @@ class Parser {
     /* TOKEN_RIGHT_BRACE   */ UNUSED,
     /* TOKEN_SEMICOLON     */ UNUSED,
     /* TOKEN_COMMA         */ UNUSED,
-    /* TOKEN_TILDE         */ PREFIX_RULE(unary, "~", PREFIX),
+    /* TOKEN_TILDE         */ PREFIX_RULE(unary, "~"),
     /* TOKEN_STAR          */ INFIX_RULE(binary, "*", FACTOR),
     /* TOKEN_STAR_STAR     */ INFIX_RULE(binary_right_assoc, "**", EXPONENT),
     /* TOKEN_STAR_EQ       */ UNUSED,
     /* TOKEN_STAR_STAR_EQ  */ UNUSED,
     /* TOKEN_MINUS         */ BOTH(unary, binary, "-", TERM),
-    /* TOKEN_MINUS_MINUS   *//* BOTH(unary, postfix, "", POSTFIX),*/ UNUSED,
+    /* TOKEN_MINUS_MINUS   */ BOTH(unary, postfix_inc_dec, "--", POSTFIX),
     /* TOKEN_RIGHT_ARROW   */ UNUSED,
     /* TOKEN_MINUS_EQ      */ UNUSED,
     /* TOKEN_PLUS          */ INFIX_RULE(binary, "+", TERM),
-    /* TOKEN_PLUS_PLUS     *//* BOTH(unary, postfix, "", POSTFIX),*/ UNUSED,
+    /* TOKEN_PLUS_PLUS     */ BOTH(unary, postfix_inc_dec, "++", POSTFIX),
     /* TOKEN_PLUS_EQ       */ UNUSED,
     /* TOKEN_DOT           *//* INFIX_RULE(dot, "", POSTFIX),*/ UNUSED,
     /* TOKEN_DOT_DOT       */ INFIX_RULE(binary, "..", RANGE),
@@ -308,15 +316,15 @@ class Parser {
     /* TOKEN_CARET_EQ      */ UNUSED,
     /* TOKEN_AMPERSAND     */ INFIX_RULE(binary, "&", BIT_AND),
     /* TOKEN_AMPERSAND_EQ  */ UNUSED,
-    /* TOKEN_BANG          */ PREFIX_RULE(unary, "!", PREFIX),
+    /* TOKEN_BANG          */ PREFIX_RULE(unary, "!"),
     /* TOKEN_BANG_EQ       */ INFIX_RULE(comparison, "!=", COMPARISON),
     /* TOKEN_EQ            */ UNUSED,
     /* TOKEN_EQ_EQ         */ INFIX_RULE(comparison, "==", COMPARISON),
-    /* TOKEN_IDENTIFIER    */ PREFIX_RULE(variable, "", NONE),
-    /* TOKEN_STRING        */ PREFIX_RULE(literal, "", NONE),
-    /* TOKEN_INTERPOLATION *//* PREFIX_RULE(string_interpolation, "", NONE),*/ UNUSED,
-    /* TOKEN_CHAR          */ PREFIX_RULE(literal, "", NONE),
-    /* TOKEN_NUMBER        */ PREFIX_RULE(literal, "", NONE),
+    /* TOKEN_IDENTIFIER    */ PREFIX_RULE(variable, ""),
+    /* TOKEN_STRING        */ PREFIX_RULE(literal, ""),
+    /* TOKEN_INTERPOLATION *//* PREFIX_RULE(string_interpolation, ""),*/ UNUSED,
+    /* TOKEN_CHAR          */ PREFIX_RULE(literal, ""),
+    /* TOKEN_NUMBER        */ PREFIX_RULE(literal, ""),
     /* TOKEN_AND           */ INFIX_RULE(binary, "and", AND),
     /* TOKEN_BREAK         */ UNUSED,
     /* TOKEN_CLASS         */ UNUSED,
@@ -325,27 +333,27 @@ class Parser {
     /* TOKEN_EACH          */ UNUSED,
     /* TOKEN_ELIF          */ UNUSED,
     /* TOKEN_ELSE          */ UNUSED,
-    /* TOKEN_FALSE         */ PREFIX_RULE(literal, "", NONE),
+    /* TOKEN_FALSE         */ PREFIX_RULE(literal, ""),
     /* TOKEN_FOR           */ UNUSED,
     /* TOKEN_FUN           */ UNUSED,
-    /* TOKEN_IF            *//* INFIX_RULE(if_expr, "", IF),*/ UNUSED,
+    /* TOKEN_IF            */ INFIX_RULE(if_expr, "", IF),
     /* TOKEN_IN            */ INFIX_RULE(binary, "in", IN),
     /* TOKEN_IS            */ INFIX_RULE(binary_is, "", IS),
     /* TOKEN_NAMESPACE     */ UNUSED,
-    /* TOKEN_NIL           */ PREFIX_RULE(literal, "", NONE),
+    /* TOKEN_NIL           */ PREFIX_RULE(literal, ""),
     /* TOKEN_NOT           */ BOTH(prefix_not, infix_not, "", IN),
-    /* TOKEN_OF            *//* PREFIX_RULE(of, "", ATOM),*/ UNUSED,
+    /* TOKEN_OF            *//* PREFIX_RULE(of, "", NONE),*/ UNUSED,
     /* TOKEN_OR            */ INFIX_RULE(binary, "or", OR),
     /* TOKEN_OVERRIDE      */ UNUSED,
     /* TOKEN_PASS          */ UNUSED,
-    /* TOKEN_PRINT         */ PREFIX_RULE(print, "print", PRINT),
-    /* TOKEN_PRINT_ERROR   */ PREFIX_RULE(print, "print_err", PRINT),
+    /* TOKEN_PRINT         */ PREFIX_RULE(print, "print"),
+    /* TOKEN_PRINT_ERROR   */ PREFIX_RULE(print, "print_err"),
     /* TOKEN_PRIVATE       */ UNUSED,
     /* TOKEN_RETURN        */ UNUSED,
     /* TOKEN_STATIC        */ UNUSED,
     /* TOKEN_SUPER         *//* PREFIX_RULE(super_id, "", NONE),*/ UNUSED,
     /* TOKEN_THIS          *//* PREFIX_RULE(this_id, "", NONE),*/ UNUSED,
-    /* TOKEN_TRUE          */ PREFIX_RULE(literal, "", NONE),
+    /* TOKEN_TRUE          */ PREFIX_RULE(literal, ""),
     /* TOKEN_USING         */ UNUSED,
     /* TOKEN_VAL           */ UNUSED,
     /* TOKEN_VAR           */ UNUSED,

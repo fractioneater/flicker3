@@ -349,6 +349,18 @@ ExprNode Parser::comparison(const ExprNode& left) {
   return std::make_shared<Expressions::Comparison>(comparison_funcs, operands);
 }
 
+ExprNode Parser::if_expr(const ExprNode& left) {
+  constexpr Precedence prec {static_cast<int>(Precedence::IF) + 1};
+  const ExprNode condition {parse_expression(Precedence::BEGIN)};
+  expect(TOKEN_ELSE, "Expecting else clause in if expression");
+  return std::make_shared<Expressions::If>(condition, left, parse_expression(prec));
+}
+
+ExprNode Parser::postfix_inc_dec(const ExprNode& expr) {
+  warnings_.emplace_back(previous_, "Postfix increment and decrement operators behave as their prefix equivalent; prefer the prefix version");
+  return std::make_shared<Expressions::Unary>(rules[previous_->type].fn_name, expr);
+}
+
 ExprNode Parser::unary() {
   return std::make_shared<Expressions::Unary>(rules[previous_->type].fn_name, parse_expression(Precedence::PREFIX));
 }

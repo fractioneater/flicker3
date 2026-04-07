@@ -124,6 +124,13 @@ class DotTreeWalker {
       }
     }
 
+    void visit_if_expr(std::shared_ptr<Expressions::If> expr) override {
+      const int parent_id {owner_.current_parent_id_};
+      owner_.walk(expr->then, parent_id);
+      owner_.walk(expr->condition, parent_id);
+      owner_.walk(expr->else_expr, parent_id);
+    }
+
     void visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) override {
       owner_.walk(expr->expr, owner_.current_parent_id_);
     }
@@ -160,11 +167,7 @@ class DotTreeWalker {
       return blah;
     }
 
-    std::string visit_namespace_stmt(std::shared_ptr<Statements::Namespace> stmt) override {
-      std::string blah {"namespace "};
-      blah += stmt->identifier->src_string;
-      return blah;
-    }
+    std::string visit_namespace_stmt(std::shared_ptr<Statements::Namespace> stmt) override { return "namespace " + std::string {stmt->identifier->src_string}; }
 
     std::string visit_if_stmt(std::shared_ptr<Statements::If> stmt) override {
       if (std::dynamic_pointer_cast<Statements::Pass>(stmt->else_body))
@@ -243,10 +246,7 @@ class DotTreeWalker {
     public:
     explicit ExprNameVisitor(DotTreeWalker& owner) : owner_ {owner} {}
 
-    std::string visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) override {
-      const std::string blah {expr->fn_name};
-      return "binary " + blah;
-    }
+    std::string visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) override { return "binary " + std::string {expr->fn_name}; }
 
     std::string visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) override {
       std::string blah {"..."};
@@ -258,10 +258,9 @@ class DotTreeWalker {
       return blah;
     }
 
-    std::string visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) override {
-      const std::string blah {expr->fn_name};
-      return "unary " + blah;
-    }
+    std::string visit_if_expr(std::shared_ptr<Expressions::If> expr) override { return "... if ... else ..."; }
+
+    std::string visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) override { return "unary " + std::string {expr->fn_name}; }
 
     std::string visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) override { return "( )"; }
 
@@ -271,9 +270,7 @@ class DotTreeWalker {
     std::string visit_char_expr(std::shared_ptr<Expressions::Char> expr) override { return std::string {expr->value}; }
     std::string visit_string_expr(std::shared_ptr<Expressions::String> expr) override { return expr->value; }
 
-    std::string visit_variable_expr(std::shared_ptr<Expressions::Variable> expr) override {
-      return std::string {expr->identifier->src_string};
-    }
+    std::string visit_variable_expr(std::shared_ptr<Expressions::Variable> expr) override { return std::string {expr->identifier->src_string}; }
 
     std::string visit_print_expr(std::shared_ptr<Expressions::Print> expr) override { return std::string {expr->fn_name}; }
   };
