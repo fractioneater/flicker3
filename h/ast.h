@@ -32,6 +32,7 @@ namespace Statements {
 namespace Expressions {
   class Binary;
   class Comparison;
+  class If;
   class Unary;
   class Grouping;
   class Number;
@@ -67,6 +68,7 @@ class ExprVisitorVoid {
   public:
   virtual void visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) = 0;
   virtual void visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) = 0;
+  virtual void visit_if_expr(std::shared_ptr<Expressions::If> expr) = 0;
   virtual void visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) = 0;
   virtual void visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) = 0;
   virtual void visit_number_expr(std::shared_ptr<Expressions::Number> expr) = 0;
@@ -104,6 +106,7 @@ class ExprVisitorAny {
   public:
   virtual std::any visit_binary_expr_any(std::shared_ptr<Expressions::Binary> expr) = 0;
   virtual std::any visit_comparison_expr_any(std::shared_ptr<Expressions::Comparison> expr) = 0;
+  virtual std::any visit_if_expr_any(std::shared_ptr<Expressions::If> expr) = 0;
   virtual std::any visit_unary_expr_any(std::shared_ptr<Expressions::Unary> expr) = 0;
   virtual std::any visit_grouping_expr_any(std::shared_ptr<Expressions::Grouping> expr) = 0;
   virtual std::any visit_number_expr_any(std::shared_ptr<Expressions::Number> expr) = 0;
@@ -191,6 +194,7 @@ class ExprVisitor : public ExprVisitorAny {
   public:
   virtual R visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) = 0;
   virtual R visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) = 0;
+  virtual R visit_if_expr(std::shared_ptr<Expressions::If> expr) = 0;
   virtual R visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) = 0;
   virtual R visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) = 0;
   virtual R visit_number_expr(std::shared_ptr<Expressions::Number> expr) = 0;
@@ -208,6 +212,10 @@ class ExprVisitor : public ExprVisitorAny {
 
   std::any visit_comparison_expr_any(std::shared_ptr<Expressions::Comparison> expr) final {
     return visit_comparison_expr(std::move(expr));
+  }
+
+  std::any visit_if_expr_any(std::shared_ptr<Expressions::If> expr) final {
+    return visit_if_expr(std::move(expr));
   }
 
   std::any visit_unary_expr_any(std::shared_ptr<Expressions::Unary> expr) final {
@@ -314,8 +322,7 @@ class Statements::Expression : public Stmt, public std::enable_shared_from_this<
 
 class Statements::Variable : public Stmt, public std::enable_shared_from_this<Variable> {
   public:
-  Variable(bool is_mutable, const Token* identifier, TypePtr type, ExprNode initializer) : is_mutable {is_mutable}, identifier {identifier},
-    type {std::move(type)}, initializer {std::move(initializer)} {}
+  Variable(bool is_mutable, const Token* identifier, TypePtr type, ExprNode initializer) : is_mutable {is_mutable}, identifier {identifier}, type {std::move(type)}, initializer {std::move(initializer)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_variable_stmt_any(shared_from_this());
@@ -349,8 +356,7 @@ class Statements::Namespace : public Stmt, public std::enable_shared_from_this<N
 
 class Statements::If : public Stmt, public std::enable_shared_from_this<If> {
   public:
-  If(ExprNode condition, StmtNode then_body, StmtNode else_body) : condition {std::move(condition)}, then_body {std::move(then_body)},
-    else_body {std::move(else_body)} {}
+  If(ExprNode condition, StmtNode then_body, StmtNode else_body) : condition {std::move(condition)}, then_body {std::move(then_body)}, else_body {std::move(else_body)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_if_stmt_any(shared_from_this());
@@ -367,8 +373,7 @@ class Statements::If : public Stmt, public std::enable_shared_from_this<If> {
 
 class Statements::While : public Stmt, public std::enable_shared_from_this<While> {
   public:
-  While(const Token* label, ExprNode condition, StmtNode loop_body, StmtNode else_body) : label {label}, condition {std::move(condition)},
-    loop_body {std::move(loop_body)}, else_body {std::move(else_body)} {}
+  While(const Token* label, ExprNode condition, StmtNode loop_body, StmtNode else_body) : label {label}, condition {std::move(condition)}, loop_body {std::move(loop_body)}, else_body {std::move(else_body)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_while_stmt_any(shared_from_this());
@@ -386,8 +391,7 @@ class Statements::While : public Stmt, public std::enable_shared_from_this<While
 
 class Statements::Each : public Stmt, public std::enable_shared_from_this<Each> {
   public:
-  Each(const Token* label, const Token* iter_var, const Token* index_var, ExprNode iterator, StmtNode loop_body, StmtNode else_body) : label {label},
-    iter_var {iter_var}, index_var {index_var}, iterator {std::move(iterator)}, loop_body {std::move(loop_body)}, else_body {std::move(else_body)} {}
+  Each(const Token* label, const Token* iter_var, const Token* index_var, ExprNode iterator, StmtNode loop_body, StmtNode else_body) : label {label}, iter_var {iter_var}, index_var {index_var}, iterator {std::move(iterator)}, loop_body {std::move(loop_body)}, else_body {std::move(else_body)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_each_stmt_any(shared_from_this());
@@ -407,8 +411,7 @@ class Statements::Each : public Stmt, public std::enable_shared_from_this<Each> 
 
 class Statements::For : public Stmt, public std::enable_shared_from_this<For> {
   public:
-  For(const Token* label, StmtNode begin, ExprNode condition, ExprNode end, StmtNode loop_body, StmtNode else_body) : label {label}, begin {std::move(begin)},
-    condition {std::move(condition)}, end {std::move(end)}, loop_body {std::move(loop_body)}, else_body {std::move(else_body)} {}
+  For(const Token* label, StmtNode begin, ExprNode condition, ExprNode end, StmtNode loop_body, StmtNode else_body) : label {label}, begin {std::move(begin)}, condition {std::move(condition)}, end {std::move(end)}, loop_body {std::move(loop_body)}, else_body {std::move(else_body)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_for_stmt_any(shared_from_this());
@@ -482,6 +485,7 @@ class Statements::Pass : public Stmt, public std::enable_shared_from_this<Pass> 
   void accept(StmtVisitorVoid& visitor) override {
     visitor.visit_pass_stmt(shared_from_this());
   }
+
 };
 
 // Expressions --------------------------------------------------
@@ -516,6 +520,23 @@ class Expressions::Comparison : public Expr, public std::enable_shared_from_this
 
   const std::vector<NamedFunction> fn_names {};
   const std::vector<ExprNode> expressions {};
+};
+
+class Expressions::If : public Expr, public std::enable_shared_from_this<If> {
+  public:
+  If(ExprNode condition, ExprNode then, ExprNode else_expr) : condition {std::move(condition)}, then {std::move(then)}, else_expr {std::move(else_expr)} {}
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_if_expr_any(shared_from_this());
+  }
+
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_if_expr(shared_from_this());
+  }
+
+  const ExprNode condition {};
+  const ExprNode then {};
+  const ExprNode else_expr {};
 };
 
 class Expressions::Unary : public Expr, public std::enable_shared_from_this<Unary> {
@@ -590,6 +611,7 @@ class Expressions::Nil : public Expr, public std::enable_shared_from_this<Nil> {
   void accept(ExprVisitorVoid& visitor) override {
     visitor.visit_nil_expr(shared_from_this());
   }
+
 };
 
 class Expressions::Char : public Expr, public std::enable_shared_from_this<Char> {

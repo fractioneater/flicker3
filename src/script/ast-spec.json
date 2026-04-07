@@ -85,6 +85,12 @@
 				{"type": "std::vector<ExprNode>", "name": "expressions", "move": true}
 			]
 		}, {
+			"name": "If", "fields": [
+				{"type": "ExprNode", "name": "condition", "move": true},
+				{"type": "ExprNode", "name": "then", "move": true},
+				{"type": "ExprNode", "name": "else_expr", "move": true}
+			]
+		}, {
 			"name": "Unary", "fields": [
 				{"type": "NamedFunction", "name": "fn_name"},
 				{"type": "ExprNode", "name": "expr", "move": true}

@@ -1,3 +1,1 @@
-namespace ONION
-  val g: Int = 32
-  var n: (A, B) -> C = pastry
+a..4 if ++b else ~23
