@@ -19,7 +19,7 @@
 #include "common.h"
 
 class LexerError {
-public:
+  public:
   size_t offset {};
   std::string message {};
   std::unique_ptr<LexerError> context {};
@@ -268,7 +268,7 @@ class Lexer {
    */
   [[nodiscard]] Token eof();
 
-public:
+  public:
   explicit Lexer(std::string src) : src_ {std::move(src)}, src_view_ {src_}, src_length_ {std::ssize(src_)} {
     indents_.emplace_back(0);
   }

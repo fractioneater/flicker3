@@ -31,7 +31,7 @@ enum class TypeKind {
 };
 
 class Type {
-public:
+  public:
   virtual ~Type() = default;
   [[nodiscard]] virtual TypeKind kind() const = 0;
 };
@@ -41,7 +41,7 @@ using TypePtr = std::shared_ptr<Type>;
 class NamedType final : public Type {
   std::string name_ {}; // TODO: We may want more than a name later.
 
-public:
+  public:
   explicit NamedType(std::string name) : name_ {std::move(name)} {}
 
   [[nodiscard]] TypeKind kind() const override { return TypeKind::NAMED; }
@@ -52,7 +52,7 @@ class AppliedType final : public Type {
   TypePtr constructor_ {};
   std::vector<TypePtr> args_ {};
 
-public:
+  public:
   AppliedType(TypePtr constructor, std::vector<TypePtr> args) : constructor_ {std::move(constructor)}, args_ {std::move(args)} {}
 
   [[nodiscard]] TypeKind kind() const override { return TypeKind::APPLIED; }
@@ -63,7 +63,7 @@ public:
 class OptionalType final : public Type {
   TypePtr inner_ {};
 
-public:
+  public:
   explicit OptionalType(TypePtr inner) : inner_ {std::move(inner)} {}
 
   [[nodiscard]] TypeKind kind() const override { return TypeKind::OPTIONAL; }
@@ -74,7 +74,7 @@ class FunctionType final : public Type {
   std::vector<TypePtr> params_ {};
   TypePtr result_ {};
 
-public:
+  public:
   FunctionType(std::vector<TypePtr> params, TypePtr result) : params_ {std::move(params)}, result_ {std::move(result)} {}
 
   [[nodiscard]] TypeKind kind() const override { return TypeKind::FUNCTION; }
@@ -85,7 +85,7 @@ public:
 class TypeVar final : public Type {
   std::string name_ {};
 
-public:
+  public:
   explicit TypeVar(std::string name) : name_ {std::move(name)} {}
 
   [[nodiscard]] TypeKind kind() const override { return TypeKind::TYPE_VAR; }
@@ -95,7 +95,7 @@ public:
 class OverloadSetType final : public Type {
   std::vector<TypePtr> functions_ {};
 
-public:
+  public:
   explicit OverloadSetType(std::vector<TypePtr> functions) : functions_ {std::move(functions)} {}
 
   [[nodiscard]] TypeKind kind() const override { return TypeKind::OVERLOAD_SET; }
