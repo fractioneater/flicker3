@@ -41,7 +41,7 @@ class DotTreeWalker {
   class StmtChildrenVisitor : public StmtVisitorVoid {
     DotTreeWalker& owner_;
 
-  public:
+    public:
     explicit StmtChildrenVisitor(DotTreeWalker& owner) : owner_ {owner} {}
 
     void visit_block_stmt(std::shared_ptr<Statements::Block> stmt) override {
@@ -108,7 +108,7 @@ class DotTreeWalker {
   class ExprChildrenVisitor : public ExprVisitorVoid {
     DotTreeWalker& owner_;
 
-  public:
+    public:
     explicit ExprChildrenVisitor(DotTreeWalker& owner) : owner_ {owner} {}
 
     void visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) override {
@@ -147,7 +147,7 @@ class DotTreeWalker {
   class StmtNameVisitor : public StmtVisitor<std::string> {
     [[maybe_unused]] DotTreeWalker& owner_;
 
-  public:
+    public:
     explicit StmtNameVisitor(DotTreeWalker& owner) : owner_ {owner} {}
 
     std::string visit_block_stmt(std::shared_ptr<Statements::Block> stmt) override { return "BLOCK"; }
@@ -240,7 +240,7 @@ class DotTreeWalker {
   class ExprNameVisitor : public ExprVisitor<std::string> {
     [[maybe_unused]] DotTreeWalker& owner_;
 
-  public:
+    public:
     explicit ExprNameVisitor(DotTreeWalker& owner) : owner_ {owner} {}
 
     std::string visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) override {
@@ -287,7 +287,7 @@ class DotTreeWalker {
   void walk(const std::vector<StmtNode>& vec, int parent_id);
   void walk(const TypePtr& type, int parent_id);
 
-public:
+  public:
   std::string render(const std::vector<StmtNode>& tree);
 };
 

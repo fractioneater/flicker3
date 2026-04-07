@@ -168,7 +168,7 @@ def render_void_visitors(categories: List[NodeCategory]) -> str:
   for index, category in enumerate(categories):
     param_id = "stmt" if category.label == "Stmt" else "expr"
     lines.append(f"class {category.label}VisitorVoid {{")
-    lines.append("public:")
+    lines.append("  public:")
     for node in category.types:
       suffix = visitor_method_suffix(node, category)
       lines.append(f"  virtual void visit_{suffix}(std::shared_ptr<{category.namespace}::{node.name}> {param_id}) = 0;")
@@ -188,7 +188,7 @@ def render_type_erased_visitors(categories: List[NodeCategory]) -> str:
   for index, category in enumerate(categories):
     param_id = "stmt" if category.label == "Stmt" else "expr"
     lines.append(f"class {category.label}VisitorAny {{")
-    lines.append("public:")
+    lines.append("  public:")
     for node in category.types:
       suffix = visitor_method_suffix(node, category)
       lines.append(f"  virtual std::any visit_{suffix}_any(std::shared_ptr<{category.namespace}::{node.name}> {param_id}) = 0;")
@@ -209,12 +209,12 @@ def render_concrete_visitors(categories: List[NodeCategory]) -> str:
     param_id = "stmt" if category.label == "Stmt" else "expr"
     lines.append("template <typename R>")
     lines.append(f"class {category.label}Visitor : public {category.label}VisitorAny {{")
-    lines.append("public:")
+    lines.append("  public:")
     for node in category.types:
       suffix = visitor_method_suffix(node, category)
       lines.append(f"  virtual R visit_{suffix}(std::shared_ptr<{category.namespace}::{node.name}> {param_id}) = 0;")
     lines.append("")
-    lines.append("private:")
+    lines.append("  private:")
     for idx, node in enumerate(category.types):
       suffix = visitor_method_suffix(node, category)
       lines.append(f"  std::any visit_{suffix}_any(std::shared_ptr<{category.namespace}::{node.name}> {param_id}) final {{")
@@ -233,7 +233,7 @@ def render_base_nodes(categories: List[NodeCategory]) -> str:
     lines.extend(
       [
         f"class {category.label} {{",
-        "public:",
+        "  public:",
         f"  virtual std::any accept({category.label}VisitorAny& visitor) = 0;",
         f"  virtual void accept({category.label}VisitorVoid& visitor) = 0;",
         "",
@@ -258,7 +258,7 @@ def render_node_class(category: NodeCategory, node: NodeType) -> str:
   initializers = ", ".join(f"{field.name} {{{field.init_expr()}}}" for field in node.fields)
   lines = [
     f"class {category.namespace}::{node.name} : public {category.label}, public std::enable_shared_from_this<{node.name}> {{",
-    "public:",
+    "  public:",
   ]
   ctor_prefix = "explicit " if len(node.fields) == 1 else ""
   if initializers:

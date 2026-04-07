@@ -10,7 +10,7 @@
 #include "type.h"
 
 class ParserError {
-public:
+  public:
   Token* token {};
   std::string message {};
   std::unique_ptr<ParserError> context {};
@@ -66,7 +66,7 @@ class Parser {
   std::vector<ParserError> errors_ {};
   std::vector<ParserError> warnings_ {};
 
-public:
+  public:
   explicit Parser(Lexer& lexer) : lexer_ {lexer} {}
 
   void advance() {
