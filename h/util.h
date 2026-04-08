@@ -135,6 +135,12 @@ class DotTreeWalker {
       owner_.walk(expr->expr, owner_.current_parent_id_);
     }
 
+    void visit_interpolation_expr(std::shared_ptr<Expressions::Interpolation> expr) override {
+      const int parent_id {owner_.current_parent_id_};
+      for (const auto& sub_expr : expr->expressions)
+        owner_.walk(sub_expr, parent_id);
+    }
+
     void visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) override {
       owner_.walk(expr->expr, owner_.current_parent_id_);
     }
@@ -262,13 +268,22 @@ class DotTreeWalker {
 
     std::string visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) override { return "unary " + std::string {expr->fn_name}; }
 
+    std::string visit_interpolation_expr(std::shared_ptr<Expressions::Interpolation> expr) override {
+      std::string blah {"\\\"" + expr->start};
+      for (const auto& interpolation : expr->end_strings) {
+        blah += "=(...)";
+        blah += interpolation;
+      }
+      return blah + "\\\"";
+    }
+
     std::string visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) override { return "( )"; }
 
     std::string visit_number_expr(std::shared_ptr<Expressions::Number> expr) override { return std::to_string(expr->value); }
     std::string visit_boolean_expr(std::shared_ptr<Expressions::Boolean> expr) override { return expr->value ? "true" : "false"; }
     std::string visit_nil_expr(std::shared_ptr<Expressions::Nil> expr) override { return "nil"; }
     std::string visit_char_expr(std::shared_ptr<Expressions::Char> expr) override { return std::string {expr->value}; }
-    std::string visit_string_expr(std::shared_ptr<Expressions::String> expr) override { return expr->value; }
+    std::string visit_string_expr(std::shared_ptr<Expressions::String> expr) override { return "\\\"" + expr->value + "\\\""; }
 
     std::string visit_variable_expr(std::shared_ptr<Expressions::Variable> expr) override { return std::string {expr->identifier->src_string}; }
 

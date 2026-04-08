@@ -34,6 +34,7 @@ namespace Expressions {
   class Comparison;
   class If;
   class Unary;
+  class Interpolation;
   class Grouping;
   class Number;
   class Boolean;
@@ -70,6 +71,7 @@ class ExprVisitorVoid {
   virtual void visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) = 0;
   virtual void visit_if_expr(std::shared_ptr<Expressions::If> expr) = 0;
   virtual void visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) = 0;
+  virtual void visit_interpolation_expr(std::shared_ptr<Expressions::Interpolation> expr) = 0;
   virtual void visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) = 0;
   virtual void visit_number_expr(std::shared_ptr<Expressions::Number> expr) = 0;
   virtual void visit_boolean_expr(std::shared_ptr<Expressions::Boolean> expr) = 0;
@@ -108,6 +110,7 @@ class ExprVisitorAny {
   virtual std::any visit_comparison_expr_any(std::shared_ptr<Expressions::Comparison> expr) = 0;
   virtual std::any visit_if_expr_any(std::shared_ptr<Expressions::If> expr) = 0;
   virtual std::any visit_unary_expr_any(std::shared_ptr<Expressions::Unary> expr) = 0;
+  virtual std::any visit_interpolation_expr_any(std::shared_ptr<Expressions::Interpolation> expr) = 0;
   virtual std::any visit_grouping_expr_any(std::shared_ptr<Expressions::Grouping> expr) = 0;
   virtual std::any visit_number_expr_any(std::shared_ptr<Expressions::Number> expr) = 0;
   virtual std::any visit_boolean_expr_any(std::shared_ptr<Expressions::Boolean> expr) = 0;
@@ -196,6 +199,7 @@ class ExprVisitor : public ExprVisitorAny {
   virtual R visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) = 0;
   virtual R visit_if_expr(std::shared_ptr<Expressions::If> expr) = 0;
   virtual R visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) = 0;
+  virtual R visit_interpolation_expr(std::shared_ptr<Expressions::Interpolation> expr) = 0;
   virtual R visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) = 0;
   virtual R visit_number_expr(std::shared_ptr<Expressions::Number> expr) = 0;
   virtual R visit_boolean_expr(std::shared_ptr<Expressions::Boolean> expr) = 0;
@@ -220,6 +224,10 @@ class ExprVisitor : public ExprVisitorAny {
 
   std::any visit_unary_expr_any(std::shared_ptr<Expressions::Unary> expr) final {
     return visit_unary_expr(std::move(expr));
+  }
+
+  std::any visit_interpolation_expr_any(std::shared_ptr<Expressions::Interpolation> expr) final {
+    return visit_interpolation_expr(std::move(expr));
   }
 
   std::any visit_grouping_expr_any(std::shared_ptr<Expressions::Grouping> expr) final {
@@ -553,6 +561,23 @@ class Expressions::Unary : public Expr, public std::enable_shared_from_this<Unar
 
   const NamedFunction fn_name {};
   const ExprNode expr {};
+};
+
+class Expressions::Interpolation : public Expr, public std::enable_shared_from_this<Interpolation> {
+  public:
+  Interpolation(std::string start, std::vector<ExprNode> expressions, std::vector<std::string> end_strings) : start {start}, expressions {std::move(expressions)}, end_strings {std::move(end_strings)} {}
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_interpolation_expr_any(shared_from_this());
+  }
+
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_interpolation_expr(shared_from_this());
+  }
+
+  const std::string start {};
+  const std::vector<ExprNode> expressions {};
+  const std::vector<std::string> end_strings {};
 };
 
 class Expressions::Grouping : public Expr, public std::enable_shared_from_this<Grouping> {

@@ -373,6 +373,27 @@ ExprNode Parser::print() {
   return std::make_shared<Expressions::Print>(rules[previous_->type].fn_name, parse_expression(Precedence::PRINT));
 }
 
+ExprNode Parser::string_interpolation() {
+  const auto start {std::any_cast<std::string>(previous_->value)};
+  std::vector<ExprNode> expressions {};
+  std::vector<std::string> end_strings {};
+
+  do {
+    expressions.emplace_back(parse_expression(Precedence::BEGIN));
+    if (match(TOKEN_STRING)) {
+      end_strings.emplace_back(std::any_cast<std::string>(previous_->value));
+      break;
+    }
+    if (check(TOKEN_INTERPOLATION)) end_strings.emplace_back(std::any_cast<std::string>(current_->value));
+    else {
+      errors_.emplace_back("You've found a lexer bug: string interpolation with no ending token—tell this to the developer");
+      break;
+    }
+  } while (match(TOKEN_INTERPOLATION));
+
+  return std::make_shared<Expressions::Interpolation>(start, expressions, end_strings);
+}
+
 // ReSharper disable once CppMemberFunctionMayBeConst because it needs to match the PrefixFn signature.
 ExprNode Parser::literal() {
   switch (previous_->type) {

@@ -96,6 +96,12 @@
 				{"type": "ExprNode", "name": "expr", "move": true}
 			]
 		}, {
+			"name": "Interpolation", "fields": [
+				{"type": "std::string", "name": "start"},
+				{"type": "std::vector<ExprNode>", "name": "expressions", "move": true},
+				{"type": "std::vector<std::string>", "name": "end_strings", "move": true}
+			]
+		}, {
 			"name": "Grouping",
 			"fields": [{"type": "ExprNode", "name": "expr", "move": true}]
 		}, {
