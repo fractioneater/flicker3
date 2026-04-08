@@ -223,6 +223,7 @@ class Parser {
   ExprNode unary();
   ExprNode prefix_not();
   ExprNode print();
+  ExprNode string_interpolation();
   // Primary/atom
   ExprNode literal();
   ExprNode variable();
@@ -322,7 +323,7 @@ class Parser {
     /* TOKEN_EQ_EQ         */ INFIX_RULE(comparison, "==", COMPARISON),
     /* TOKEN_IDENTIFIER    */ PREFIX_RULE(variable, ""),
     /* TOKEN_STRING        */ PREFIX_RULE(literal, ""),
-    /* TOKEN_INTERPOLATION *//* PREFIX_RULE(string_interpolation, ""),*/ UNUSED,
+    /* TOKEN_INTERPOLATION */ PREFIX_RULE(string_interpolation, ""),
     /* TOKEN_CHAR          */ PREFIX_RULE(literal, ""),
     /* TOKEN_NUMBER        */ PREFIX_RULE(literal, ""),
     /* TOKEN_AND           */ INFIX_RULE(binary, "and", AND),
@@ -334,15 +335,15 @@ class Parser {
     /* TOKEN_ELIF          */ UNUSED,
     /* TOKEN_ELSE          */ UNUSED,
     /* TOKEN_FALSE         */ PREFIX_RULE(literal, ""),
-    /* TOKEN_FOR           */ UNUSED,
-    /* TOKEN_FUN           */ UNUSED,
+    /* TOKEN_FOR           */ UNUSED, // See TOKEN_OF
+    /* TOKEN_FUN           *//* PREFIX_RULE(lambda, ""),*/ UNUSED,
     /* TOKEN_IF            */ INFIX_RULE(if_expr, "", IF),
     /* TOKEN_IN            */ INFIX_RULE(binary, "in", IN),
     /* TOKEN_IS            */ INFIX_RULE(binary_is, "", IS),
     /* TOKEN_NAMESPACE     */ UNUSED,
     /* TOKEN_NIL           */ PREFIX_RULE(literal, ""),
     /* TOKEN_NOT           */ BOTH(prefix_not, infix_not, "", IN),
-    /* TOKEN_OF            *//* PREFIX_RULE(of, "", NONE),*/ UNUSED,
+    /* TOKEN_OF            */ UNUSED, // TODO: Does this ever show up as an operator? How to handle it?
     /* TOKEN_OR            */ INFIX_RULE(binary, "or", OR),
     /* TOKEN_OVERRIDE      */ UNUSED,
     /* TOKEN_PASS          */ UNUSED,
