@@ -91,6 +91,17 @@
 				{"type": "ExprNode", "name": "else_expr", "move": true}
 			]
 		}, {
+			"name": "Member", "fields": [
+				{"type": "ExprNode", "name": "object", "move": true},
+				{"type": "Token*", "name": "member"},
+				{"type": "bool", "name": "is_safe"}
+			]
+		}, {
+			"name": "NamespaceMember", "fields": [
+				{"type": "Token*", "name": "namespace_id", "move": true},
+				{"type": "Token*", "name": "member"}
+			]
+		}, {
 			"name": "Unary", "fields": [
 				{"type": "NamedFunction", "name": "fn_name"},
 				{"type": "ExprNode", "name": "expr", "move": true}

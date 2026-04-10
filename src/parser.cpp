@@ -356,6 +356,21 @@ ExprNode Parser::if_expr(const ExprNode& left) {
   return std::make_shared<Expressions::If>(condition, left, parse_expression(prec));
 }
 
+ExprNode Parser::member(const ExprNode& left) {
+  const bool safe_access {previous_->type == TOKEN_QUEST_DOT};
+  expect(TOKEN_IDENTIFIER, "Expecting a member name");
+  return std::make_shared<Expressions::Member>(left, previous_, safe_access);
+}
+
+ExprNode Parser::namespace_member(const ExprNode& left) {
+  if (const auto var_expr {std::dynamic_pointer_cast<Expressions::Variable>(left)}) {
+    expect(TOKEN_IDENTIFIER, "Expecting a namespace member");
+    return std::make_shared<Expressions::NamespaceMember>(var_expr->identifier, previous_);
+  }
+  errors_.emplace_back(previous_, "'::' (namespace access) only works for namespaces");
+  return std::make_shared<Expressions::Nil>();
+}
+
 ExprNode Parser::postfix_inc_dec(const ExprNode& expr) {
   warnings_.emplace_back(previous_, "Postfix increment and decrement operators behave as their prefix equivalent; prefer the prefix version");
   return std::make_shared<Expressions::Unary>(rules[previous_->type].fn_name, expr);

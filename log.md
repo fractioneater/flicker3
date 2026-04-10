@@ -219,7 +219,8 @@ val c = 32
 The next step, in my opinion, is to take care of the rest of the expressions instead of jumping fully into statements—because classes and functions are going to be hard.
 
 Day 1: `++`, `--`, and if expressions (`... if ... else ...`)  
-Day 2: string interpolation
+Day 2: string interpolation  
+Day 3: member access, both for namespaces (`::`) and normal objects (`.`, `?.`)
 
 [learncpp]: https://learncpp.com
 

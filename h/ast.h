@@ -33,6 +33,8 @@ namespace Expressions {
   class Binary;
   class Comparison;
   class If;
+  class Member;
+  class NamespaceMember;
   class Unary;
   class Interpolation;
   class Grouping;
@@ -70,6 +72,8 @@ class ExprVisitorVoid {
   virtual void visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) = 0;
   virtual void visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) = 0;
   virtual void visit_if_expr(std::shared_ptr<Expressions::If> expr) = 0;
+  virtual void visit_member_expr(std::shared_ptr<Expressions::Member> expr) = 0;
+  virtual void visit_namespace_member_expr(std::shared_ptr<Expressions::NamespaceMember> expr) = 0;
   virtual void visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) = 0;
   virtual void visit_interpolation_expr(std::shared_ptr<Expressions::Interpolation> expr) = 0;
   virtual void visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) = 0;
@@ -109,6 +113,8 @@ class ExprVisitorAny {
   virtual std::any visit_binary_expr_any(std::shared_ptr<Expressions::Binary> expr) = 0;
   virtual std::any visit_comparison_expr_any(std::shared_ptr<Expressions::Comparison> expr) = 0;
   virtual std::any visit_if_expr_any(std::shared_ptr<Expressions::If> expr) = 0;
+  virtual std::any visit_member_expr_any(std::shared_ptr<Expressions::Member> expr) = 0;
+  virtual std::any visit_namespace_member_expr_any(std::shared_ptr<Expressions::NamespaceMember> expr) = 0;
   virtual std::any visit_unary_expr_any(std::shared_ptr<Expressions::Unary> expr) = 0;
   virtual std::any visit_interpolation_expr_any(std::shared_ptr<Expressions::Interpolation> expr) = 0;
   virtual std::any visit_grouping_expr_any(std::shared_ptr<Expressions::Grouping> expr) = 0;
@@ -198,6 +204,8 @@ class ExprVisitor : public ExprVisitorAny {
   virtual R visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) = 0;
   virtual R visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) = 0;
   virtual R visit_if_expr(std::shared_ptr<Expressions::If> expr) = 0;
+  virtual R visit_member_expr(std::shared_ptr<Expressions::Member> expr) = 0;
+  virtual R visit_namespace_member_expr(std::shared_ptr<Expressions::NamespaceMember> expr) = 0;
   virtual R visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) = 0;
   virtual R visit_interpolation_expr(std::shared_ptr<Expressions::Interpolation> expr) = 0;
   virtual R visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) = 0;
@@ -220,6 +228,14 @@ class ExprVisitor : public ExprVisitorAny {
 
   std::any visit_if_expr_any(std::shared_ptr<Expressions::If> expr) final {
     return visit_if_expr(std::move(expr));
+  }
+
+  std::any visit_member_expr_any(std::shared_ptr<Expressions::Member> expr) final {
+    return visit_member_expr(std::move(expr));
+  }
+
+  std::any visit_namespace_member_expr_any(std::shared_ptr<Expressions::NamespaceMember> expr) final {
+    return visit_namespace_member_expr(std::move(expr));
   }
 
   std::any visit_unary_expr_any(std::shared_ptr<Expressions::Unary> expr) final {
@@ -545,6 +561,39 @@ class Expressions::If : public Expr, public std::enable_shared_from_this<If> {
   const ExprNode condition {};
   const ExprNode then {};
   const ExprNode else_expr {};
+};
+
+class Expressions::Member : public Expr, public std::enable_shared_from_this<Member> {
+  public:
+  Member(ExprNode object, const Token* member, bool is_safe) : object {std::move(object)}, member {member}, is_safe {is_safe} {}
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_member_expr_any(shared_from_this());
+  }
+
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_member_expr(shared_from_this());
+  }
+
+  const ExprNode object {};
+  const Token* member {};
+  const bool is_safe {};
+};
+
+class Expressions::NamespaceMember : public Expr, public std::enable_shared_from_this<NamespaceMember> {
+  public:
+  NamespaceMember(const Token* namespace_id, const Token* member) : namespace_id {std::move(namespace_id)}, member {member} {}
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_namespace_member_expr_any(shared_from_this());
+  }
+
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_namespace_member_expr(shared_from_this());
+  }
+
+  const Token* namespace_id {};
+  const Token* member {};
 };
 
 class Expressions::Unary : public Expr, public std::enable_shared_from_this<Unary> {

@@ -1,1 +1,3 @@
-"cruising at altitude =(altitude) with heading =(rad / pi * 180)"
+a.to_string
+a?.safe_access
+THING::item
