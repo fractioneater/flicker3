@@ -220,7 +220,7 @@ The next step, in my opinion, is to take care of the rest of the expressions ins
 
 Day 1: `++`, `--`, and if expressions (`... if ... else ...`)  
 Day 2: string interpolation  
-Day 3: member access, both for namespaces (`::`) and normal objects (`.`, `?.`)
+Day 3: member access, both for namespaces (`::`) and normal objects (`.`, `?.`), calls—but not lambda calls yet
 
 [learncpp]: https://learncpp.com
 

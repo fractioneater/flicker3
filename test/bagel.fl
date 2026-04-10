@@ -1,3 +1,1 @@
-a.to_string
-a?.safe_access
-THING::item
+a.nonsenseCall(ALPHABET::letter_B, 0x203c2, -~++4)

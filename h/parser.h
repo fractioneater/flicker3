@@ -31,7 +31,7 @@ class ParserError {
 
 enum class Precedence {
   NONE,           // so the compiler doesn't destroy itself trying to call the infix rule of a prefix-only token
-  BEGIN,          // used when calling parse_expression() at top level, or in parentheses
+  BEGIN,          // used when calling parse_expression() in a general case
   PRINT,          // yes, print is an expression
   ASSIGNMENT,     // = | -= | += | *= | /= | **= | |= | &= | ^= | %=
   NOT,            // not
@@ -217,10 +217,11 @@ class Parser {
   ExprNode binary_is(const ExprNode& left);
   ExprNode comparison(const ExprNode& left);
   ExprNode if_expr(const ExprNode& left);
-  ExprNode member(const ExprNode& left);
-  ExprNode namespace_member(const ExprNode& left);
   // Postfix (treated as InfixFn)
   ExprNode postfix_inc_dec(const ExprNode& expr);
+  ExprNode call(const ExprNode& expr);
+  ExprNode member(const ExprNode& expr);
+  ExprNode namespace_member(const ExprNode& expr);
   // Prefix
   ExprNode unary();
   ExprNode prefix_not();
@@ -271,11 +272,11 @@ class Parser {
   #define PREFIX_RULE(fn, name)      ParseRule {&Parser::fn, nullptr, name, Precedence::NONE}
   #define BOTH(pre, in, name, prec)  ParseRule {&Parser::pre, &Parser::in, name, Precedence::prec}
 
-  // @formatter:off
+  // @formatter:off; it will separate the comments from the rest of their lines, which is horrifying.
   // IMPORTANT: Prefix rules always have a precedence of none! Their precedence is decided by the parse_expression(prec) call inside them, not the parse rule table!
   // This means that for "BOTH" rules, the precedence only applies to the infix rule.
   std::array<ParseRule, 90> rules {{
-    /* TOKEN_LEFT_PAREN    *//* BOTH(grouping, call, "", POSTFIX),*/ PREFIX_RULE(grouping, ""),
+    /* TOKEN_LEFT_PAREN    */ BOTH(grouping, call, "", POSTFIX),
     /* TOKEN_RIGHT_PAREN   */ UNUSED,
     /* TOKEN_LEFT_BRACKET  *//* BOTH(collection, subscript, "", POSTFIX),*/ UNUSED,
     /* TOKEN_RIGHT_BRACKET */ UNUSED,

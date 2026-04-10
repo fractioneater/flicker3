@@ -356,24 +356,41 @@ ExprNode Parser::if_expr(const ExprNode& left) {
   return std::make_shared<Expressions::If>(condition, left, parse_expression(prec));
 }
 
-ExprNode Parser::member(const ExprNode& left) {
-  const bool safe_access {previous_->type == TOKEN_QUEST_DOT};
-  expect(TOKEN_IDENTIFIER, "Expecting a member name");
-  return std::make_shared<Expressions::Member>(left, previous_, safe_access);
+ExprNode Parser::postfix_inc_dec(const ExprNode& expr) {
+  warnings_.emplace_back(previous_, "Postfix increment and decrement operators behave as their prefix equivalent; prefer the prefix version");
+  return std::make_shared<Expressions::Unary>(rules[previous_->type].fn_name, expr);
 }
 
-ExprNode Parser::namespace_member(const ExprNode& left) {
-  if (const auto var_expr {std::dynamic_pointer_cast<Expressions::Variable>(left)}) {
+ExprNode Parser::call(const ExprNode& expr) {
+  ParserError start_context {previous_, "To match this one"};
+  std::vector<ExprNode> args {};
+  // The one error case that comes to mind immediately is an attempted trailing comma.
+  if (!check(TOKEN_RIGHT_PAREN))
+    do {
+      if (check(TOKEN_RIGHT_PAREN)) {
+        errors_.emplace_back(previous_, "Trailing commas are not allowed");
+        break;
+      }
+      args.emplace_back(parse_expression(Precedence::BEGIN));
+    } while (match(TOKEN_COMMA));
+  expect(TOKEN_RIGHT_PAREN, "Expecting a closing parenthesis", start_context);
+
+  return std::make_shared<Expressions::Call>(expr, args);
+}
+
+ExprNode Parser::member(const ExprNode& expr) {
+  const bool safe_access {previous_->type == TOKEN_QUEST_DOT};
+  expect(TOKEN_IDENTIFIER, "Expecting a member name");
+  return std::make_shared<Expressions::Member>(expr, previous_, safe_access);
+}
+
+ExprNode Parser::namespace_member(const ExprNode& expr) {
+  if (const auto var_expr {std::dynamic_pointer_cast<Expressions::Variable>(expr)}) {
     expect(TOKEN_IDENTIFIER, "Expecting a namespace member");
     return std::make_shared<Expressions::NamespaceMember>(var_expr->identifier, previous_);
   }
   errors_.emplace_back(previous_, "'::' (namespace access) only works for namespaces");
   return std::make_shared<Expressions::Nil>();
-}
-
-ExprNode Parser::postfix_inc_dec(const ExprNode& expr) {
-  warnings_.emplace_back(previous_, "Postfix increment and decrement operators behave as their prefix equivalent; prefer the prefix version");
-  return std::make_shared<Expressions::Unary>(rules[previous_->type].fn_name, expr);
 }
 
 ExprNode Parser::unary() {

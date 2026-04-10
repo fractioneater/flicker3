@@ -131,6 +131,13 @@ class DotTreeWalker {
       owner_.walk(expr->else_expr, parent_id);
     }
 
+    void visit_call_expr(std::shared_ptr<Expressions::Call> expr) override {
+      const int parent_id {owner_.current_parent_id_};
+      owner_.walk(expr->object, parent_id);
+      for (const auto& arg : expr->arguments)
+        owner_.walk(arg, parent_id);
+    }
+
     void visit_member_expr(std::shared_ptr<Expressions::Member> expr) override {
       owner_.walk(expr->object, owner_.current_parent_id_);
     }
@@ -276,6 +283,8 @@ class DotTreeWalker {
       const std::string blah {"(...)"};
       return blah + (expr->is_safe ? "?." : ".") + std::string {expr->member->src_string};
     }
+
+    std::string visit_call_expr(std::shared_ptr<Expressions::Call> expr) override { return "call"; }
 
     std::string visit_namespace_member_expr(std::shared_ptr<Expressions::NamespaceMember> expr) override {
       return std::string {expr->namespace_id->src_string} + "::" + std::string {expr->member->src_string};
