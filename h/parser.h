@@ -217,6 +217,8 @@ class Parser {
   ExprNode binary_is(const ExprNode& left);
   ExprNode comparison(const ExprNode& left);
   ExprNode if_expr(const ExprNode& left);
+  ExprNode member(const ExprNode& left);
+  ExprNode namespace_member(const ExprNode& left);
   // Postfix (treated as InfixFn)
   ExprNode postfix_inc_dec(const ExprNode& expr);
   // Prefix
@@ -293,12 +295,12 @@ class Parser {
     /* TOKEN_PLUS          */ INFIX_RULE(binary, "+", TERM),
     /* TOKEN_PLUS_PLUS     */ BOTH(unary, postfix_inc_dec, "++", POSTFIX),
     /* TOKEN_PLUS_EQ       */ UNUSED,
-    /* TOKEN_DOT           *//* INFIX_RULE(dot, "", POSTFIX),*/ UNUSED,
+    /* TOKEN_DOT           */ INFIX_RULE(member, "", POSTFIX),
     /* TOKEN_DOT_DOT       */ INFIX_RULE(binary, "..", RANGE),
     /* TOKEN_DOT_DOT_LT    */ INFIX_RULE(binary, "..<", RANGE),
     /* TOKEN_QUEST         */ UNUSED,
     /* TOKEN_QUEST_COLON   */ INFIX_RULE(binary, "?:", NIL_COALESCING),
-    /* TOKEN_QUEST_DOT     *//* INFIX_RULE(dot, "", POSTFIX),*/ UNUSED,
+    /* TOKEN_QUEST_DOT     */ INFIX_RULE(member, "", POSTFIX),
     /* TOKEN_GT            */ INFIX_RULE(comparison, ">", COMPARISON),
     /* TOKEN_GT_GT         */ INFIX_RULE(binary, ">>", BIT_SHIFT),
     /* TOKEN_GT_EQ         */ INFIX_RULE(comparison, ">=", COMPARISON),
@@ -306,7 +308,7 @@ class Parser {
     /* TOKEN_LT_LT         */ INFIX_RULE(binary, "<<", BIT_SHIFT),
     /* TOKEN_LT_EQ         */ INFIX_RULE(comparison, "<=", COMPARISON),
     /* TOKEN_COLON         */ UNUSED,
-    /* TOKEN_COLON_COLON   *//* INFIX_RULE(scope_access, "", ATOM),*/ UNUSED,
+    /* TOKEN_COLON_COLON   */ INFIX_RULE(namespace_member, "", ATOM),
     /* TOKEN_SLASH         */ INFIX_RULE(binary, "/", FACTOR),
     /* TOKEN_SLASH_EQ      */ UNUSED,
     /* TOKEN_PERCENT       */ INFIX_RULE(binary, "%", FACTOR),
@@ -335,7 +337,7 @@ class Parser {
     /* TOKEN_ELIF          */ UNUSED,
     /* TOKEN_ELSE          */ UNUSED,
     /* TOKEN_FALSE         */ PREFIX_RULE(literal, ""),
-    /* TOKEN_FOR           */ UNUSED, // See TOKEN_OF
+    /* TOKEN_FOR           */ UNUSED, // TODO: Does this ever show up as an operator? How to handle it?
     /* TOKEN_FUN           *//* PREFIX_RULE(lambda, ""),*/ UNUSED,
     /* TOKEN_IF            */ INFIX_RULE(if_expr, "", IF),
     /* TOKEN_IN            */ INFIX_RULE(binary, "in", IN),
