@@ -91,6 +91,11 @@
 				{"type": "ExprNode", "name": "else_expr", "move": true}
 			]
 		}, {
+			"name": "Call", "fields": [
+				{"type": "ExprNode", "name": "object", "move": true},
+				{"type": "std::vector<ExprNode>", "name": "arguments", "move": true}
+			]
+		}, {
 			"name": "Member", "fields": [
 				{"type": "ExprNode", "name": "object", "move": true},
 				{"type": "Token*", "name": "member"},
