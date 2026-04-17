@@ -138,6 +138,10 @@
 			"name": "Variable",
 			"fields": [{"type": "Token*", "name": "identifier"}]
 		}, {
+			"name": "This", "fields": [{"type": "Token*", "name": "identifier"}]
+		}, {
+			"name": "Super", "fields": [{"type": "Token*", "name": "identifier"}]
+		},{
 			"name": "Print", "fields": [
 				{"type": "NamedFunction", "name": "fn_name"},
 				{"type": "ExprNode", "name": "expr", "move": true}
