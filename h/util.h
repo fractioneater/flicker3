@@ -164,6 +164,8 @@ class DotTreeWalker {
     void visit_char_expr(std::shared_ptr<Expressions::Char> expr) override {}
     void visit_string_expr(std::shared_ptr<Expressions::String> expr) override {}
     void visit_variable_expr(std::shared_ptr<Expressions::Variable> expr) override {}
+    void visit_this_expr(std::shared_ptr<Expressions::This> expr) override {}
+    void visit_super_expr(std::shared_ptr<Expressions::Super> expr) override {}
 
     void visit_print_expr(std::shared_ptr<Expressions::Print> expr) override {
       owner_.walk(expr->expr, owner_.current_parent_id_);
@@ -310,6 +312,9 @@ class DotTreeWalker {
     std::string visit_string_expr(std::shared_ptr<Expressions::String> expr) override { return "\\\"" + expr->value + "\\\""; }
 
     std::string visit_variable_expr(std::shared_ptr<Expressions::Variable> expr) override { return std::string {expr->identifier->src_string}; }
+
+    std::string visit_this_expr(std::shared_ptr<Expressions::This> expr) override { return "this"; }
+    std::string visit_super_expr(std::shared_ptr<Expressions::Super> expr) override { return "super"; }
 
     std::string visit_print_expr(std::shared_ptr<Expressions::Print> expr) override { return std::string {expr->fn_name}; }
   };

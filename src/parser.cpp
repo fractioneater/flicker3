@@ -444,6 +444,14 @@ ExprNode Parser::variable() {
   return std::make_shared<Expressions::Variable>(previous_);
 }
 
+ExprNode Parser::this_id() {
+  return std::make_shared<Expressions::This>(previous_);
+}
+
+ExprNode Parser::super_id() {
+  return std::make_shared<Expressions::Super>(previous_);
+}
+
 ExprNode Parser::grouping() {
   ParserError start_context {previous_, "To match this one"};
   const auto grouping {std::make_shared<Expressions::Grouping>(parse_expression(Precedence::BEGIN))};

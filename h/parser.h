@@ -230,6 +230,8 @@ class Parser {
   // Primary/atom
   ExprNode literal();
   ExprNode variable();
+  ExprNode this_id();
+  ExprNode super_id();
   ExprNode grouping();
 
   ExprNode parse_expression(Precedence precedence);
@@ -355,8 +357,8 @@ class Parser {
     /* TOKEN_PRIVATE       */ UNUSED,
     /* TOKEN_RETURN        */ UNUSED,
     /* TOKEN_STATIC        */ UNUSED,
-    /* TOKEN_SUPER         *//* PREFIX_RULE(super_id, "", NONE),*/ UNUSED,
-    /* TOKEN_THIS          *//* PREFIX_RULE(this_id, "", NONE),*/ UNUSED,
+    /* TOKEN_SUPER         */ PREFIX_RULE(super_id, ""),
+    /* TOKEN_THIS          */ PREFIX_RULE(this_id, ""),
     /* TOKEN_TRUE          */ PREFIX_RULE(literal, ""),
     /* TOKEN_USING         */ UNUSED,
     /* TOKEN_VAL           */ UNUSED,

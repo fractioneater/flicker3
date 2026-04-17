@@ -45,6 +45,8 @@ namespace Expressions {
   class Char;
   class String;
   class Variable;
+  class This;
+  class Super;
   class Print;
 }
 
@@ -85,6 +87,8 @@ class ExprVisitorVoid {
   virtual void visit_char_expr(std::shared_ptr<Expressions::Char> expr) = 0;
   virtual void visit_string_expr(std::shared_ptr<Expressions::String> expr) = 0;
   virtual void visit_variable_expr(std::shared_ptr<Expressions::Variable> expr) = 0;
+  virtual void visit_this_expr(std::shared_ptr<Expressions::This> expr) = 0;
+  virtual void visit_super_expr(std::shared_ptr<Expressions::Super> expr) = 0;
   virtual void visit_print_expr(std::shared_ptr<Expressions::Print> expr) = 0;
   virtual ~ExprVisitorVoid() = default;
 };
@@ -127,6 +131,8 @@ class ExprVisitorAny {
   virtual std::any visit_char_expr_any(std::shared_ptr<Expressions::Char> expr) = 0;
   virtual std::any visit_string_expr_any(std::shared_ptr<Expressions::String> expr) = 0;
   virtual std::any visit_variable_expr_any(std::shared_ptr<Expressions::Variable> expr) = 0;
+  virtual std::any visit_this_expr_any(std::shared_ptr<Expressions::This> expr) = 0;
+  virtual std::any visit_super_expr_any(std::shared_ptr<Expressions::Super> expr) = 0;
   virtual std::any visit_print_expr_any(std::shared_ptr<Expressions::Print> expr) = 0;
   virtual ~ExprVisitorAny() = default;
 };
@@ -219,6 +225,8 @@ class ExprVisitor : public ExprVisitorAny {
   virtual R visit_char_expr(std::shared_ptr<Expressions::Char> expr) = 0;
   virtual R visit_string_expr(std::shared_ptr<Expressions::String> expr) = 0;
   virtual R visit_variable_expr(std::shared_ptr<Expressions::Variable> expr) = 0;
+  virtual R visit_this_expr(std::shared_ptr<Expressions::This> expr) = 0;
+  virtual R visit_super_expr(std::shared_ptr<Expressions::Super> expr) = 0;
   virtual R visit_print_expr(std::shared_ptr<Expressions::Print> expr) = 0;
 
   private:
@@ -280,6 +288,14 @@ class ExprVisitor : public ExprVisitorAny {
 
   std::any visit_variable_expr_any(std::shared_ptr<Expressions::Variable> expr) final {
     return visit_variable_expr(std::move(expr));
+  }
+
+  std::any visit_this_expr_any(std::shared_ptr<Expressions::This> expr) final {
+    return visit_this_expr(std::move(expr));
+  }
+
+  std::any visit_super_expr_any(std::shared_ptr<Expressions::Super> expr) final {
+    return visit_super_expr(std::move(expr));
   }
 
   std::any visit_print_expr_any(std::shared_ptr<Expressions::Print> expr) final {
@@ -752,6 +768,36 @@ class Expressions::Variable : public Expr, public std::enable_shared_from_this<V
 
   void accept(ExprVisitorVoid& visitor) override {
     visitor.visit_variable_expr(shared_from_this());
+  }
+
+  const Token* identifier {};
+};
+
+class Expressions::This : public Expr, public std::enable_shared_from_this<This> {
+  public:
+  explicit This(const Token* identifier) : identifier {identifier} {}
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_this_expr_any(shared_from_this());
+  }
+
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_this_expr(shared_from_this());
+  }
+
+  const Token* identifier {};
+};
+
+class Expressions::Super : public Expr, public std::enable_shared_from_this<Super> {
+  public:
+  explicit Super(const Token* identifier) : identifier {identifier} {}
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_super_expr_any(shared_from_this());
+  }
+
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_super_expr(shared_from_this());
   }
 
   const Token* identifier {};
