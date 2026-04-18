@@ -96,6 +96,11 @@
 				{"type": "std::vector<ExprNode>", "name": "arguments", "move": true}
 			]
 		}, {
+			"name": "Subscript", "fields": [
+				{"type": "ExprNode", "name": "object", "move": true},
+				{"type": "std::vector<ExprNode>", "name": "arguments", "move": true}
+			]
+		}, {
 			"name": "Member", "fields": [
 				{"type": "ExprNode", "name": "object", "move": true},
 				{"type": "Token*", "name": "member"},
@@ -121,6 +126,15 @@
 			"name": "Grouping",
 			"fields": [{"type": "ExprNode", "name": "expr", "move": true}]
 		}, {
+			"name": "List", "fields": [
+				{"type": "std::vector<ExprNode>", "name": "items", "move": true}
+			]
+		}, {
+			"name": "Map", "fields": [
+				{"type": "std::vector<std::string>", "name": "keys", "move": true},
+				{"type": "std::vector<ExprNode>", "name": "values", "move": true}
+			]
+		}, {
 			"name": "Number",
 			"fields": [{"type": "double", "name": "value"}]
 		}, {
@@ -141,7 +155,7 @@
 			"name": "This", "fields": [{"type": "Token*", "name": "identifier"}]
 		}, {
 			"name": "Super", "fields": [{"type": "Token*", "name": "identifier"}]
-		},{
+		}, {
 			"name": "Print", "fields": [
 				{"type": "NamedFunction", "name": "fn_name"},
 				{"type": "ExprNode", "name": "expr", "move": true}
