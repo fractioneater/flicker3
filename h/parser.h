@@ -220,12 +220,16 @@ class Parser {
   // Postfix (treated as InfixFn)
   ExprNode postfix_inc_dec(const ExprNode& expr);
   ExprNode call(const ExprNode& expr);
+  ExprNode subscript(const ExprNode& expr);
   ExprNode member(const ExprNode& expr);
   ExprNode namespace_member(const ExprNode& expr);
   // Prefix
   ExprNode unary();
   ExprNode prefix_not();
   ExprNode print();
+  ExprNode list(ExprNode first_item);
+  ExprNode map(const ExprNode& first_item);
+  ExprNode collection();
   ExprNode string_interpolation();
   // Primary/atom
   ExprNode literal();
@@ -234,6 +238,7 @@ class Parser {
   ExprNode super_id();
   ExprNode grouping();
 
+  ExprNode parse_expression();
   ExprNode parse_expression(Precedence precedence);
 
   /**
@@ -280,7 +285,7 @@ class Parser {
   std::array<ParseRule, 90> rules {{
     /* TOKEN_LEFT_PAREN    */ BOTH(grouping, call, "", POSTFIX),
     /* TOKEN_RIGHT_PAREN   */ UNUSED,
-    /* TOKEN_LEFT_BRACKET  *//* BOTH(collection, subscript, "", POSTFIX),*/ UNUSED,
+    /* TOKEN_LEFT_BRACKET  */ BOTH(collection, subscript, "", POSTFIX),
     /* TOKEN_RIGHT_BRACKET */ UNUSED,
     /* TOKEN_LEFT_BRACE    *//* INFIX_RULE(lambda_call, "", POSTFIX),*/ UNUSED,
     /* TOKEN_RIGHT_BRACE   */ UNUSED,

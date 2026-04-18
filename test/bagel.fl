@@ -1,5 +1,5 @@
-this
-not this
-super + this
-this is super
-super is not this
+var a = [tree -> 2, item -> 5]
+var b = ["name" -> 4, "fruit" -> 34.2]
+var c = [true, false, true, this, not true]
+
+print g[2]

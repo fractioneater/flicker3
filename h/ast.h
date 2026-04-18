@@ -34,11 +34,14 @@ namespace Expressions {
   class Comparison;
   class If;
   class Call;
+  class Subscript;
   class Member;
   class NamespaceMember;
   class Unary;
   class Interpolation;
   class Grouping;
+  class List;
+  class Map;
   class Number;
   class Boolean;
   class Nil;
@@ -76,11 +79,14 @@ class ExprVisitorVoid {
   virtual void visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) = 0;
   virtual void visit_if_expr(std::shared_ptr<Expressions::If> expr) = 0;
   virtual void visit_call_expr(std::shared_ptr<Expressions::Call> expr) = 0;
+  virtual void visit_subscript_expr(std::shared_ptr<Expressions::Subscript> expr) = 0;
   virtual void visit_member_expr(std::shared_ptr<Expressions::Member> expr) = 0;
   virtual void visit_namespace_member_expr(std::shared_ptr<Expressions::NamespaceMember> expr) = 0;
   virtual void visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) = 0;
   virtual void visit_interpolation_expr(std::shared_ptr<Expressions::Interpolation> expr) = 0;
   virtual void visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) = 0;
+  virtual void visit_list_expr(std::shared_ptr<Expressions::List> expr) = 0;
+  virtual void visit_map_expr(std::shared_ptr<Expressions::Map> expr) = 0;
   virtual void visit_number_expr(std::shared_ptr<Expressions::Number> expr) = 0;
   virtual void visit_boolean_expr(std::shared_ptr<Expressions::Boolean> expr) = 0;
   virtual void visit_nil_expr(std::shared_ptr<Expressions::Nil> expr) = 0;
@@ -120,11 +126,14 @@ class ExprVisitorAny {
   virtual std::any visit_comparison_expr_any(std::shared_ptr<Expressions::Comparison> expr) = 0;
   virtual std::any visit_if_expr_any(std::shared_ptr<Expressions::If> expr) = 0;
   virtual std::any visit_call_expr_any(std::shared_ptr<Expressions::Call> expr) = 0;
+  virtual std::any visit_subscript_expr_any(std::shared_ptr<Expressions::Subscript> expr) = 0;
   virtual std::any visit_member_expr_any(std::shared_ptr<Expressions::Member> expr) = 0;
   virtual std::any visit_namespace_member_expr_any(std::shared_ptr<Expressions::NamespaceMember> expr) = 0;
   virtual std::any visit_unary_expr_any(std::shared_ptr<Expressions::Unary> expr) = 0;
   virtual std::any visit_interpolation_expr_any(std::shared_ptr<Expressions::Interpolation> expr) = 0;
   virtual std::any visit_grouping_expr_any(std::shared_ptr<Expressions::Grouping> expr) = 0;
+  virtual std::any visit_list_expr_any(std::shared_ptr<Expressions::List> expr) = 0;
+  virtual std::any visit_map_expr_any(std::shared_ptr<Expressions::Map> expr) = 0;
   virtual std::any visit_number_expr_any(std::shared_ptr<Expressions::Number> expr) = 0;
   virtual std::any visit_boolean_expr_any(std::shared_ptr<Expressions::Boolean> expr) = 0;
   virtual std::any visit_nil_expr_any(std::shared_ptr<Expressions::Nil> expr) = 0;
@@ -214,11 +223,14 @@ class ExprVisitor : public ExprVisitorAny {
   virtual R visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) = 0;
   virtual R visit_if_expr(std::shared_ptr<Expressions::If> expr) = 0;
   virtual R visit_call_expr(std::shared_ptr<Expressions::Call> expr) = 0;
+  virtual R visit_subscript_expr(std::shared_ptr<Expressions::Subscript> expr) = 0;
   virtual R visit_member_expr(std::shared_ptr<Expressions::Member> expr) = 0;
   virtual R visit_namespace_member_expr(std::shared_ptr<Expressions::NamespaceMember> expr) = 0;
   virtual R visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) = 0;
   virtual R visit_interpolation_expr(std::shared_ptr<Expressions::Interpolation> expr) = 0;
   virtual R visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) = 0;
+  virtual R visit_list_expr(std::shared_ptr<Expressions::List> expr) = 0;
+  virtual R visit_map_expr(std::shared_ptr<Expressions::Map> expr) = 0;
   virtual R visit_number_expr(std::shared_ptr<Expressions::Number> expr) = 0;
   virtual R visit_boolean_expr(std::shared_ptr<Expressions::Boolean> expr) = 0;
   virtual R visit_nil_expr(std::shared_ptr<Expressions::Nil> expr) = 0;
@@ -246,6 +258,10 @@ class ExprVisitor : public ExprVisitorAny {
     return visit_call_expr(std::move(expr));
   }
 
+  std::any visit_subscript_expr_any(std::shared_ptr<Expressions::Subscript> expr) final {
+    return visit_subscript_expr(std::move(expr));
+  }
+
   std::any visit_member_expr_any(std::shared_ptr<Expressions::Member> expr) final {
     return visit_member_expr(std::move(expr));
   }
@@ -264,6 +280,14 @@ class ExprVisitor : public ExprVisitorAny {
 
   std::any visit_grouping_expr_any(std::shared_ptr<Expressions::Grouping> expr) final {
     return visit_grouping_expr(std::move(expr));
+  }
+
+  std::any visit_list_expr_any(std::shared_ptr<Expressions::List> expr) final {
+    return visit_list_expr(std::move(expr));
+  }
+
+  std::any visit_map_expr_any(std::shared_ptr<Expressions::Map> expr) final {
+    return visit_map_expr(std::move(expr));
   }
 
   std::any visit_number_expr_any(std::shared_ptr<Expressions::Number> expr) final {
@@ -603,6 +627,22 @@ class Expressions::Call : public Expr, public std::enable_shared_from_this<Call>
   const std::vector<ExprNode> arguments {};
 };
 
+class Expressions::Subscript : public Expr, public std::enable_shared_from_this<Subscript> {
+  public:
+  Subscript(ExprNode object, std::vector<ExprNode> arguments) : object {std::move(object)}, arguments {std::move(arguments)} {}
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_subscript_expr_any(shared_from_this());
+  }
+
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_subscript_expr(shared_from_this());
+  }
+
+  const ExprNode object {};
+  const std::vector<ExprNode> arguments {};
+};
+
 class Expressions::Member : public Expr, public std::enable_shared_from_this<Member> {
   public:
   Member(ExprNode object, const Token* member, bool is_safe) : object {std::move(object)}, member {member}, is_safe {is_safe} {}
@@ -682,6 +722,37 @@ class Expressions::Grouping : public Expr, public std::enable_shared_from_this<G
   }
 
   const ExprNode expr {};
+};
+
+class Expressions::List : public Expr, public std::enable_shared_from_this<List> {
+  public:
+  explicit List(std::vector<ExprNode> items) : items {std::move(items)} {}
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_list_expr_any(shared_from_this());
+  }
+
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_list_expr(shared_from_this());
+  }
+
+  const std::vector<ExprNode> items {};
+};
+
+class Expressions::Map : public Expr, public std::enable_shared_from_this<Map> {
+  public:
+  Map(std::vector<std::string> keys, std::vector<ExprNode> values) : keys {std::move(keys)}, values {std::move(values)} {}
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_map_expr_any(shared_from_this());
+  }
+
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_map_expr(shared_from_this());
+  }
+
+  const std::vector<std::string> keys {};
+  const std::vector<ExprNode> values {};
 };
 
 class Expressions::Number : public Expr, public std::enable_shared_from_this<Number> {

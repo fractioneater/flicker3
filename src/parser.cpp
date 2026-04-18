@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <utility>
 
 #include "util.h"
 
@@ -48,7 +49,7 @@ StmtNode Parser::val_declaration() {
   if (type && type->kind() != TypeKind::OPTIONAL)
     context.add_context({nullptr, "Your type isn't even able to hold 'nil'!"});
   expect(TOKEN_EQ, "Val declarations must have an initializer", context);
-  return std::make_shared<Statements::Variable>(false, identifier, type, parse_expression(Precedence::BEGIN));
+  return std::make_shared<Statements::Variable>(false, identifier, type, parse_expression());
 }
 
 StmtNode Parser::var_declaration() {
@@ -59,12 +60,12 @@ StmtNode Parser::var_declaration() {
 
   if (match(TOKEN_COLON)) {
     type = parse_type();
-    if (match(TOKEN_EQ)) initializer = parse_expression(Precedence::BEGIN);
+    if (match(TOKEN_EQ)) initializer = parse_expression();
     else if (type && type->kind() != TypeKind::OPTIONAL)
       errors_.emplace_back(current_, "Non-optional variable must have an initializer; the default value of 'nil' is not allowed");
   } else {
     expect(TOKEN_EQ, "Var declaration with no type must have an initializer");
-    initializer = parse_expression(Precedence::BEGIN);
+    initializer = parse_expression();
   }
   return std::make_shared<Statements::Variable>(true, identifier, type, initializer);
 }
@@ -185,11 +186,11 @@ StmtNode Parser::statement() {
   if (match(TOKEN_PASS)) return std::make_shared<Statements::Pass>();
   // Otherwise, expect an expression statement.
   //   TODO: This creates a weird situation with errors if there's nothing valid here ("Expected an expression" when a statement or expression would be okay)
-  return std::make_shared<Statements::Expression>(parse_expression(Precedence::BEGIN));
+  return std::make_shared<Statements::Expression>(parse_expression());
 }
 
 StmtNode Parser::if_statement() {
-  const ExprNode condition {parse_expression(Precedence::BEGIN)};
+  const ExprNode condition {parse_expression()};
   const StmtNode then_body {block_or_statement()};
   StmtNode else_body {std::make_shared<Statements::Pass>()};
   if (match_after_newlines(TOKEN_ELIF))
@@ -201,7 +202,7 @@ StmtNode Parser::if_statement() {
 
 StmtNode Parser::while_statement() {
   Token* label {loop_label()};
-  const ExprNode condition {parse_expression(Precedence::BEGIN)};
+  const ExprNode condition {parse_expression()};
   const StmtNode loop_body {block_or_statement()};
   const StmtNode else_body {optional_else_body()};
   return std::make_shared<Statements::While>(label, condition, loop_body, else_body);
@@ -222,7 +223,7 @@ StmtNode Parser::each_statement() {
 
   expect(TOKEN_IN, "Iterator loops must follow the format: each ___ in ___");
 
-  const ExprNode expr {parse_expression(Precedence::BEGIN)};
+  const ExprNode expr {parse_expression()};
   const StmtNode loop_body {block_or_statement()};
   const StmtNode else_body {optional_else_body()};
 
@@ -241,7 +242,7 @@ StmtNode Parser::for_statement() {
       ? var_declaration()
       : check(TOKEN_SEMICOLON)
         ? std::make_shared<Statements::Expression>(std::make_shared<Expressions::Nil>()) // No beginning clause.
-        : std::make_shared<Statements::Expression>(parse_expression(Precedence::BEGIN))
+        : std::make_shared<Statements::Expression>(parse_expression())
   };
 
   ParserError context {for_token, "'for' creates a C-style for loop; use 'each' for iteration"};
@@ -249,12 +250,12 @@ StmtNode Parser::for_statement() {
 
   // Only expressions are acceptable for the next two clauses.
   ExprNode condition {std::make_shared<Expressions::Boolean>(true)}; // The default value is true; a "for ;;" loop is an infinite loop.
-  if (!check(TOKEN_SEMICOLON)) condition = parse_expression(Precedence::BEGIN);
+  if (!check(TOKEN_SEMICOLON)) condition = parse_expression();
 
   expect(TOKEN_SEMICOLON, "Expecting ';' between for loop clauses");
 
   ExprNode end {std::make_shared<Expressions::Nil>()};
-  if (!check(TOKEN_LINE) && !check(TOKEN_DO)) end = parse_expression(Precedence::BEGIN);
+  if (!check(TOKEN_LINE) && !check(TOKEN_DO)) end = parse_expression();
 
   const StmtNode loop_body {block_or_statement()};
   const StmtNode else_body {optional_else_body()};
@@ -273,7 +274,7 @@ StmtNode Parser::continue_statement() {
 StmtNode Parser::return_statement() {
   if (check(TOKEN_LINE) || check(TOKEN_EOF) || check(TOKEN_DEDENT))
     return std::make_shared<Statements::Return>(std::make_shared<Expressions::Nil>());
-  return std::make_shared<Statements::Return>(parse_expression(Precedence::BEGIN));
+  return std::make_shared<Statements::Return>(parse_expression());
 }
 
 StmtNode Parser::block() {
@@ -351,7 +352,7 @@ ExprNode Parser::comparison(const ExprNode& left) {
 
 ExprNode Parser::if_expr(const ExprNode& left) {
   constexpr Precedence prec {static_cast<int>(Precedence::IF) + 1};
-  const ExprNode condition {parse_expression(Precedence::BEGIN)};
+  const ExprNode condition {parse_expression()};
   expect(TOKEN_ELSE, "Expecting else clause in if expression");
   return std::make_shared<Expressions::If>(condition, left, parse_expression(prec));
 }
@@ -371,11 +372,27 @@ ExprNode Parser::call(const ExprNode& expr) {
         errors_.emplace_back(previous_, "Trailing commas are not allowed");
         break;
       }
-      args.emplace_back(parse_expression(Precedence::BEGIN));
+      args.emplace_back(parse_expression());
     } while (match(TOKEN_COMMA));
   expect(TOKEN_RIGHT_PAREN, "Expecting a closing parenthesis", start_context);
 
   return std::make_shared<Expressions::Call>(expr, args);
+}
+
+ExprNode Parser::subscript(const ExprNode& expr) {
+  ParserError start_context {previous_, "To match this one"};
+  std::vector<ExprNode> args {};
+  if (!check(TOKEN_RIGHT_BRACKET))
+    do {
+      if (check(TOKEN_RIGHT_BRACKET)) {
+        errors_.emplace_back(previous_, "Trailing commas are not allowed");
+        break;
+      }
+      args.emplace_back(parse_expression());
+    } while (match(TOKEN_COMMA));
+  expect(TOKEN_RIGHT_BRACKET, "Expecting ']' after subscript", start_context);
+
+  return std::make_shared<Expressions::Subscript>(expr, args);
 }
 
 ExprNode Parser::member(const ExprNode& expr) {
@@ -405,13 +422,93 @@ ExprNode Parser::print() {
   return std::make_shared<Expressions::Print>(rules[previous_->type].fn_name, parse_expression(Precedence::PRINT));
 }
 
+ExprNode Parser::list(ExprNode first_item) {
+  std::vector items {std::move(first_item)};
+
+  while (match(TOKEN_COMMA)) {
+    if (check(TOKEN_RIGHT_BRACKET)) {
+      errors_.emplace_back(previous_, "Trailing commas are not allowed");
+      break;
+    }
+    items.emplace_back(parse_expression());
+  }
+  expect(TOKEN_RIGHT_BRACKET, "Expecting ']' after list");
+
+  return std::make_shared<Expressions::List>(items);
+}
+
+ExprNode Parser::map(const ExprNode& first_item) {
+  std::vector<std::string> keys {};
+  std::vector<ExprNode> values {};
+
+  // A little helper to handle keys.
+  auto validate_key = [&](const ExprNode& key) {
+    // A string is valid, but identifiers are the preferred style for readability.
+    if (const auto str {std::dynamic_pointer_cast<Expressions::String>(key)}) {
+      keys.emplace_back(str->value);
+      warnings_.emplace_back(previous_, "It's recommended to use identifiers instead of strings as keys");
+      return;
+    }
+
+    // String interpolation for keys is not supported yet.
+    if (std::dynamic_pointer_cast<Expressions::Interpolation>(key)) {
+      errors_.emplace_back(previous_, "String interpolation for keys is not yet supported");
+      keys.emplace_back("");
+      return;
+    }
+
+    if (const auto var {std::dynamic_pointer_cast<Expressions::Variable>(key)}) {
+      keys.emplace_back(var->identifier->src_string);
+      return;
+    }
+
+    errors_.emplace_back(previous_, "Invalid key type", ParserError {"If you're trying to use a reserved word, wrap it in backticks (ex. `class`)"});
+  };
+
+  // Step 1: First key (already parsed by collection()) and its value.
+  validate_key(first_item);
+  match(TOKEN_RIGHT_ARROW); // We already know it exists, just consume it a bit late so validate_key has the right previous_.
+  values.emplace_back(parse_expression());
+
+  // Step 2: Parse the rest of the map.
+  while (match(TOKEN_COMMA)) {
+    if (check(TOKEN_RIGHT_BRACKET)) {
+      errors_.emplace_back(previous_, "Trailing commas are not allowed");
+      break;
+    }
+
+    validate_key(parse_expression());
+    expect(TOKEN_RIGHT_ARROW, "Expecting '->' after map key");
+    values.emplace_back(parse_expression());
+  }
+
+  expect(TOKEN_RIGHT_BRACKET, "Expecting ']' after map");
+
+  return std::make_shared<Expressions::Map>(keys, values);
+}
+
+ExprNode Parser::collection() {
+  if (match(TOKEN_RIGHT_BRACKET)) // Empty list.
+    return std::make_shared<Expressions::List>(std::vector<ExprNode> {});
+  if (match(TOKEN_RIGHT_ARROW)) { // Empty map.
+    expect(TOKEN_RIGHT_BRACKET, "Expecting ']'; a map collection with no key, '[->]', can't have a value either");
+    return std::make_shared<Expressions::Map>(std::vector<std::string> {}, std::vector<ExprNode> {});
+  }
+
+  const ExprNode first_item {parse_expression()};
+
+  if (check(TOKEN_RIGHT_ARROW))
+    return map(first_item);
+  return list(first_item);
+}
+
 ExprNode Parser::string_interpolation() {
   const auto start {std::any_cast<std::string>(previous_->value)};
   std::vector<ExprNode> expressions {};
   std::vector<std::string> end_strings {};
 
   do {
-    expressions.emplace_back(parse_expression(Precedence::BEGIN));
+    expressions.emplace_back(parse_expression());
     if (match(TOKEN_STRING)) {
       end_strings.emplace_back(std::any_cast<std::string>(previous_->value));
       break;
@@ -454,10 +551,12 @@ ExprNode Parser::super_id() {
 
 ExprNode Parser::grouping() {
   ParserError start_context {previous_, "To match this one"};
-  const auto grouping {std::make_shared<Expressions::Grouping>(parse_expression(Precedence::BEGIN))};
+  const auto grouping {std::make_shared<Expressions::Grouping>(parse_expression())};
   expect(TOKEN_RIGHT_PAREN, "Expecting a closing parenthesis", start_context);
   return grouping;
 }
+
+ExprNode Parser::parse_expression() { return parse_expression(Precedence::BEGIN); }
 
 ExprNode Parser::parse_expression(Precedence precedence) {
   advance();

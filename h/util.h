@@ -138,6 +138,13 @@ class DotTreeWalker {
         owner_.walk(arg, parent_id);
     }
 
+    void visit_subscript_expr(std::shared_ptr<Expressions::Subscript> expr) override {
+      const int parent_id {owner_.current_parent_id_};
+      owner_.walk(expr->object, parent_id);
+      for (const auto& arg : expr->arguments)
+        owner_.walk(arg, parent_id);
+    }
+
     void visit_member_expr(std::shared_ptr<Expressions::Member> expr) override {
       owner_.walk(expr->object, owner_.current_parent_id_);
     }
@@ -156,6 +163,18 @@ class DotTreeWalker {
 
     void visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) override {
       owner_.walk(expr->expr, owner_.current_parent_id_);
+    }
+
+    void visit_list_expr(std::shared_ptr<Expressions::List> expr) override {
+      const int parent_id {owner_.current_parent_id_};
+      for (const auto& item : expr->items)
+        owner_.walk(item, parent_id);
+    }
+
+    void visit_map_expr(std::shared_ptr<Expressions::Map> expr) override {
+      const int parent_id {owner_.current_parent_id_};
+      for (const auto& item : expr->values)
+        owner_.walk(item, parent_id);
     }
 
     void visit_number_expr(std::shared_ptr<Expressions::Number> expr) override {}
@@ -281,12 +300,14 @@ class DotTreeWalker {
 
     std::string visit_if_expr(std::shared_ptr<Expressions::If> expr) override { return "... if ... else ..."; }
 
+    std::string visit_call_expr(std::shared_ptr<Expressions::Call> expr) override { return "call"; } // TODO.
+
+    std::string visit_subscript_expr(std::shared_ptr<Expressions::Subscript> expr) override { return "subscript"; } // TODO.
+
     std::string visit_member_expr(std::shared_ptr<Expressions::Member> expr) override {
       const std::string blah {"(...)"};
       return blah + (expr->is_safe ? "?." : ".") + std::string {expr->member->src_string};
     }
-
-    std::string visit_call_expr(std::shared_ptr<Expressions::Call> expr) override { return "call"; }
 
     std::string visit_namespace_member_expr(std::shared_ptr<Expressions::NamespaceMember> expr) override {
       return std::string {expr->namespace_id->src_string} + "::" + std::string {expr->member->src_string};
@@ -303,7 +324,19 @@ class DotTreeWalker {
       return blah + "\\\"";
     }
 
-    std::string visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) override { return "( )"; }
+    std::string visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) override { return "()"; }
+
+    std::string visit_list_expr(std::shared_ptr<Expressions::List> expr) override { return "[]"; }
+
+    std::string visit_map_expr(std::shared_ptr<Expressions::Map> expr) override {
+      std::string blah {"["};
+      for (size_t i {0}; i < expr->keys.size(); ++i) {
+        blah += expr->keys[i] + " -> ...";
+        if (i + 1 < expr->keys.size())
+          blah += ", ";
+      }
+      return blah + "]";
+    }
 
     std::string visit_number_expr(std::shared_ptr<Expressions::Number> expr) override { return std::to_string(expr->value); }
     std::string visit_boolean_expr(std::shared_ptr<Expressions::Boolean> expr) override { return expr->value ? "true" : "false"; }
