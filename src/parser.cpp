@@ -312,6 +312,25 @@ Token* Parser::loop_label() {
   return nullptr;
 }
 
+std::vector<Param> Parser::param_list() {
+  std::vector<Param> params {};
+  if (!check(TOKEN_RIGHT_PAREN))
+    do {
+      if (check(TOKEN_RIGHT_PAREN)) {
+        errors_.emplace_back(previous_, "Trailing commas are not allowed");
+        break;
+      }
+
+      expect(TOKEN_IDENTIFIER, "Expecting a parameter name");
+      const auto id {previous_};
+      expect(TOKEN_COLON, "Expecting ':' then a parameter type");
+      params.emplace_back(id, parse_type());
+    } while (match(TOKEN_COMMA));
+
+  expect(TOKEN_RIGHT_PAREN, "Expecting ')' after parameter list");
+  return params;
+}
+
 // Expressions --------------------------------------------------
 
 ExprNode Parser::binary_right_assoc(const ExprNode& left) {
@@ -377,6 +396,10 @@ ExprNode Parser::call(const ExprNode& expr) {
   expect(TOKEN_RIGHT_PAREN, "Expecting a closing parenthesis", start_context);
 
   return std::make_shared<Expressions::Call>(expr, args);
+}
+
+ExprNode Parser::lambda_call(const ExprNode& expr) {
+  return std::make_shared<Expressions::Call>(expr, std::vector {lambda()});
 }
 
 ExprNode Parser::subscript(const ExprNode& expr) {
@@ -500,6 +523,71 @@ ExprNode Parser::collection() {
   if (check(TOKEN_RIGHT_ARROW))
     return map(first_item);
   return list(first_item);
+}
+
+ExprNode Parser::lambda() {
+  // We can reach this point from either a lambda call or a lambda literal.
+  // In case of a lambda call, the { will already be consumed; in a standard lambda, only 'fun' will be consumed.
+  if (previous_->type != TOKEN_LEFT_BRACE) match(TOKEN_LEFT_BRACE);
+
+  // There are two types: curly-brace lambdas and block lambdas.
+  // Brace lambdas...
+  // - do not have significant whitespace inside them.
+  // - require a semicolon after each statement (even the last) UNLESS it immediately returns an expression through equals-sign syntax.
+  // - do not require parameters. 'fun { = 30 }' is valid.
+  // Block lambdas...
+  // - have significant whitespace, handled like a standard codeblock.
+  // - require parameters (could be empty)—'fun = blahblahblah' is not allowed, instead it would be 'fun () = blahblahblah'.
+
+  // From the grammar:
+  // lambdaLiteral : FUN (braceLambda | blockLambda) ;
+  //
+  // blockLambda : paramList (blockOrStatement | EQ expression) ;
+  // braceLambda : LEFT_BRACE (statementLambdaBody | exprLambdaBody) RIGHT_BRACE ;
+  //
+  // statementLambdaBody : (paramList RIGHT_ARROW)? (codeItem SEMICOLON)* ;
+  // exprLambdaBody : paramList? EQ expression SEMICOLON? ;
+
+  if (previous_->type == TOKEN_LEFT_BRACE) {
+    // Brace lambda.
+    std::vector params {
+      match(TOKEN_LEFT_PAREN) ? param_list() : std::vector<Param> {}
+    };
+    StmtNode body {};
+
+    if (match(TOKEN_EQ)) {
+      body = std::make_shared<Statements::Return>(parse_expression());
+      match(TOKEN_SEMICOLON);
+    } else {
+      if (previous_->type == TOKEN_RIGHT_PAREN)
+        expect(TOKEN_RIGHT_ARROW, "Expecting -> after parameter list");
+
+      // Lambda body (all whitespace ignored, semicolons required).
+      std::vector<StmtNode> statements {};
+      // TODO: Ignore whitespace. Does lexer already do it?
+      do {
+        statements.emplace_back(statement());
+        expect(TOKEN_SEMICOLON, "Expecting ';' after statement in brace lambda");
+      } while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF));
+
+      body = std::make_shared<Statements::Block>(statements);
+    }
+
+    expect(TOKEN_RIGHT_BRACE, "Expecting '}'");
+    return std::make_shared<Expressions::Lambda>(params, body);
+  }
+
+  // Block lambda.
+  expect(TOKEN_LEFT_PAREN, "Expecting '(' to start a parameter list");
+  std::vector params {param_list()};
+
+  StmtNode body {
+    match(TOKEN_EQ)
+    ? std::make_shared<Statements::Return>(parse_expression()) // Could be an expression
+    : block_or_statement()                                     // or a statement.
+  };
+
+  return std::make_shared<Expressions::Lambda>(params, body);
 }
 
 ExprNode Parser::string_interpolation() {

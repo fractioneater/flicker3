@@ -7,6 +7,7 @@
 #pragma once
 
 #include "ast.h"
+#include "param.h"
 #include "type.h"
 
 class ParserError {
@@ -209,6 +210,7 @@ class Parser {
   StmtNode block_or_statement();
   StmtNode optional_else_body();
   Token* loop_label();
+  std::vector<Param> param_list();
 
   // Infix
   ExprNode binary_right_assoc(const ExprNode& left);
@@ -220,6 +222,7 @@ class Parser {
   // Postfix (treated as InfixFn)
   ExprNode postfix_inc_dec(const ExprNode& expr);
   ExprNode call(const ExprNode& expr);
+  ExprNode lambda_call(const ExprNode& expr);
   ExprNode subscript(const ExprNode& expr);
   ExprNode member(const ExprNode& expr);
   ExprNode namespace_member(const ExprNode& expr);
@@ -227,9 +230,8 @@ class Parser {
   ExprNode unary();
   ExprNode prefix_not();
   ExprNode print();
-  ExprNode list(ExprNode first_item);
-  ExprNode map(const ExprNode& first_item);
   ExprNode collection();
+  ExprNode lambda();
   ExprNode string_interpolation();
   // Primary/atom
   ExprNode literal();
@@ -237,6 +239,9 @@ class Parser {
   ExprNode this_id();
   ExprNode super_id();
   ExprNode grouping();
+
+  ExprNode list(ExprNode first_item);
+  ExprNode map(const ExprNode& first_item);
 
   ExprNode parse_expression();
   ExprNode parse_expression(Precedence precedence);
@@ -287,7 +292,7 @@ class Parser {
     /* TOKEN_RIGHT_PAREN   */ UNUSED,
     /* TOKEN_LEFT_BRACKET  */ BOTH(collection, subscript, "", POSTFIX),
     /* TOKEN_RIGHT_BRACKET */ UNUSED,
-    /* TOKEN_LEFT_BRACE    *//* INFIX_RULE(lambda_call, "", POSTFIX),*/ UNUSED,
+    /* TOKEN_LEFT_BRACE    */ INFIX_RULE(lambda_call, "", POSTFIX),
     /* TOKEN_RIGHT_BRACE   */ UNUSED,
     /* TOKEN_SEMICOLON     */ UNUSED,
     /* TOKEN_COMMA         */ UNUSED,
@@ -346,7 +351,7 @@ class Parser {
     /* TOKEN_ELSE          */ UNUSED,
     /* TOKEN_FALSE         */ PREFIX_RULE(literal, ""),
     /* TOKEN_FOR           */ UNUSED, // TODO: Does this ever show up as an operator? How to handle it?
-    /* TOKEN_FUN           *//* PREFIX_RULE(lambda, ""),*/ UNUSED,
+    /* TOKEN_FUN           */ PREFIX_RULE(lambda, ""),
     /* TOKEN_IF            */ INFIX_RULE(if_expr, "", IF),
     /* TOKEN_IN            */ INFIX_RULE(binary, "in", IN),
     /* TOKEN_IS            */ INFIX_RULE(binary_is, "", IS),

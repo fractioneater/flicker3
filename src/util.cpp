@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "common.h"
+#include "parser.h"
 
 void formatting(int type) {
   if (type == 0) { // Error.
@@ -82,19 +83,17 @@ void DotTreeWalker::walk(const ExprNode& node, int parent_id) {
   current_parent_id_ = previous_parent;
 }
 
-void DotTreeWalker::walk(const std::vector<StmtNode>& vec, int parent_id) {
-  for (const auto& node : vec) {
-    const int my_id = id_counter_++;
-    const std::string label {node->accept(stmt_name_visitor_)};
+void DotTreeWalker::walk(const StmtNode& node, int parent_id) {
+  const int my_id = id_counter_++;
+  const std::string label {node->accept(stmt_name_visitor_)};
 
-    out_ << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=indianred, fontcolor=maroon];\n";
-    out_ << "  n" << parent_id << " -> n" << my_id << ";\n";
+  out_ << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=indianred, fontcolor=maroon];\n";
+  out_ << "  n" << parent_id << " -> n" << my_id << ";\n";
 
-    const int previous_parent {current_parent_id_};
-    current_parent_id_ = my_id;
-    node->accept(stmt_children_visitor_);
-    current_parent_id_ = previous_parent;
-  }
+  const int previous_parent {current_parent_id_};
+  current_parent_id_ = my_id;
+  node->accept(stmt_children_visitor_);
+  current_parent_id_ = previous_parent;
 }
 
 // Types aren't AST nodes, but they behave similarly. Instead of using a visitor pattern, they're just handled with a switch.
@@ -154,7 +153,7 @@ std::string DotTreeWalker::render(const std::vector<StmtNode>& tree) {
   out_ << "  n0 [label=\"PROGRAM\", shape=box, color=darkorange2, fontcolor=black];\n";
   id_counter_        = 1;
   current_parent_id_ = 0;
-  walk(tree, 0);
+  for (const auto& stmt : tree) walk(stmt, 0);
   out_ << "}\n";
   return out_.str();
 }

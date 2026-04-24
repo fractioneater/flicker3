@@ -13,10 +13,10 @@ while false
 fun () = 3 + 2
 fun () do pass
 
-fun j: C = 3 + j
+fun (j: C) = 3 + j
 fun (a: B) do print a
 
-fun b: Int do
+fun (b: Int) do
   print (fun (g: Int) do return 4)(b)
 fun ()
   return 30
@@ -27,9 +27,9 @@ fun { ()
                   302; pass; return; ##hey
    "0402"; 11;}
 
-fun { a: B, b: C, c: D -> } # Why? Who knows. CONSIDER: maybe warn.
+fun { (a: B, b: C, c: D) -> } # Why? Who knows. CONSIDER: maybe warn.
 fun { print -1; print 0; print 1; }
-funcWithLambdaArg { x: Int -> x ** 2; }
-funcWithLambdaArg { y: Int = y + y + y }
-funcWithLambdaArg { y: Int = y + y + y; }
+funcWithLambdaArg { (x: Int) -> x ** 2; }
+funcWithLambdaArg { (y: Int) = y + y + y }
+funcWithLambdaArg { (y: Int) = y + y + y; }
 fun {= "boom"}

@@ -9,8 +9,11 @@
 #include <sstream>
 #include <vector>
 
-#include "lexer.h"
-#include "parser.h"
+#include "ast.h"
+
+class Lexer;
+class LexerError;
+class ParserError;
 
 /**
  * Prints an error, warning, or note, and all of its child contexts.
@@ -45,7 +48,8 @@ class DotTreeWalker {
     explicit StmtChildrenVisitor(DotTreeWalker& owner) : owner_ {owner} {}
 
     void visit_block_stmt(std::shared_ptr<Statements::Block> stmt) override {
-      owner_.walk(stmt->statements, owner_.current_parent_id_);
+      for (const auto& inner_stmt : stmt->statements)
+        owner_.walk(inner_stmt, owner_.current_parent_id_);
     }
 
     void visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) override {
@@ -58,41 +62,42 @@ class DotTreeWalker {
     }
 
     void visit_namespace_stmt(std::shared_ptr<Statements::Namespace> stmt) override {
-      owner_.walk(stmt->declarations, owner_.current_parent_id_);
+      for (const auto& decl : stmt->declarations)
+        owner_.walk(decl, owner_.current_parent_id_);
     }
 
     void visit_if_stmt(std::shared_ptr<Statements::If> stmt) override {
       const int parent_id {owner_.current_parent_id_};
       owner_.walk(stmt->condition, parent_id);
-      owner_.walk(std::vector {stmt->then_body}, parent_id);
+      owner_.walk(stmt->then_body, parent_id);
       if (!std::dynamic_pointer_cast<Statements::Pass>(stmt->else_body))
-        owner_.walk(std::vector {stmt->else_body}, parent_id);
+        owner_.walk(stmt->else_body, parent_id);
     }
 
     void visit_while_stmt(std::shared_ptr<Statements::While> stmt) override {
       const int parent_id {owner_.current_parent_id_};
       owner_.walk(stmt->condition, parent_id);
-      owner_.walk(std::vector {stmt->loop_body}, parent_id);
+      owner_.walk(stmt->loop_body, parent_id);
       if (!std::dynamic_pointer_cast<Statements::Pass>(stmt->else_body))
-        owner_.walk(std::vector {stmt->else_body}, parent_id);
+        owner_.walk(stmt->else_body, parent_id);
     }
 
     void visit_each_stmt(std::shared_ptr<Statements::Each> stmt) override {
       const int parent_id {owner_.current_parent_id_};
       owner_.walk(stmt->iterator, parent_id);
-      owner_.walk(std::vector {stmt->loop_body}, parent_id);
+      owner_.walk(stmt->loop_body, parent_id);
       if (!std::dynamic_pointer_cast<Statements::Pass>(stmt->else_body))
-        owner_.walk(std::vector {stmt->else_body}, parent_id);
+        owner_.walk(stmt->else_body, parent_id);
     }
 
     void visit_for_stmt(std::shared_ptr<Statements::For> stmt) override {
       const int parent_id {owner_.current_parent_id_};
-      owner_.walk(std::vector {stmt->begin}, parent_id);
+      owner_.walk(stmt->begin, parent_id);
       owner_.walk(stmt->condition, parent_id);
       owner_.walk(stmt->end, parent_id);
-      owner_.walk(std::vector {stmt->loop_body}, parent_id);
+      owner_.walk(stmt->loop_body, parent_id);
       if (!std::dynamic_pointer_cast<Statements::Pass>(stmt->else_body))
-        owner_.walk(std::vector {stmt->else_body}, parent_id);
+        owner_.walk(stmt->else_body, parent_id);
     }
 
     void visit_break_stmt(std::shared_ptr<Statements::Break> stmt) override {}
@@ -159,6 +164,13 @@ class DotTreeWalker {
       const int parent_id {owner_.current_parent_id_};
       for (const auto& sub_expr : expr->expressions)
         owner_.walk(sub_expr, parent_id);
+    }
+
+    void visit_lambda_expr(std::shared_ptr<Expressions::Lambda> expr) override {
+      const int parent_id {owner_.current_parent_id_};
+      for (const auto& [_, type] : expr->params)
+        owner_.walk(type, parent_id);
+      owner_.walk(expr->body, parent_id);
     }
 
     void visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) override {
@@ -300,9 +312,9 @@ class DotTreeWalker {
 
     std::string visit_if_expr(std::shared_ptr<Expressions::If> expr) override { return "... if ... else ..."; }
 
-    std::string visit_call_expr(std::shared_ptr<Expressions::Call> expr) override { return "call"; } // TODO.
+    std::string visit_call_expr(std::shared_ptr<Expressions::Call> expr) override { return "...(...*)"; }
 
-    std::string visit_subscript_expr(std::shared_ptr<Expressions::Subscript> expr) override { return "subscript"; } // TODO.
+    std::string visit_subscript_expr(std::shared_ptr<Expressions::Subscript> expr) override { return "...[...*]"; }
 
     std::string visit_member_expr(std::shared_ptr<Expressions::Member> expr) override {
       const std::string blah {"(...)"};
@@ -322,6 +334,18 @@ class DotTreeWalker {
         blah += interpolation;
       }
       return blah + "\\\"";
+    }
+
+    std::string visit_lambda_expr(std::shared_ptr<Expressions::Lambda> expr) override {
+      std::string blah {"lambda ("};
+      if (!expr->params.empty()) {
+        for (size_t i {0}; i < expr->params.size(); ++i) {
+          if (i > 0) blah += ", ";
+          blah += expr->params[i].identifier->src_string;
+        }
+      }
+      blah += ") -> ...";
+      return blah;
     }
 
     std::string visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) override { return "()"; }
@@ -358,7 +382,7 @@ class DotTreeWalker {
   ExprNameVisitor expr_name_visitor_ {*this};
 
   void walk(const ExprNode& node, int parent_id);
-  void walk(const std::vector<StmtNode>& vec, int parent_id);
+  void walk(const StmtNode& node, int parent_id);
   void walk(const TypePtr& type, int parent_id);
 
   public:

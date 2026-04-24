@@ -1,5 +1,5 @@
-var a = [tree -> 2, item -> 5]
-var b = ["name" -> 4, "fruit" -> 34.2]
-var c = [true, false, true, this, not true]
+fun (g: () -> Tank) do print 323
 
-print g[2]
+fun {= 5}
+
+fun { print 32; if (true) do print nil else do tree.coconut(); }
