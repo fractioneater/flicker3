@@ -1,5 +1,5 @@
 {
-	"includes": ["<any>", "<memory>", "\"lexer.h\"", "\"type.h\""],
+	"includes": ["<any>", "<memory>", "\"lexer.h\"", "\"param.h\"", "\"type.h\""],
 	"aliases": [
 		"using StmtNode      = std::shared_ptr<Stmt>;",
 		"using ExprNode      = std::shared_ptr<Expr>;",
@@ -121,6 +121,11 @@
 				{"type": "std::string", "name": "start"},
 				{"type": "std::vector<ExprNode>", "name": "expressions", "move": true},
 				{"type": "std::vector<std::string>", "name": "end_strings", "move": true}
+			]
+		}, {
+			"name": "Lambda", "fields": [
+				{"type": "std::vector<Param>", "name": "params", "move": true},
+				{"type": "StmtNode", "name": "body", "move": true}
 			]
 		}, {
 			"name": "Grouping",

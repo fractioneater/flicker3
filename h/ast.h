@@ -12,6 +12,7 @@
 #include <memory>
 
 #include "lexer.h"
+#include "param.h"
 #include "type.h"
 
 namespace Statements {
@@ -39,6 +40,7 @@ namespace Expressions {
   class NamespaceMember;
   class Unary;
   class Interpolation;
+  class Lambda;
   class Grouping;
   class List;
   class Map;
@@ -84,6 +86,7 @@ class ExprVisitorVoid {
   virtual void visit_namespace_member_expr(std::shared_ptr<Expressions::NamespaceMember> expr) = 0;
   virtual void visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) = 0;
   virtual void visit_interpolation_expr(std::shared_ptr<Expressions::Interpolation> expr) = 0;
+  virtual void visit_lambda_expr(std::shared_ptr<Expressions::Lambda> expr) = 0;
   virtual void visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) = 0;
   virtual void visit_list_expr(std::shared_ptr<Expressions::List> expr) = 0;
   virtual void visit_map_expr(std::shared_ptr<Expressions::Map> expr) = 0;
@@ -131,6 +134,7 @@ class ExprVisitorAny {
   virtual std::any visit_namespace_member_expr_any(std::shared_ptr<Expressions::NamespaceMember> expr) = 0;
   virtual std::any visit_unary_expr_any(std::shared_ptr<Expressions::Unary> expr) = 0;
   virtual std::any visit_interpolation_expr_any(std::shared_ptr<Expressions::Interpolation> expr) = 0;
+  virtual std::any visit_lambda_expr_any(std::shared_ptr<Expressions::Lambda> expr) = 0;
   virtual std::any visit_grouping_expr_any(std::shared_ptr<Expressions::Grouping> expr) = 0;
   virtual std::any visit_list_expr_any(std::shared_ptr<Expressions::List> expr) = 0;
   virtual std::any visit_map_expr_any(std::shared_ptr<Expressions::Map> expr) = 0;
@@ -228,6 +232,7 @@ class ExprVisitor : public ExprVisitorAny {
   virtual R visit_namespace_member_expr(std::shared_ptr<Expressions::NamespaceMember> expr) = 0;
   virtual R visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) = 0;
   virtual R visit_interpolation_expr(std::shared_ptr<Expressions::Interpolation> expr) = 0;
+  virtual R visit_lambda_expr(std::shared_ptr<Expressions::Lambda> expr) = 0;
   virtual R visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) = 0;
   virtual R visit_list_expr(std::shared_ptr<Expressions::List> expr) = 0;
   virtual R visit_map_expr(std::shared_ptr<Expressions::Map> expr) = 0;
@@ -276,6 +281,10 @@ class ExprVisitor : public ExprVisitorAny {
 
   std::any visit_interpolation_expr_any(std::shared_ptr<Expressions::Interpolation> expr) final {
     return visit_interpolation_expr(std::move(expr));
+  }
+
+  std::any visit_lambda_expr_any(std::shared_ptr<Expressions::Lambda> expr) final {
+    return visit_lambda_expr(std::move(expr));
   }
 
   std::any visit_grouping_expr_any(std::shared_ptr<Expressions::Grouping> expr) final {
@@ -707,6 +716,22 @@ class Expressions::Interpolation : public Expr, public std::enable_shared_from_t
   const std::string start {};
   const std::vector<ExprNode> expressions {};
   const std::vector<std::string> end_strings {};
+};
+
+class Expressions::Lambda : public Expr, public std::enable_shared_from_this<Lambda> {
+  public:
+  Lambda(std::vector<Param> params, StmtNode body) : params {std::move(params)}, body {std::move(body)} {}
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_lambda_expr_any(shared_from_this());
+  }
+
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_lambda_expr(shared_from_this());
+  }
+
+  const std::vector<Param> params {};
+  const StmtNode body {};
 };
 
 class Expressions::Grouping : public Expr, public std::enable_shared_from_this<Grouping> {
