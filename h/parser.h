@@ -67,9 +67,6 @@ class Parser {
   std::vector<ParserError> errors_ {};
   std::vector<ParserError> warnings_ {};
 
-  public:
-  explicit Parser(Lexer& lexer) : lexer_ {lexer} {}
-
   void advance() {
     previous_ = current_;
     if (current_->type != TOKEN_EOF) ++current_;
@@ -246,28 +243,6 @@ class Parser {
   ExprNode parse_expression();
   ExprNode parse_expression(Precedence precedence);
 
-  /**
-   * Fill the tokens_ vector with tokens from the lexer, up to ONE end-of-file token.
-   * This allows the lexer to display all of its errors and warnings before the parser begins.
-   * Also initializes current_ and previous_ (IMPORTANT! Must be called for this purpose).
-   */
-  void populate_token_vec();
-
-  /**
-   * Parses the input token stream and generates an AST which is stored in program_ if there are no errors.
-   * @return True if parsing completes without syntax errors; otherwise false
-   */
-  void parse();
-
-  /**
-   * Output in GraphViz DOT format, to a file specified by DEBUG_DOT_FILENAME, from the tree stored in program_.
-   * There must be a tree already—parse() must have been called.
-   */
-  void output_dot() const;
-
-  const std::vector<ParserError>& get_errors() { return errors_; }
-  const std::vector<ParserError>& get_warnings() { return warnings_; }
-
   // Helper data structures and parse rules
   using PrefixFn = ExprNode(Parser::*)();
   using InfixFn  = ExprNode(Parser::*)(const ExprNode&);
@@ -380,4 +355,29 @@ class Parser {
     /* TOKEN_EOF           */ UNUSED,
   }};
   // @formatter:on
+
+  public:
+  explicit Parser(Lexer& lexer) : lexer_ {lexer} {}
+
+  /**
+   * Fill the tokens_ vector with tokens from the lexer, up to ONE end-of-file token.
+   * This allows the lexer to display all of its errors and warnings before the parser begins.
+   * Also initializes current_ and previous_ (IMPORTANT! Must be called for this purpose).
+   */
+  void populate_token_vec();
+
+  /**
+   * Parses the input token stream and generates an AST which is stored in program_ if there are no errors.
+   * @return True if parsing completes without syntax errors; otherwise false
+   */
+  void parse();
+
+  /**
+   * Output in GraphViz DOT format, to a file specified by DEBUG_DOT_FILENAME, from the tree stored in program_.
+   * There must be a tree already—parse() must have been called.
+   */
+  void output_dot() const;
+
+  const std::vector<ParserError>& get_errors() { return errors_; }
+  const std::vector<ParserError>& get_warnings() { return warnings_; }
 };

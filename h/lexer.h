@@ -76,7 +76,7 @@ struct Token {
   std::any value {};
 
   Token(TokenType type, size_t start, size_t length, const std::string_view src) : type {type}, start_offset {start}, length {length},
-    src_string {src.substr(start_offset, length)} {}
+    src_string {length == 0 ? "" : src.substr(start, length)} {}
 };
 
 class Lexer {

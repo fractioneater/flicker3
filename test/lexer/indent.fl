@@ -21,13 +21,13 @@ fun (b: Int) do
 fun ()
   return 30
 
-fun {}
+fun {pass;}
 fun { ()
                             ->  print #hey
                   302; pass; return; ##hey
    "0402"; 11;}
 
-fun { (a: B, b: C, c: D) -> } # Why? Who knows. CONSIDER: maybe warn.
+fun { (a: B, b: C, c: D) -> pass; }
 fun { print -1; print 0; print 1; }
 funcWithLambdaArg { (x: Int) -> x ** 2; }
 funcWithLambdaArg { (y: Int) = y + y + y }

@@ -4,27 +4,11 @@
 #include <sstream>
 #include <gtest/gtest.h>
 
-#include "lexer-adapter.h"
 #include "parser.h"
 
 static Token scan_single(const std::string& src) {
   Lexer lexer {src};
   return lexer.next_token();
-}
-
-static std::vector<Token> scan_all(const std::string& src) {
-  Lexer lexer {src};
-  std::vector<Token> tokens;
-  Token token;
-  do {
-    token = lexer.next_token();
-    tokens.push_back(token);
-  } while (token.type != TOKEN_EOF);
-  return tokens;
-}
-
-static TokenType token_type(const std::string& src) {
-  return scan_single(src).type;
 }
 
 static bool has_error(const std::string& src) {
@@ -53,16 +37,12 @@ TEST(Comment, FileTest) {
   buffer << file.rdbuf();
   std::string source = buffer.str();
   Lexer lexer {source};
+  Parser parser {lexer};
 
-  antlr::LexerAdapter adapter {lexer, "comment-test"};
-  antlr4::CommonTokenStream token_stream {&adapter};
-  Parser parser {&token_stream};
-
-  token_stream.fill();
+  parser.populate_token_vec();
   EXPECT_TRUE(lexer.get_errors().empty());
-
-  const bool parse_success {parser.parse()};
-  EXPECT_TRUE(parse_success);
+  parser.parse();
+  EXPECT_TRUE(parser.get_errors().empty());
 }
 
 TEST(Comment, BlockCommentMaxNest) {
@@ -86,16 +66,12 @@ TEST(Identifier, FileTest) {
   buffer << file.rdbuf();
   std::string source = buffer.str();
   Lexer lexer {source};
+  Parser parser {lexer};
 
-  antlr::LexerAdapter adapter {lexer, "identifier-test"};
-  antlr4::CommonTokenStream token_stream {&adapter};
-  Parser parser {&token_stream};
-
-  token_stream.fill();
+  parser.populate_token_vec();
   EXPECT_TRUE(lexer.get_errors().empty());
-
-  const bool parse_success {parser.parse()};
-  EXPECT_TRUE(parse_success);
+  parser.parse();
+  EXPECT_TRUE(parser.get_errors().empty());
 }
 
 TEST(Identifier, BacktickIdentifierUnclosed) {
@@ -121,16 +97,12 @@ TEST(Number, FileTest) {
   buffer << file.rdbuf();
   std::string source = buffer.str();
   Lexer lexer {source};
+  Parser parser {lexer};
 
-  antlr::LexerAdapter adapter {lexer, "number-test"};
-  antlr4::CommonTokenStream token_stream {&adapter};
-  Parser parser {&token_stream};
-
-  token_stream.fill();
+  parser.populate_token_vec();
   EXPECT_TRUE(lexer.get_errors().empty());
-
-  const bool parse_success {parser.parse()};
-  EXPECT_TRUE(parse_success);
+  parser.parse();
+  EXPECT_TRUE(parser.get_errors().empty());
 }
 
 TEST(Number, UnderscoreInvalid) {
@@ -172,16 +144,12 @@ TEST(String, FileTest) {
   buffer << file.rdbuf();
   std::string source = buffer.str();
   Lexer lexer {source};
+  Parser parser {lexer};
 
-  antlr::LexerAdapter adapter {lexer, "string-test"};
-  antlr4::CommonTokenStream token_stream {&adapter};
-  Parser parser {&token_stream};
-
-  token_stream.fill();
+  parser.populate_token_vec();
   EXPECT_TRUE(lexer.get_errors().empty());
-
-  const bool parse_success {parser.parse()};
-  EXPECT_TRUE(parse_success);
+  parser.parse();
+  EXPECT_TRUE(parser.get_errors().empty());
 }
 
 TEST(String, Unterminated) {
@@ -209,16 +177,12 @@ TEST(Indentation, FileTest) {
   buffer << file.rdbuf();
   std::string source = buffer.str();
   Lexer lexer {source};
+  Parser parser {lexer};
 
-  antlr::LexerAdapter adapter {lexer, "indent-test"};
-  antlr4::CommonTokenStream token_stream {&adapter};
-  Parser parser {&token_stream};
-
-  token_stream.fill();
+  parser.populate_token_vec();
   EXPECT_TRUE(lexer.get_errors().empty());
-
-  const bool parse_success {parser.parse()};
-  EXPECT_TRUE(parse_success);
+  parser.parse();
+  EXPECT_TRUE(parser.get_errors().empty());
 }
 
 TEST(Indentation, NoPrevMatchingIndent) {
