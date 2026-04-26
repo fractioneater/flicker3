@@ -272,7 +272,7 @@ StmtNode Parser::continue_statement() {
 }
 
 StmtNode Parser::return_statement() {
-  if (check(TOKEN_LINE) || check(TOKEN_EOF) || check(TOKEN_DEDENT))
+  if (check(TOKEN_LINE) || check(TOKEN_EOF) || check(TOKEN_DEDENT) || check(TOKEN_SEMICOLON))
     return std::make_shared<Statements::Return>(std::make_shared<Expressions::Nil>());
   return std::make_shared<Statements::Return>(parse_expression());
 }
@@ -564,7 +564,6 @@ ExprNode Parser::lambda() {
 
       // Lambda body (all whitespace ignored, semicolons required).
       std::vector<StmtNode> statements {};
-      // TODO: Ignore whitespace. Does lexer already do it?
       do {
         statements.emplace_back(statement());
         expect(TOKEN_SEMICOLON, "Expecting ';' after statement in brace lambda");

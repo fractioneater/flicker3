@@ -44,16 +44,3 @@ target_link_libraries(test_parser GTest::gtest_main flicker_lib)
 include(GoogleTest)
 gtest_discover_tests(test_lexer)
 gtest_discover_tests(test_parser)
-
-# Google Benchmark
-FetchContent_Declare(
-	googlebenchmark
-	GIT_REPOSITORY https://github.com/google/benchmark.git
-	GIT_TAG v1.9.5
-)
-set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googlebenchmark)
-
-# Lexer bench
-add_executable(bench_lexer test/lexer-bench.cpp)
-target_link_libraries(bench_lexer benchmark::benchmark_main flicker_lib)
