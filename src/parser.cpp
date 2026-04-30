@@ -18,7 +18,7 @@
 std::optional<StmtNode> Parser::declaration() {
   if (match(TOKEN_VAL)) return val_declaration();
   if (match(TOKEN_VAR)) return var_declaration();
-  // if (match(TOKEN_FUN)) return function_declaration();
+  if (check(TOKEN_FUN)) return function_declaration();
   // if (match(TOKEN_CLASS)) return class_declaration();
   if (match(TOKEN_NAMESPACE)) return namespace_declaration();
   // if (match(TOKEN_USING)) return using_declaration();
@@ -43,7 +43,7 @@ StmtNode Parser::val_declaration() {
   expect(TOKEN_IDENTIFIER, "Expecting a variable name after 'val'");
   const Token* identifier {previous_};
 
-  const TypePtr type {match(TOKEN_COLON) ? parse_type() : nullptr};
+  const TypePtr type {match(TOKEN_COLON) ? broad_type() : nullptr};
 
   ParserError context {nullptr, "You probably don't want an immutable variable just to hold 'nil'"};
   if (type && type->kind() != TypeKind::OPTIONAL)
@@ -59,7 +59,7 @@ StmtNode Parser::var_declaration() {
   ExprNode initializer {std::make_shared<Expressions::Nil>()};
 
   if (match(TOKEN_COLON)) {
-    type = parse_type();
+    type = broad_type();
     if (match(TOKEN_EQ)) initializer = parse_expression();
     else if (type && type->kind() != TypeKind::OPTIONAL)
       errors_.emplace_back(current_, "Non-optional variable must have an initializer; the default value of 'nil' is not allowed");
@@ -70,9 +70,38 @@ StmtNode Parser::var_declaration() {
   return std::make_shared<Statements::Variable>(true, identifier, type, initializer);
 }
 
-// StmtNode Parser::function_declaration() {
-//
-// }
+std::optional<StmtNode> Parser::function_declaration() {
+  // After 'fun' we can either have a name or a parameter list which is part of a lambda, not a declaration.
+  const auto has_next {current_ < tokens_.data() + tokens_.size() - 1};
+  if (has_next && current_[1].type == TOKEN_LEFT_PAREN) return std::nullopt;
+  // Consume TOKEN_FUN.
+  advance();
+
+  // Property 1: Function name
+  expect(TOKEN_IDENTIFIER, "Expecting either a function name for a function declaration or '(' for a lambda");
+  const Token* identifier {previous_};
+
+  // Property 2: Type parameters
+  std::vector<Token*> type_params {};
+  if (match_generic()) {
+    if (!check(TOKEN_IDENTIFIER)) errors_.emplace_back(current_, "Expecting a type parameter");
+    while (match(TOKEN_IDENTIFIER))
+      type_params.emplace_back(previous_);
+  }
+
+  // Property 3: Parameters
+  expect(TOKEN_LEFT_PAREN, "Expecting '(' to start a parameter list");
+  const std::vector params {param_list()};
+
+  // Property 4: Body
+  StmtNode body {
+    match(TOKEN_EQ)
+    ? std::make_shared<Statements::Return>(parse_expression())
+    : block_or_statement()
+  };
+
+  return std::make_shared<Statements::Function>(identifier, type_params, params, body);
+}
 
 // StmtNode Parser::class_declaration() {
 //
@@ -101,7 +130,7 @@ StmtNode Parser::namespace_declaration() {
 
 // Type parsing (for declarations) --------------------------------------------------
 
-TypePtr Parser::parse_type() {
+TypePtr Parser::broad_type() {
   // Check for function type first.
   if (match(TOKEN_LEFT_PAREN)) return function_type();
 
@@ -110,41 +139,26 @@ TypePtr Parser::parse_type() {
     return nullptr;
   }
 
-  expect(TOKEN_IDENTIFIER, "Expecting either a type name or '(' for a function type");
-  const std::string name {previous_->src_string};
-  const bool is_optional {match(TOKEN_QUEST)};
-  TypePtr type {std::make_shared<NamedType>(name)};
-
-  if (match(TOKEN_FOR) || match(TOKEN_OF)) {
-    std::vector<TypePtr> args {};
-    do {
-      args.emplace_back(basic_type("a type parameter (a type name)"));
-    } while (match(TOKEN_COMMA));
-    type = std::make_shared<AppliedType>(type, std::move(args));
-  }
-
-  if (is_optional) type = std::make_shared<OptionalType>(type);
-
-  return type;
+  return standard_type("either a type name or '(' for a function type", true);
 }
 
 TypePtr Parser::function_type() {
   std::vector<TypePtr> param_types {};
   do {
     if (check(TOKEN_RIGHT_PAREN)) break;
-    param_types.emplace_back(basic_type("a parameter type"));
+    param_types.emplace_back(standard_type("a parameter type", true));
   } while (match(TOKEN_COMMA));
 
   expect(TOKEN_RIGHT_PAREN, "Expecting ')' after parameter list in function type");
 
   if (match(TOKEN_RIGHT_ARROW)) {
-    return std::make_shared<FunctionType>(std::move(param_types), basic_type("a return type"));
+    return std::make_shared<FunctionType>(std::move(param_types), standard_type("a return type", true));
   }
   // Non-returning function.
   return std::make_shared<FunctionType>(std::move(param_types), std::make_shared<NamedType>("Unit"));
 }
 
-TypePtr Parser::basic_type(const std::string& thing_to_look_for) {
+TypePtr Parser::standard_type(const std::string& thing_to_look_for, bool allow_generics) {
   if (match(TOKEN_LEFT_PAREN)) {
     errors_.emplace_back(
       ParserError {
@@ -159,16 +173,28 @@ TypePtr Parser::basic_type(const std::string& thing_to_look_for) {
   const std::string name {previous_->src_string};
   TypePtr type {std::make_shared<NamedType>(name)};
 
-  if (match(TOKEN_QUEST)) return std::make_shared<OptionalType>(type);
+  const bool is_optional {match(TOKEN_QUEST)};
 
-  if (match(TOKEN_OF) || match(TOKEN_FOR))
-    errors_.emplace_back(
-      ParserError {
-        previous_,
-        "For readability's sake, inside a complex type, you must define other complex types with an alias",
-        {nullptr, "How to create an alias: 'using YourAliasName = ... for/of ...'"}
-      }
-    );
+  if (match_generic()) {
+    if (allow_generics) {
+      std::vector<TypePtr> args {};
+      do {
+        args.emplace_back(standard_type("a type parameter (a type name)", false));
+      } while (check(TOKEN_IDENTIFIER));
+      type = std::make_shared<AppliedType>(type, std::move(args));
+    } else {
+      // Generics are not allowed! Oh, no!
+      errors_.emplace_back(
+        ParserError {
+          previous_,
+          "For readability's sake, inside a complex type, you must define other complex types with an alias",
+          {nullptr, "How to create an alias: 'using YourAliasName = ... for/of ...'"}
+        }
+      );
+    }
+  }
+
+  if (is_optional) type = std::make_shared<OptionalType>(type);
 
   return type;
 }
@@ -293,13 +319,13 @@ StmtNode Parser::block() {
 
 StmtNode Parser::block_or_statement() {
   if (check(TOKEN_LINE)) return block();
-  expect(TOKEN_DO, "Must have either 'do' or newline between condition and statement");
+  expect(TOKEN_DO, "Must have either 'do' or newline before statements");
   if (check(TOKEN_LINE)) return block();
   return statement();
 }
 
 StmtNode Parser::optional_else_body() {
-  if (match_after_newlines(TOKEN_ELSE)) // Won't consume newlines if there isn't an ELSE afterward
+  if (match_after_newlines(TOKEN_ELSE)) // Won't consume newlines if there isn't an ELSE afterward.
     return block_or_statement();
   return std::make_shared<Statements::Pass>();
 }
@@ -324,7 +350,7 @@ std::vector<Param> Parser::param_list() {
       expect(TOKEN_IDENTIFIER, "Expecting a parameter name");
       const auto id {previous_};
       expect(TOKEN_COLON, "Expecting ':' then a parameter type");
-      params.emplace_back(id, parse_type());
+      params.emplace_back(id, standard_type("a type for this parameter", true));
     } while (match(TOKEN_COMMA));
 
   expect(TOKEN_RIGHT_PAREN, "Expecting ')' after parameter list");
@@ -527,7 +553,7 @@ ExprNode Parser::collection() {
 
 ExprNode Parser::lambda() {
   // We can reach this point from either a lambda call or a lambda literal.
-  // In case of a lambda call, the { will already be consumed; in a standard lambda, only 'fun' will be consumed.
+  // In case of a lambda call, the '{' will already be consumed; in a standard lambda, only 'fun' will be consumed.
   if (previous_->type != TOKEN_LEFT_BRACE) match(TOKEN_LEFT_BRACE);
 
   // There are two types: curly-brace lambdas and block lambdas.
@@ -538,15 +564,6 @@ ExprNode Parser::lambda() {
   // Block lambdas...
   // - have significant whitespace, handled like a standard codeblock.
   // - require parameters (could be empty)—'fun = blahblahblah' is not allowed, instead it would be 'fun () = blahblahblah'.
-
-  // From the grammar:
-  // lambdaLiteral : FUN (braceLambda | blockLambda) ;
-  //
-  // blockLambda : paramList (blockOrStatement | EQ expression) ;
-  // braceLambda : LEFT_BRACE (statementLambdaBody | exprLambdaBody) RIGHT_BRACE ;
-  //
-  // statementLambdaBody : (paramList RIGHT_ARROW)? (codeItem SEMICOLON)* ;
-  // exprLambdaBody : paramList? EQ expression SEMICOLON? ;
 
   if (previous_->type == TOKEN_LEFT_BRACE) {
     // Brace lambda.

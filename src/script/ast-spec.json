@@ -23,6 +23,13 @@
 				{"type": "ExprNode", "name": "initializer", "move": true}
 			]
 		}, {
+			"name": "Function", "fields": [
+				{"type": "Token*", "name": "identifier"},
+				{"type": "std::vector<Token*>", "name": "type_params", "move": true},
+				{"type": "std::vector<Param>", "name": "params", "move": true},
+				{"type": "StmtNode", "name": "body", "move": true}
+			]
+		}, {
 			"name": "Namespace", "fields": [
 				{"type": "Token*", "name": "identifier"},
 				{"type": "std::vector<StmtNode>", "name": "declarations", "move": true}
