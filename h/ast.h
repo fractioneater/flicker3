@@ -429,7 +429,7 @@ class Statements::Variable : public Stmt, public std::enable_shared_from_this<Va
 
 class Statements::Function : public Stmt, public std::enable_shared_from_this<Function> {
   public:
-  Function(const Token* identifier, std::vector<Token*> type_params, std::vector<Param> params, StmtNode body) : identifier {identifier}, type_params {std::move(type_params)}, params {std::move(params)}, body {std::move(body)} {}
+  Function(const Token* identifier, std::vector<Token*> type_params, std::vector<Param> params, TypePtr return_type, StmtNode body) : identifier {identifier}, type_params {std::move(type_params)}, params {std::move(params)}, return_type {std::move(return_type)}, body {std::move(body)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_function_stmt_any(shared_from_this());
@@ -442,6 +442,7 @@ class Statements::Function : public Stmt, public std::enable_shared_from_this<Fu
   const Token* identifier {};
   const std::vector<Token*> type_params {};
   const std::vector<Param> params {};
+  const TypePtr return_type {};
   const StmtNode body {};
 };
 

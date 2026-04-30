@@ -93,14 +93,17 @@ std::optional<StmtNode> Parser::function_declaration() {
   expect(TOKEN_LEFT_PAREN, "Expecting '(' to start a parameter list");
   const std::vector params {param_list()};
 
-  // Property 4: Body
+  // Property 4: Return type
+  const auto return_type {match(TOKEN_RIGHT_ARROW) ? broad_type() : nullptr};
+
+  // Property 5: Body
   StmtNode body {
     match(TOKEN_EQ)
     ? std::make_shared<Statements::Return>(parse_expression())
     : block_or_statement()
   };
 
-  return std::make_shared<Statements::Function>(identifier, type_params, params, body);
+  return std::make_shared<Statements::Function>(identifier, type_params, params, return_type, body);
 }
 
 // StmtNode Parser::class_declaration() {
