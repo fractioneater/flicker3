@@ -27,6 +27,7 @@
 				{"type": "Token*", "name": "identifier"},
 				{"type": "std::vector<Token*>", "name": "type_params", "move": true},
 				{"type": "std::vector<Param>", "name": "params", "move": true},
+				{"type": "TypePtr", "name": "return_type", "move": true},
 				{"type": "StmtNode", "name": "body", "move": true}
 			]
 		}, {

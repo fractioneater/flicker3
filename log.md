@@ -208,6 +208,7 @@ List of String?  # There is a list, but it has optional strings
 List? of String? # There may be a list, and it may have strings or Nil
 Pair of Int, Int
 ```
+
 ```
 var a: Int?
 val b: Banana    # Errors because vals need an initializer
@@ -216,7 +217,8 @@ val c = 32
 
 ## April 7 – 24, 2026
 
-The next step, in my opinion, is to take care of the rest of the expressions instead of jumping fully into statements—because classes and functions are going to be hard.
+The next step, in my opinion, is to take care of the rest of the expressions instead of jumping fully into statements—
+because classes and functions are going to be hard.
 
 Day 1: `++`, `--`, and if expressions (`... if ... else ...`)  
 Day 2: string interpolation  
@@ -224,6 +226,28 @@ Day 3: member access, both for namespaces (`::`) and normal objects (`.`, `?.`),
 Day 4: `this` and `super` because I wanted something really easy to do during class  
 Day 5: list and map collections, array subscripting  
 Day 6: lambdas, which I've been dreading, but were actually really simple
+
+## April 29, 2026
+
+To implement functions more nicely, I'm making a few changes to syntax and restrictions for generic types.
+
+`Pair of String, Int` is now becoming `Pair of String Int`; functions will be declared like `fun a for X Y`, and so on. The only difference: commas are gone.
+And why, you ask?
+
+To make this situation possible: `(Pair of X Y, Int) -> X`.
+
+Yes, I'm allowing applied types (generics) inside function types. Each "level" of type can now contain any type less complex than itself. Function types can't
+contain function types, but they _can_ contain applied types; Applied types can't contain applied types, but they can contain optionals. And optionals, as it
+turns out, can't contain other optionals.
+
+The reason is so when people create functions, they can use generics in parameters without having to do extra work to create an alias, because defining
+`List of Bool` as `BoolList` is tedious and not beneficial.
+
+```
+fun a for X (b: X)
+  print "By the way, functions are parsed to the AST now!"
+  print "Only two declarations to go: classes and aliases/imports"
+```
 
 [learncpp]: https://learncpp.com
 

@@ -1,3 +1,2 @@
-fun {(g: String) ->
-    print 32; 3
-  == 23;}
+fun create_toes(g: Integer of Life, b: Idea for OnionRings) -> Unit
+  print g + b or not spike(g)
