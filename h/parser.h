@@ -130,6 +130,18 @@ class Parser {
   }
 
   /**
+   * Matches either 'of' or 'for' for a generic, but not both.
+   * @return A boolean, true if the next token is 'of' or 'for'
+   */
+  bool match_generic() {
+    if (check(TOKEN_OF) || check(TOKEN_FOR)) {
+      advance();
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * If the next token matches a certain type, advances, otherwise creates an error.
    * @param type Expected type of the next token
    * @param message Error message in case the expected type is not found
@@ -169,7 +181,7 @@ class Parser {
   StmtNode declaration_in_namespace();
   StmtNode val_declaration();
   StmtNode var_declaration();
-  // StmtNode function_declaration();
+  std::optional<StmtNode> function_declaration();
   // StmtNode class_declaration();
   StmtNode namespace_declaration();
   // StmtNode using_declaration();
@@ -179,20 +191,19 @@ class Parser {
    * This includes optionals, applied types, function types, and named types (see h/type.h for explanation).
    * @return Type parsed (possibly nullptr in error case)
    */
-  TypePtr parse_type();
+  TypePtr broad_type();
   /**
    * Parses a function type, like this: (String, String) -> String.
-   * Does not allow applied types or function types nested inside (only basic_type calls).
    * @return Function type parsed (possibly nullptr in error case)
    */
   TypePtr function_type();
   /**
-   * Parses a basic type only, no applied types (no 'for' or 'of') and no function types allowed.
-   * Will show helpful errors if an applied or function type is found.
-   * @param thing_to_look_for For the error message of the expect(IDENTIFIER)—this type always starts with an identifier—which are "Expecting " + thing_to_look_for
-   * @return Basic type parsed (possibly nullptr in error case)
+   * Parses a type that is not a function type—could be applied (with generics), nullable, or anything but a function type.
+   * @param thing_to_look_for For the error message of the expect(IDENTIFIER)—this type always starts with an identifier—"Expecting " + thing_to_look_for
+   * @param allow_generics Whether applied types are allowed.
+   * @return Type parsed (possibly nullptr in error case)
    */
-  TypePtr basic_type(const std::string& thing_to_look_for);
+  TypePtr standard_type(const std::string& thing_to_look_for, bool allow_generics);
 
   StmtNode statement();
   StmtNode if_statement();
@@ -207,6 +218,11 @@ class Parser {
   StmtNode block_or_statement();
   StmtNode optional_else_body();
   Token* loop_label();
+  /**
+   * Parse a parameter list for a function or lambda.
+   * IMPORTANT: '(' must already be consumed. ')' is handled by the function.
+   * @return A list of param objects
+   */
   std::vector<Param> param_list();
 
   // Infix

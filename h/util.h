@@ -61,6 +61,13 @@ class DotTreeWalker {
       owner_.walk(stmt->initializer, owner_.current_parent_id_);
     }
 
+    void visit_function_stmt(std::shared_ptr<Statements::Function> stmt) override {
+      const int parent_id {owner_.current_parent_id_};
+      for (const auto& [_, type] : stmt->params)
+        owner_.walk(type, parent_id);
+      owner_.walk(stmt->body, parent_id);
+    }
+
     void visit_namespace_stmt(std::shared_ptr<Statements::Namespace> stmt) override {
       for (const auto& decl : stmt->declarations)
         owner_.walk(decl, owner_.current_parent_id_);
@@ -217,6 +224,10 @@ class DotTreeWalker {
       blah += stmt->identifier->src_string;
       blah += ": ... = ...";
       return blah;
+    }
+
+    std::string visit_function_stmt(std::shared_ptr<Statements::Function> stmt) override {
+      return "function"; // TODO.
     }
 
     std::string visit_namespace_stmt(std::shared_ptr<Statements::Namespace> stmt) override { return "namespace " + std::string {stmt->identifier->src_string}; }
