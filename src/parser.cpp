@@ -239,10 +239,11 @@ StmtNode Parser::initializer() {
   if (match(TOKEN_EQ)) errors_.emplace_back(previous_, "Cannot return from initializer");
   StmtNode body {match(TOKEN_SEMICOLON) ? std::make_shared<Statements::Pass>() : block_or_statement()};
 
-  if (!body) {
-    errors_.emplace_back(ParserError {current_, "Expected a body for initializer", {nullptr, "Use a semicolon (';') to skip the body"}});
-    body = std::make_shared<Statements::Pass>();
-  }
+  // TODO.
+  // if (!body) {
+  //   errors_.emplace_back(ParserError {current_, "Expected a body for initializer", {nullptr, "Use a semicolon (';') to skip the body"}});
+  //   body = std::make_shared<Statements::Pass>();
+  // }
 
   return std::make_shared<Statements::Initializer>(params, body);
 }
@@ -456,11 +457,8 @@ StmtNode Parser::block() {
 
 StmtNode Parser::block_or_statement() {
   if (check(TOKEN_LINE)) return block();
-  if (!match(TOKEN_DO)) {
-    errors_.emplace_back(current_, "Must have either 'do' or newline before statements");
-    return nullptr;
-  }
-  if (check(TOKEN_LINE)) return block();
+  expect(TOKEN_DO, "Must have either 'do' or newline before statements");
+  if (check(TOKEN_LINE)) return block(); // A block is still an option after 'do'.
   return statement();
 }
 
