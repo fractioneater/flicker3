@@ -184,7 +184,7 @@ class Parser {
   std::optional<StmtNode> function_declaration();
   // StmtNode class_declaration();
   StmtNode namespace_declaration();
-  // StmtNode using_declaration();
+  StmtNode using_declaration();
 
   /**
    * Interprets and parses the next few tokens as a user-representable type of any complexity.

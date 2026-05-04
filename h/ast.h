@@ -21,6 +21,8 @@ namespace Statements {
   class Variable;
   class Function;
   class Namespace;
+  class Import;
+  class Typealias;
   class If;
   class While;
   class Each;
@@ -66,6 +68,8 @@ class StmtVisitorVoid {
   virtual void visit_variable_stmt(std::shared_ptr<Statements::Variable> stmt) = 0;
   virtual void visit_function_stmt(std::shared_ptr<Statements::Function> stmt) = 0;
   virtual void visit_namespace_stmt(std::shared_ptr<Statements::Namespace> stmt) = 0;
+  virtual void visit_import_stmt(std::shared_ptr<Statements::Import> stmt) = 0;
+  virtual void visit_typealias_stmt(std::shared_ptr<Statements::Typealias> stmt) = 0;
   virtual void visit_if_stmt(std::shared_ptr<Statements::If> stmt) = 0;
   virtual void visit_while_stmt(std::shared_ptr<Statements::While> stmt) = 0;
   virtual void visit_each_stmt(std::shared_ptr<Statements::Each> stmt) = 0;
@@ -115,6 +119,8 @@ class StmtVisitorAny {
   virtual std::any visit_variable_stmt_any(std::shared_ptr<Statements::Variable> stmt) = 0;
   virtual std::any visit_function_stmt_any(std::shared_ptr<Statements::Function> stmt) = 0;
   virtual std::any visit_namespace_stmt_any(std::shared_ptr<Statements::Namespace> stmt) = 0;
+  virtual std::any visit_import_stmt_any(std::shared_ptr<Statements::Import> stmt) = 0;
+  virtual std::any visit_typealias_stmt_any(std::shared_ptr<Statements::Typealias> stmt) = 0;
   virtual std::any visit_if_stmt_any(std::shared_ptr<Statements::If> stmt) = 0;
   virtual std::any visit_while_stmt_any(std::shared_ptr<Statements::While> stmt) = 0;
   virtual std::any visit_each_stmt_any(std::shared_ptr<Statements::Each> stmt) = 0;
@@ -165,6 +171,8 @@ class StmtVisitor : public StmtVisitorAny {
   virtual R visit_variable_stmt(std::shared_ptr<Statements::Variable> stmt) = 0;
   virtual R visit_function_stmt(std::shared_ptr<Statements::Function> stmt) = 0;
   virtual R visit_namespace_stmt(std::shared_ptr<Statements::Namespace> stmt) = 0;
+  virtual R visit_import_stmt(std::shared_ptr<Statements::Import> stmt) = 0;
+  virtual R visit_typealias_stmt(std::shared_ptr<Statements::Typealias> stmt) = 0;
   virtual R visit_if_stmt(std::shared_ptr<Statements::If> stmt) = 0;
   virtual R visit_while_stmt(std::shared_ptr<Statements::While> stmt) = 0;
   virtual R visit_each_stmt(std::shared_ptr<Statements::Each> stmt) = 0;
@@ -193,6 +201,14 @@ class StmtVisitor : public StmtVisitorAny {
 
   std::any visit_namespace_stmt_any(std::shared_ptr<Statements::Namespace> stmt) final {
     return visit_namespace_stmt(std::move(stmt));
+  }
+
+  std::any visit_import_stmt_any(std::shared_ptr<Statements::Import> stmt) final {
+    return visit_import_stmt(std::move(stmt));
+  }
+
+  std::any visit_typealias_stmt_any(std::shared_ptr<Statements::Typealias> stmt) final {
+    return visit_typealias_stmt(std::move(stmt));
   }
 
   std::any visit_if_stmt_any(std::shared_ptr<Statements::If> stmt) final {
@@ -460,6 +476,38 @@ class Statements::Namespace : public Stmt, public std::enable_shared_from_this<N
 
   const Token* identifier {};
   const std::vector<StmtNode> declarations {};
+};
+
+class Statements::Import : public Stmt, public std::enable_shared_from_this<Import> {
+  public:
+  Import(std::string path, std::vector<Token*> imports) : path {std::move(path)}, imports {std::move(imports)} {}
+
+  std::any accept(StmtVisitorAny& visitor) override {
+    return visitor.visit_import_stmt_any(shared_from_this());
+  }
+
+  void accept(StmtVisitorVoid& visitor) override {
+    visitor.visit_import_stmt(shared_from_this());
+  }
+
+  const std::string path {};
+  const std::vector<Token*> imports {};
+};
+
+class Statements::Typealias : public Stmt, public std::enable_shared_from_this<Typealias> {
+  public:
+  Typealias(const Token* identifier, TypePtr type) : identifier {identifier}, type {std::move(type)} {}
+
+  std::any accept(StmtVisitorAny& visitor) override {
+    return visitor.visit_typealias_stmt_any(shared_from_this());
+  }
+
+  void accept(StmtVisitorVoid& visitor) override {
+    visitor.visit_typealias_stmt(shared_from_this());
+  }
+
+  const Token* identifier {};
+  const TypePtr type {};
 };
 
 class Statements::If : public Stmt, public std::enable_shared_from_this<If> {
@@ -730,7 +778,7 @@ class Expressions::Unary : public Expr, public std::enable_shared_from_this<Unar
 
 class Expressions::Interpolation : public Expr, public std::enable_shared_from_this<Interpolation> {
   public:
-  Interpolation(std::string start, std::vector<ExprNode> expressions, std::vector<std::string> end_strings) : start {start}, expressions {std::move(expressions)}, end_strings {std::move(end_strings)} {}
+  Interpolation(std::string start, std::vector<ExprNode> expressions, std::vector<std::string> end_strings) : start {std::move(start)}, expressions {std::move(expressions)}, end_strings {std::move(end_strings)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_interpolation_expr_any(shared_from_this());

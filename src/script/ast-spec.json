@@ -36,6 +36,16 @@
 				{"type": "std::vector<StmtNode>", "name": "declarations", "move": true}
 			]
 		}, {
+			"name": "Import", "fields": [
+				{"type": "std::string", "name": "path", "move": true},
+				{"type": "std::vector<Token*>", "name": "imports", "move": true}
+			]
+		}, {
+			"name": "Typealias", "fields": [
+				{"type": "Token*", "name": "identifier"},
+				{"type": "TypePtr", "name": "type", "move": true}
+			]
+		}, {
 			"name": "If", "fields": [
 				{"type": "ExprNode", "name": "condition", "move": true},
 				{"type": "StmtNode", "name": "then_body", "move": true},
@@ -126,7 +136,7 @@
 			]
 		}, {
 			"name": "Interpolation", "fields": [
-				{"type": "std::string", "name": "start"},
+				{"type": "std::string", "name": "start", "move": true},
 				{"type": "std::vector<ExprNode>", "name": "expressions", "move": true},
 				{"type": "std::vector<std::string>", "name": "end_strings", "move": true}
 			]

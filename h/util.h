@@ -75,6 +75,12 @@ class DotTreeWalker {
         owner_.walk(decl, owner_.current_parent_id_);
     }
 
+    void visit_import_stmt(std::shared_ptr<Statements::Import> stmt) override {}
+
+    void visit_typealias_stmt(std::shared_ptr<Statements::Typealias> stmt) override {
+      owner_.walk(stmt->type, owner_.current_parent_id_);
+    }
+
     void visit_if_stmt(std::shared_ptr<Statements::If> stmt) override {
       const int parent_id {owner_.current_parent_id_};
       owner_.walk(stmt->condition, parent_id);
@@ -254,6 +260,25 @@ class DotTreeWalker {
     }
 
     std::string visit_namespace_stmt(std::shared_ptr<Statements::Namespace> stmt) override { return "namespace " + std::string {stmt->identifier->src_string}; }
+
+    std::string visit_import_stmt(std::shared_ptr<Statements::Import> stmt) override {
+      std::string blah {"import " + stmt->path};
+      if (!stmt->imports.empty()) {
+        blah += " for ";
+        for (size_t i {0}; i < stmt->imports.size(); ++i) {
+          if (i > 0) blah += ", ";
+          blah += stmt->imports[i]->src_string;
+        }
+      }
+      return blah;
+    }
+
+    std::string visit_typealias_stmt(std::shared_ptr<Statements::Typealias> stmt) override {
+      std::string blah {"typealias "};
+      blah += stmt->identifier->src_string;
+      blah += " = ...";
+      return blah;
+    }
 
     std::string visit_if_stmt(std::shared_ptr<Statements::If> stmt) override {
       if (std::dynamic_pointer_cast<Statements::Pass>(stmt->else_body))

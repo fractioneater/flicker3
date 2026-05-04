@@ -21,9 +21,9 @@ std::optional<StmtNode> Parser::declaration() {
   if (check(TOKEN_FUN)) return function_declaration();
   // if (match(TOKEN_CLASS)) return class_declaration();
   if (match(TOKEN_NAMESPACE)) return namespace_declaration();
-  // if (match(TOKEN_USING)) return using_declaration();
+  if (match(TOKEN_USING)) return using_declaration();
 
-  // Each of the places that use this handle the "there is no declaration" case differently.
+  // Each of the places that use this handles the "there is no declaration" case differently.
   return {};
 }
 
@@ -127,9 +127,34 @@ StmtNode Parser::namespace_declaration() {
   return std::make_shared<Statements::Namespace>(name, std::move(contents));
 }
 
-// StmtNode Parser::using_declaration() {
-//
-// }
+StmtNode Parser::using_declaration() {
+  // 'using' for import.
+  if (match(TOKEN_STRING)) {
+    const auto path {std::any_cast<std::string>(previous_->value)};
+    std::vector<Token*> imports {};
+    if (match(TOKEN_FOR)) {
+      if (check(TOKEN_STAR) || check(TOKEN_DOT)) {
+        // An "import all" statement can be done three ways, which is a little weird.
+        // You can skip the for clause, or inside it use either a star or use a dot.
+        advance();
+      } else {
+        do {
+          if (check(TOKEN_EOF) || check(TOKEN_LINE)) break;
+          expect(TOKEN_IDENTIFIER, "Expecting a name for an object to import");
+          imports.emplace_back(previous_);
+        } while (match(TOKEN_COMMA));
+      }
+    }
+
+    return std::make_shared<Statements::Import>(path, imports);
+  }
+
+  // 'using' for type alias.
+  expect(TOKEN_IDENTIFIER, "Expecting either a type alias name or a path for an import file");
+  const Token* name {previous_};
+  expect(TOKEN_EQ, "Expecting '=' and a type to create alias for");
+  return std::make_shared<Statements::Typealias>(name, broad_type());
+}
 
 // Type parsing (for declarations) --------------------------------------------------
 
