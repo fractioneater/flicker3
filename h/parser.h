@@ -182,9 +182,12 @@ class Parser {
   StmtNode val_declaration();
   StmtNode var_declaration();
   std::optional<StmtNode> function_declaration();
-  // StmtNode class_declaration();
+  StmtNode class_declaration();
   StmtNode namespace_declaration();
   StmtNode using_declaration();
+
+  StmtNode initializer();
+  StmtNode method();
 
   /**
    * Interprets and parses the next few tokens as a user-representable type of any complexity.
@@ -220,7 +223,6 @@ class Parser {
   Token* loop_label();
   /**
    * Parse a parameter list for a function or lambda.
-   * IMPORTANT: '(' must already be consumed. ')' is handled by the function.
    * @return A list of param objects
    */
   std::vector<Param> param_list();

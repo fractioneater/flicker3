@@ -20,6 +20,9 @@ namespace Statements {
   class Expression;
   class Variable;
   class Function;
+  class Initializer;
+  class Method;
+  class Class;
   class Namespace;
   class Import;
   class Typealias;
@@ -67,6 +70,9 @@ class StmtVisitorVoid {
   virtual void visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) = 0;
   virtual void visit_variable_stmt(std::shared_ptr<Statements::Variable> stmt) = 0;
   virtual void visit_function_stmt(std::shared_ptr<Statements::Function> stmt) = 0;
+  virtual void visit_initializer_stmt(std::shared_ptr<Statements::Initializer> stmt) = 0;
+  virtual void visit_method_stmt(std::shared_ptr<Statements::Method> stmt) = 0;
+  virtual void visit_class_stmt(std::shared_ptr<Statements::Class> stmt) = 0;
   virtual void visit_namespace_stmt(std::shared_ptr<Statements::Namespace> stmt) = 0;
   virtual void visit_import_stmt(std::shared_ptr<Statements::Import> stmt) = 0;
   virtual void visit_typealias_stmt(std::shared_ptr<Statements::Typealias> stmt) = 0;
@@ -118,6 +124,9 @@ class StmtVisitorAny {
   virtual std::any visit_expression_stmt_any(std::shared_ptr<Statements::Expression> stmt) = 0;
   virtual std::any visit_variable_stmt_any(std::shared_ptr<Statements::Variable> stmt) = 0;
   virtual std::any visit_function_stmt_any(std::shared_ptr<Statements::Function> stmt) = 0;
+  virtual std::any visit_initializer_stmt_any(std::shared_ptr<Statements::Initializer> stmt) = 0;
+  virtual std::any visit_method_stmt_any(std::shared_ptr<Statements::Method> stmt) = 0;
+  virtual std::any visit_class_stmt_any(std::shared_ptr<Statements::Class> stmt) = 0;
   virtual std::any visit_namespace_stmt_any(std::shared_ptr<Statements::Namespace> stmt) = 0;
   virtual std::any visit_import_stmt_any(std::shared_ptr<Statements::Import> stmt) = 0;
   virtual std::any visit_typealias_stmt_any(std::shared_ptr<Statements::Typealias> stmt) = 0;
@@ -170,6 +179,9 @@ class StmtVisitor : public StmtVisitorAny {
   virtual R visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) = 0;
   virtual R visit_variable_stmt(std::shared_ptr<Statements::Variable> stmt) = 0;
   virtual R visit_function_stmt(std::shared_ptr<Statements::Function> stmt) = 0;
+  virtual R visit_initializer_stmt(std::shared_ptr<Statements::Initializer> stmt) = 0;
+  virtual R visit_method_stmt(std::shared_ptr<Statements::Method> stmt) = 0;
+  virtual R visit_class_stmt(std::shared_ptr<Statements::Class> stmt) = 0;
   virtual R visit_namespace_stmt(std::shared_ptr<Statements::Namespace> stmt) = 0;
   virtual R visit_import_stmt(std::shared_ptr<Statements::Import> stmt) = 0;
   virtual R visit_typealias_stmt(std::shared_ptr<Statements::Typealias> stmt) = 0;
@@ -197,6 +209,18 @@ class StmtVisitor : public StmtVisitorAny {
 
   std::any visit_function_stmt_any(std::shared_ptr<Statements::Function> stmt) final {
     return visit_function_stmt(std::move(stmt));
+  }
+
+  std::any visit_initializer_stmt_any(std::shared_ptr<Statements::Initializer> stmt) final {
+    return visit_initializer_stmt(std::move(stmt));
+  }
+
+  std::any visit_method_stmt_any(std::shared_ptr<Statements::Method> stmt) final {
+    return visit_method_stmt(std::move(stmt));
+  }
+
+  std::any visit_class_stmt_any(std::shared_ptr<Statements::Class> stmt) final {
+    return visit_class_stmt(std::move(stmt));
   }
 
   std::any visit_namespace_stmt_any(std::shared_ptr<Statements::Namespace> stmt) final {
@@ -460,6 +484,60 @@ class Statements::Function : public Stmt, public std::enable_shared_from_this<Fu
   const std::vector<Param> params {};
   const TypePtr return_type {};
   const StmtNode body {};
+};
+
+class Statements::Initializer : public Stmt, public std::enable_shared_from_this<Initializer> {
+  public:
+  Initializer(std::vector<Param> params, StmtNode body) : params {std::move(params)}, body {std::move(body)} {}
+
+  std::any accept(StmtVisitorAny& visitor) override {
+    return visitor.visit_initializer_stmt_any(shared_from_this());
+  }
+
+  void accept(StmtVisitorVoid& visitor) override {
+    visitor.visit_initializer_stmt(shared_from_this());
+  }
+
+  const std::vector<Param> params {};
+  const StmtNode body {};
+};
+
+class Statements::Method : public Stmt, public std::enable_shared_from_this<Method> {
+  public:
+  Method(const Token* identifier, std::vector<Param> params, TypePtr return_type, StmtNode body) : identifier {identifier}, params {std::move(params)}, return_type {std::move(return_type)}, body {std::move(body)} {}
+
+  std::any accept(StmtVisitorAny& visitor) override {
+    return visitor.visit_method_stmt_any(shared_from_this());
+  }
+
+  void accept(StmtVisitorVoid& visitor) override {
+    visitor.visit_method_stmt(shared_from_this());
+  }
+
+  const Token* identifier {};
+  const std::vector<Param> params {};
+  const TypePtr return_type {};
+  const StmtNode body {};
+};
+
+class Statements::Class : public Stmt, public std::enable_shared_from_this<Class> {
+  public:
+  Class(const Token* identifier, std::vector<Token*> type_params, const Token* superclass, std::vector<StmtNode> namespace_items, std::vector<StmtNode> initializers, std::vector<StmtNode> declarations) : identifier {identifier}, type_params {std::move(type_params)}, superclass {superclass}, namespace_items {std::move(namespace_items)}, initializers {std::move(initializers)}, declarations {std::move(declarations)} {}
+
+  std::any accept(StmtVisitorAny& visitor) override {
+    return visitor.visit_class_stmt_any(shared_from_this());
+  }
+
+  void accept(StmtVisitorVoid& visitor) override {
+    visitor.visit_class_stmt(shared_from_this());
+  }
+
+  const Token* identifier {};
+  const std::vector<Token*> type_params {};
+  const Token* superclass {};
+  const std::vector<StmtNode> namespace_items {};
+  const std::vector<StmtNode> initializers {};
+  const std::vector<StmtNode> declarations {};
 };
 
 class Statements::Namespace : public Stmt, public std::enable_shared_from_this<Namespace> {
@@ -746,7 +824,7 @@ class Expressions::Member : public Expr, public std::enable_shared_from_this<Mem
 
 class Expressions::NamespaceMember : public Expr, public std::enable_shared_from_this<NamespaceMember> {
   public:
-  NamespaceMember(const Token* namespace_id, const Token* member) : namespace_id {std::move(namespace_id)}, member {member} {}
+  NamespaceMember(const Token* namespace_id, const Token* member) : namespace_id {namespace_id}, member {member} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_namespace_member_expr_any(shared_from_this());

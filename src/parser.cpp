@@ -19,7 +19,7 @@ std::optional<StmtNode> Parser::declaration() {
   if (match(TOKEN_VAL)) return val_declaration();
   if (match(TOKEN_VAR)) return var_declaration();
   if (check(TOKEN_FUN)) return function_declaration();
-  // if (match(TOKEN_CLASS)) return class_declaration();
+  if (match(TOKEN_CLASS)) return class_declaration();
   if (match(TOKEN_NAMESPACE)) return namespace_declaration();
   if (match(TOKEN_USING)) return using_declaration();
 
@@ -90,7 +90,6 @@ std::optional<StmtNode> Parser::function_declaration() {
   }
 
   // Property 3: Parameters
-  expect(TOKEN_LEFT_PAREN, "Expecting '(' to start a parameter list");
   const std::vector params {param_list()};
 
   // Property 4: Return type
@@ -106,9 +105,60 @@ std::optional<StmtNode> Parser::function_declaration() {
   return std::make_shared<Statements::Function>(identifier, type_params, params, return_type, body);
 }
 
-// StmtNode Parser::class_declaration() {
-//
-// }
+StmtNode Parser::class_declaration() {
+  // Property 1: Name
+  expect(TOKEN_IDENTIFIER, "Expecting a class name");
+  const Token* name {previous_};
+
+  // Property 2: Type parameters
+  std::vector<Token*> type_params {};
+  if (match_generic()) {
+    if (!check(TOKEN_IDENTIFIER)) errors_.emplace_back(current_, "Expecting a type parameter");
+    while (match(TOKEN_IDENTIFIER))
+      type_params.emplace_back(previous_);
+  }
+
+  // Property 3: Superclass
+  const Token* superclass {};
+  if (match(TOKEN_IS)) {
+    expect(TOKEN_IDENTIFIER, "Expecting a superclass name");
+    superclass = previous_;
+  }
+
+  // Properties 4, 5 & 6: Contents
+  match_line();
+  expect(TOKEN_INDENT, "Expecting indentation to increase when class block begins");
+
+  std::vector<StmtNode> namespace_items {};
+  if (match(TOKEN_NAMESPACE)) {
+    match_line();
+    expect(TOKEN_INDENT, "Expecting indentation to increase when namespace block begins");
+
+    while (!check(TOKEN_DEDENT)) {
+      namespace_items.emplace_back(declaration_in_namespace());
+      if (!match_line()) break;
+    }
+    // TODO: This error will be shown if there are two statements on one line. Same issue in block().
+    expect(TOKEN_DEDENT, "Expecting indentation to decrease after namespace block ends");
+  }
+
+  std::vector<StmtNode> declarations {};
+  std::vector<StmtNode> initializers {};
+  while (!check(TOKEN_DEDENT)) {
+    // TODO: Access specifiers/things.
+    if (match(TOKEN_VAL)) declarations.emplace_back(val_declaration());
+    else if (match(TOKEN_VAR)) declarations.emplace_back(var_declaration());
+    else if (match(TOKEN_FUN)) declarations.emplace_back(method());
+    else if (check(TOKEN_IDENTIFIER) && current_->src_string == "init")
+      initializers.emplace_back(initializer());
+    if (!match_line()) break;
+  }
+
+  // TODO: See the error in namespace. Same problem applies here.
+  expect(TOKEN_DEDENT, "Expecting indentation to decrease after class block ends");
+
+  return std::make_shared<Statements::Class>(name, type_params, superclass, namespace_items, initializers, declarations);
+}
 
 StmtNode Parser::namespace_declaration() {
   expect(TOKEN_IDENTIFIER, "Expecting a name for this namespace");
@@ -154,6 +204,65 @@ StmtNode Parser::using_declaration() {
   const Token* name {previous_};
   expect(TOKEN_EQ, "Expecting '=' and a type to create alias for");
   return std::make_shared<Statements::Typealias>(name, broad_type());
+}
+
+StmtNode Parser::initializer() {
+  // Consume the 'init' word—it was checked, not matched.
+  advance();
+
+  expect(TOKEN_LEFT_PAREN, "Expecting '(' to start a parameter list");
+  std::vector<Param> params {};
+  if (!check(TOKEN_RIGHT_PAREN))
+    // TODO: Repetition. I think this pattern is used in a few places.
+    do {
+      if (check(TOKEN_RIGHT_PAREN)) {
+        errors_.emplace_back(previous_, "Trailing commas are not allowed");
+        break;
+      }
+
+      auto mod {Param::Modifier::NONE};
+      if (match(TOKEN_VAL))
+        mod = Param::Modifier::VAL;
+      else if (match(TOKEN_VAR))
+        mod = Param::Modifier::VAR;
+
+      expect(TOKEN_IDENTIFIER, "Expecting a parameter name");
+      const auto id {previous_};
+      expect(TOKEN_COLON, "Expecting ':' then a parameter type");
+      params.emplace_back(id, standard_type("a type for this parameter", true), mod);
+    } while (match(TOKEN_COMMA));
+
+  expect(TOKEN_RIGHT_PAREN, "Expecting ')' after parameter list");
+
+  // TODO: Superclass initializers?
+
+  if (match(TOKEN_EQ)) errors_.emplace_back(previous_, "Cannot return from initializer");
+  StmtNode body {match(TOKEN_SEMICOLON) ? std::make_shared<Statements::Pass>() : block_or_statement()};
+
+  if (!body) {
+    errors_.emplace_back(ParserError {current_, "Expected a body for initializer", {nullptr, "Use a semicolon (';') to skip the body"}});
+    body = std::make_shared<Statements::Pass>();
+  }
+
+  return std::make_shared<Statements::Initializer>(params, body);
+}
+
+StmtNode Parser::method() {
+  // Essentially just a function without type parameters.
+  expect(TOKEN_IDENTIFIER, "Expecting a method name");
+  const Token* identifier {previous_};
+
+  const std::vector params {param_list()};
+
+  const auto return_type {match(TOKEN_RIGHT_ARROW) ? broad_type() : nullptr};
+
+  StmtNode body {
+    match(TOKEN_EQ)
+    ? std::make_shared<Statements::Return>(parse_expression())
+    : block_or_statement()
+  };
+
+  return std::make_shared<Statements::Method>(identifier, params, return_type, body);
 }
 
 // Type parsing (for declarations) --------------------------------------------------
@@ -231,7 +340,7 @@ TypePtr Parser::standard_type(const std::string& thing_to_look_for, bool allow_g
 
 StmtNode Parser::statement() {
   if (match(TOKEN_IF)) return if_statement();
-  if (match(TOKEN_WHILE)) return while_statement();
+  if (match(TOKEN_WHILE)) return while_statement(); // TODO: 'around' clause for loops.
   if (match(TOKEN_EACH)) return each_statement();
   if (match(TOKEN_FOR)) return for_statement();
   if (match(TOKEN_BREAK)) return break_statement();
@@ -347,7 +456,10 @@ StmtNode Parser::block() {
 
 StmtNode Parser::block_or_statement() {
   if (check(TOKEN_LINE)) return block();
-  expect(TOKEN_DO, "Must have either 'do' or newline before statements");
+  if (!match(TOKEN_DO)) {
+    errors_.emplace_back(current_, "Must have either 'do' or newline before statements");
+    return nullptr;
+  }
   if (check(TOKEN_LINE)) return block();
   return statement();
 }
@@ -367,6 +479,7 @@ Token* Parser::loop_label() {
 }
 
 std::vector<Param> Parser::param_list() {
+  expect(TOKEN_LEFT_PAREN, "Expecting '(' to start a parameter list");
   std::vector<Param> params {};
   if (!check(TOKEN_RIGHT_PAREN))
     do {
@@ -581,7 +694,7 @@ ExprNode Parser::collection() {
 
 ExprNode Parser::lambda() {
   // We can reach this point from either a lambda call or a lambda literal.
-  // In case of a lambda call, the '{' will already be consumed; in a standard lambda, only 'fun' will be consumed.
+  // In the case of a lambda call, the '{' will already be consumed; in a standard lambda, only 'fun' will be consumed.
   if (previous_->type != TOKEN_LEFT_BRACE) match(TOKEN_LEFT_BRACE);
 
   // There are two types: curly-brace lambdas and block lambdas.
@@ -596,7 +709,7 @@ ExprNode Parser::lambda() {
   if (previous_->type == TOKEN_LEFT_BRACE) {
     // Brace lambda.
     std::vector params {
-      match(TOKEN_LEFT_PAREN) ? param_list() : std::vector<Param> {}
+      check(TOKEN_LEFT_PAREN) ? param_list() : std::vector<Param> {}
     };
     StmtNode body {};
 
@@ -622,7 +735,6 @@ ExprNode Parser::lambda() {
   }
 
   // Block lambda.
-  expect(TOKEN_LEFT_PAREN, "Expecting '(' to start a parameter list");
   std::vector params {param_list()};
 
   StmtNode body {

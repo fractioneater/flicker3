@@ -11,6 +11,11 @@
 struct Token;
 
 struct Param {
+  enum Modifier {
+    NONE, VAL, VAR
+  };
+
   Token* identifier {};
   TypePtr type {};
+  Modifier mod {NONE};
 };

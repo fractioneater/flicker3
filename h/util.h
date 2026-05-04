@@ -63,11 +63,37 @@ class DotTreeWalker {
 
     void visit_function_stmt(std::shared_ptr<Statements::Function> stmt) override {
       const int parent_id {owner_.current_parent_id_};
-      for (const auto& [_, type] : stmt->params)
+      for (const auto& [_, type, _1] : stmt->params)
         owner_.walk(type, parent_id);
       if (stmt->return_type)
         owner_.walk(stmt->return_type, parent_id);
       owner_.walk(stmt->body, parent_id);
+    }
+
+    void visit_initializer_stmt(std::shared_ptr<Statements::Initializer> stmt) override {
+      const int parent_id {owner_.current_parent_id_};
+      for (const auto& [_, type, _1] : stmt->params)
+        owner_.walk(type, parent_id);
+      owner_.walk(stmt->body, parent_id);
+    }
+
+    void visit_method_stmt(std::shared_ptr<Statements::Method> stmt) override {
+      const int parent_id {owner_.current_parent_id_};
+      for (const auto& [_, type, _1] : stmt->params)
+        owner_.walk(type, parent_id);
+      if (stmt->return_type)
+        owner_.walk(stmt->return_type, parent_id);
+      owner_.walk(stmt->body, parent_id);
+    }
+
+    void visit_class_stmt(std::shared_ptr<Statements::Class> stmt) override {
+      const int parent_id {owner_.current_parent_id_};
+      for (const auto& a : stmt->namespace_items)
+        owner_.walk(a, parent_id);
+      for (const auto& a : stmt->initializers)
+        owner_.walk(a, parent_id);
+      for (const auto& a : stmt->declarations)
+        owner_.walk(a, parent_id);
     }
 
     void visit_namespace_stmt(std::shared_ptr<Statements::Namespace> stmt) override {
@@ -183,7 +209,7 @@ class DotTreeWalker {
 
     void visit_lambda_expr(std::shared_ptr<Expressions::Lambda> expr) override {
       const int parent_id {owner_.current_parent_id_};
-      for (const auto& [_, type] : expr->params)
+      for (const auto& [_, type, _1] : expr->params)
         owner_.walk(type, parent_id);
       owner_.walk(expr->body, parent_id);
     }
@@ -256,6 +282,54 @@ class DotTreeWalker {
       if (stmt->return_type)
         blah += " -> ...";
 
+      return blah;
+    }
+
+    std::string visit_initializer_stmt(std::shared_ptr<Statements::Initializer> stmt) override {
+      std::string blah {"init "};
+      blah += "(";
+      for (size_t i {0}; i < stmt->params.size(); ++i) {
+        if (i > 0) blah += ", ";
+        blah += stmt->params[i].identifier->src_string;
+      }
+      blah += ")";
+
+      return blah;
+    }
+
+    std::string visit_method_stmt(std::shared_ptr<Statements::Method> stmt) override {
+      std::string blah {"method "};
+      blah += stmt->identifier->src_string;
+      // Params.
+      blah += "(";
+      for (size_t i {0}; i < stmt->params.size(); ++i) {
+        if (i > 0) blah += ", ";
+        blah += stmt->params[i].identifier->src_string;
+      }
+      blah += ")";
+      // Return type.
+      if (stmt->return_type)
+        blah += " -> ...";
+
+      return blah;
+    }
+
+    std::string visit_class_stmt(std::shared_ptr<Statements::Class> stmt) override {
+      std::string blah {"class "};
+      blah += stmt->identifier->src_string;
+      // Type parameters.
+      if (!stmt->type_params.empty()) {
+        blah += " for";
+        for (const auto& param : stmt->type_params) {
+          blah += " ";
+          blah += param->src_string;
+        }
+      }
+      // Superclass.
+      if (stmt->superclass) {
+        blah += " is ";
+        blah += stmt->superclass->src_string;
+      }
       return blah;
     }
 
