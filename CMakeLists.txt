@@ -9,11 +9,12 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
 # Files are organized as a library so my code is only compiled once and flags can be applied specifically to it.
 add_library(flicker_lib
+	src/analyzer.cpp
+	src/diagnostic.cpp
 	src/lexer.cpp
 	src/parser.cpp
-	src/analyzer.cpp
-	src/vm.cpp
 	src/util.cpp
+	src/vm.cpp
 )
 
 target_compile_options(flicker_lib PRIVATE -Wall -Werror)

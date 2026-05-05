@@ -9,6 +9,7 @@
 
 #include <format>
 #include <iostream>
+#include <unordered_map>
 #include <utility>
 
 namespace Helpers {
@@ -84,7 +85,7 @@ std::optional<Token> Lexer::block_comment() {
   char prev {};
   for (int nest_depth = 1; nest_depth > 0; prev = advance()) {
     if (at_eof()) {
-      errors_.emplace_back(start_offset, "Block comment missing closing '-#'");
+      diagnostics_.emplace_back("Block comment missing closing '-#'", start_offset, Diagnostic::ERROR);
       return std::nullopt;
     }
 
@@ -95,7 +96,7 @@ std::optional<Token> Lexer::block_comment() {
       if (peek_next() == '-') {
         advance();
         if (nest_depth++ == MAX_COMMENT_NEST) {
-          errors_.emplace_back(offset_ - 1, "Too many nested comments");
+          diagnostics_.emplace_back("Too many nested comments", offset_ - 1, Diagnostic::ERROR);
           return std::nullopt;
         }
       }
@@ -129,14 +130,14 @@ std::optional<Token> Lexer::line_comment() {
 [[nodiscard]] Token Lexer::backtick_identifier() {
   while (peek() != '`' && !at_eof()) {
     if (peek() == '\n') {
-      errors_.emplace_back(start_offset_, "Identifier is missing closing backtick; even these can't have newlines");
+      diagnostics_.emplace_back("Identifier is missing closing backtick; even these can't have newlines", start_offset_, Diagnostic::ERROR);
       return make_token(TOKEN_IDENTIFIER);
     }
     advance();
   }
 
   if (at_eof()) {
-    errors_.emplace_back(start_offset_, "Identifier is missing closing backtick");
+    diagnostics_.emplace_back("Identifier is missing closing backtick", start_offset_, Diagnostic::ERROR);
     return make_token(TOKEN_IDENTIFIER);
   }
 
@@ -147,7 +148,7 @@ std::optional<Token> Lexer::line_comment() {
   token.length -= 2;
 
   if (token.length == 0) {
-    errors_.emplace_back(start_offset_, "Empty identifier");
+    diagnostics_.emplace_back("Empty identifier", start_offset_, Diagnostic::ERROR);
     return make_token(TOKEN_IDENTIFIER); // Instead of returning the var 'token', let's just do this.
   }
 
@@ -158,13 +159,13 @@ std::optional<Token> Lexer::line_comment() {
   std::uint32_t value = 0;
   for (int i = 0; i < length; ++i) {
     if (at_eof()) {
-      errors_.emplace_back(offset_, std::format("Escape sequence cut short by EOF (should be {} digits)", length));
+      diagnostics_.emplace_back(std::format("Escape sequence cut short by EOF (should be {} digits)offset_, ", length), Diagnostic::ERROR);
       return 0;
     }
 
     const int digit = Helpers::hex_value(peek());
     if (digit == -1) {
-      errors_.emplace_back(offset_, std::format("Invalid hex character; sequence should be {} digits", length));
+      diagnostics_.emplace_back(std::format("Invalid hex character; sequence should be {} digitsoffset_, ", length), Diagnostic::ERROR);
       return 0;
     }
     advance(); // The char that was just peeked at.
@@ -176,11 +177,11 @@ std::optional<Token> Lexer::line_comment() {
 
 void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point, size_t sequence_start_offset) {
   if (code_point > 0x10FFFFu) {
-    errors_.emplace_back(sequence_start_offset, "Invalid Unicode code point");
+    diagnostics_.emplace_back("Invalid Unicode code point", sequence_start_offset, Diagnostic::ERROR);
     return;
   }
   if (code_point >= 0xD800u && code_point <= 0xDFFFu) {
-    errors_.emplace_back(sequence_start_offset, "Invalid Unicode surrogate");
+    diagnostics_.emplace_back("Invalid Unicode surrogate", sequence_start_offset, Diagnostic::ERROR);
     return;
   }
 
@@ -217,11 +218,11 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point, size_t se
     if (c == '"') break;
     if (c == '\r') continue; // To stay platform-independent.
     if (c == '\n') {
-      errors_.emplace_back(start_offset_, "String is missing closing quotation mark; newlines aren't allowed in strings");
+      diagnostics_.emplace_back("String is missing closing quotation mark; newlines aren't start_offset_, allowed in strings", Diagnostic::ERROR);
       return make_token(TOKEN_STRING);
     }
     if (at_eof()) {
-      errors_.emplace_back(start_offset_, "String is missing closing quotation mark");
+      diagnostics_.emplace_back("String is missing closing quotation mark", start_offset_, Diagnostic::ERROR);
       return make_token(TOKEN_STRING);
     }
 
@@ -237,7 +238,7 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point, size_t se
         break;
       }
 
-      errors_.emplace_back(offset_ + 1, "Too many nested string-interpolations");
+      diagnostics_.emplace_back("Too many nested string-interpolations", offset_ + 1, Diagnostic::ERROR);
       return make_token(TOKEN_STRING);
     }
 
@@ -274,7 +275,7 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point, size_t se
           break;
         }
         default:
-          errors_.emplace_back(offset_ - 1, "Invalid escape character");
+          diagnostics_.emplace_back("Invalid escape character", offset_ - 1, Diagnostic::ERROR);
       }
     } else {
       buffer.push_back(c);
@@ -290,12 +291,12 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point, size_t se
   const char c {advance()};
 
   if (c == '\'') {
-    errors_.emplace_back(start_offset_, "Empty characters are not allowed");
+    diagnostics_.emplace_back("Empty characters are not allowed", start_offset_, Diagnostic::ERROR);
     return make_token(TOKEN_CHAR);
   }
 
   if (c == '\n') {
-    errors_.emplace_back(start_offset_, "Character literal is missing closing quotation mark");
+    diagnostics_.emplace_back("Character literal is missing closing quotation mark", start_offset_, Diagnostic::ERROR);
     return make_token(TOKEN_CHAR);
   }
 
@@ -316,7 +317,7 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point, size_t se
       // CONSIDER! Store a character as a char32_t, allowing longer Unicode code points.
       case 'x': value = static_cast<char>(read_hex(2)); break;
       default:
-        errors_.emplace_back(offset_ - 1, "Invalid escape character");
+        diagnostics_.emplace_back("Invalid escape character", offset_ - 1, Diagnostic::ERROR);
     }
   } else value = c;
   // @formatter:on
@@ -326,14 +327,14 @@ void Lexer::append_utf8(std::string& buffer, std::uint32_t code_point, size_t se
 
     while (!at_eof() && peek() != '\'' && peek() != '\n') { advance(); }
     if (at_eof() || peek() == '\n') {
-      errors_.emplace_back(start_offset_, "Character literal is missing closing quotation mark");
+      diagnostics_.emplace_back("Character literal is missing closing quotation mark", start_offset_, Diagnostic::ERROR);
     } else if (peek() == '\'') {
-      errors_.emplace_back(start_offset_, "Use double-quotes for strings; single-quotes are for single characters");
+      diagnostics_.emplace_back("Use double-quotes for strings; single-quotes are for single characters", start_offset_, Diagnostic::ERROR);
       advance(); // Closing quote.
     }
 
     if (src_[possible_end_offset] == '\'') {
-      errors_.back().add_context({possible_end_offset, "Backslashes should be escaped ('\\\\') to allow this quote to close the char"});
+      diagnostics_.back().add_context({"Backslashes should be escaped ('\\\\') to allow this quote to close the char", possible_end_offset, Diagnostic::NOTE});
     }
     return make_token(TOKEN_CHAR);
   }
@@ -352,7 +353,7 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
 
     if (c == '_') {
       if (!is_digit(peek_next()))
-        errors_.emplace_back(offset_, "Underscores must be followed by digits");
+        diagnostics_.emplace_back("Underscores must be followed by digits", offset_, Diagnostic::ERROR);
       advance(); // The underscore.
       continue;
     }
@@ -367,13 +368,13 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
   };
 
   if (!is_hex_digit(peek())) {
-    errors_.emplace_back(offset_, "Expected a hex digit after 0x");
+    diagnostics_.emplace_back("Expected a hex digit after 0x", offset_, Diagnostic::ERROR);
     return make_token(TOKEN_NUMBER);
   }
   consume_digit_chunk(is_hex_digit);
 
   if (!is_hex_digit(peek()) && std::isalpha(static_cast<unsigned char>(peek())) != 0) {
-    warnings_.emplace_back(offset_, "Character appears to be part of the number, but is actually not");
+    diagnostics_.emplace_back("Character appears to be part of the number, but is actually not", offset_, Diagnostic::WARNING);
   }
 
   auto raw_hex {std::string(src_.substr(start_offset_, offset_ - start_offset_))};
@@ -386,13 +387,13 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
   const auto is_binary_digit = [](char c) { return c == '0' || c == '1'; };
 
   if (!is_binary_digit(peek())) {
-    errors_.emplace_back(offset_, "Expected a binary digit after 0b");
+    diagnostics_.emplace_back("Expected a binary digit after 0b", offset_, Diagnostic::ERROR);
     return make_token(TOKEN_NUMBER);
   }
   consume_digit_chunk(is_binary_digit);
 
   if (!is_binary_digit(peek()) && std::isalnum(static_cast<unsigned char>(peek())) != 0) {
-    warnings_.emplace_back(offset_, "Character appears to be part of the number, but is actually not");
+    diagnostics_.emplace_back("Character appears to be part of the number, but is actually not", offset_, Diagnostic::WARNING);
   }
 
   auto raw_binary {std::string(src_.substr(start_offset_, offset_ - start_offset_))};
@@ -421,7 +422,7 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
     if (peek() == '+' || peek() == '-') advance();
 
     if (!is_digit(peek())) {
-      errors_.emplace_back(offset_, "Exponent requires a digit");
+      diagnostics_.emplace_back("Exponent requires a digit", offset_, Diagnostic::ERROR);
       return make_token(TOKEN_NUMBER);
     }
 
@@ -430,9 +431,9 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
 
   if (!is_digit(peek()) && std::isalpha(static_cast<unsigned char>(peek())) != 0) {
     if (peek() == 'e')
-      warnings_.emplace_back(offset_, "Use uppercase E for an exponent part");
+      diagnostics_.emplace_back("Use uppercase E for an exponent part", offset_, Diagnostic::WARNING);
     else
-      warnings_.emplace_back(offset_, "Character appears to be part of the number, but is actually not");
+      diagnostics_.emplace_back("Character appears to be part of the number, but is actually not", offset_, Diagnostic::WARNING);
   }
 
   auto raw_decimal {std::string(src_.substr(start_offset_, offset_ - start_offset_))};
@@ -454,7 +455,7 @@ std::optional<Token> Lexer::indentation() {
         advance();
         continue;
 
-      case '\t': errors_.emplace_back(offset_, "Tabs are not allowed in indentation");
+      case '\t': diagnostics_.emplace_back("Tabs are not allowed in indentation", offset_, Diagnostic::ERROR);
 
       case '#': {
         advance();
@@ -489,13 +490,13 @@ std::optional<Token> Lexer::indentation() {
 
     // So, um, this really shouldn't be happening. Because, you know, it would mean... it would mean the indentation level was less than zero.
     if (indents_.empty())
-      errors_.emplace_back(offset_, "AAAAH");
+      diagnostics_.emplace_back("AAAAH", offset_, Diagnostic::ERROR);
   }
 
   if (had_a_dedent) {
     if (indent != indents_.back()) {
       dedents_queued_ = 0;
-      errors_.emplace_back(offset_, "Indentation does not match any previous line");
+      diagnostics_.emplace_back("Indentation does not match any previous line", offset_, Diagnostic::ERROR);
       return std::nullopt; // CONSIDER! What is best to return here?
     }
     --dedents_queued_;
@@ -573,7 +574,7 @@ std::optional<Token> Lexer::indentation() {
         return make_token(TOKEN_LEFT_BRACE);
       case '}':
         if (--brace_nesting_ < 0)
-          errors_.emplace_back(offset_, "Extra closing brace");
+          diagnostics_.emplace_back("Extra closing brace", offset_, Diagnostic::ERROR);
         return make_token(TOKEN_RIGHT_BRACE);
       case ';': return make_token(TOKEN_SEMICOLON);
       case ',': return make_token(TOKEN_COMMA);
@@ -617,7 +618,7 @@ std::optional<Token> Lexer::indentation() {
       default:
         if (c == '_' || std::isalpha(static_cast<unsigned char>(c)) != 0) return word();
         if (std::isdigit(static_cast<unsigned char>(c)) != 0) return number();
-        errors_.emplace_back(offset_ - 1, "Unexpected character");
+        diagnostics_.emplace_back("Unexpected character", offset_ - 1, Diagnostic::ERROR);
     }
   } while (!at_eof());
 

@@ -11,7 +11,7 @@ TEST(ParserTest, BasicVariableDeclaration) {
   Parser parser {lexer};
   parser.populate_token_vec();
   parser.parse();
-  EXPECT_TRUE(parser.get_errors().empty());
+  EXPECT_TRUE(parser.get_diagnostics().empty());
 }
 
 TEST(ParserTest, MultipleStatements) {
@@ -20,7 +20,7 @@ TEST(ParserTest, MultipleStatements) {
   Parser parser {lexer};
   parser.populate_token_vec();
   parser.parse();
-  EXPECT_TRUE(parser.get_errors().empty());
+  EXPECT_TRUE(parser.get_diagnostics().empty());
 }
 
 TEST(ParserTest, BlockWithIndentation) {
@@ -29,7 +29,7 @@ TEST(ParserTest, BlockWithIndentation) {
   Parser parser {lexer};
   parser.populate_token_vec();
   parser.parse();
-  EXPECT_TRUE(parser.get_errors().empty());
+  EXPECT_TRUE(parser.get_diagnostics().empty());
 }
 
 TEST(ParserTest, ComplexFunction) {
@@ -42,5 +42,5 @@ TEST(ParserTest, ComplexFunction) {
   Parser parser {lexer};
   parser.populate_token_vec();
   parser.parse();
-  EXPECT_TRUE(parser.get_errors().empty());
+  EXPECT_TRUE(parser.get_diagnostics().empty());
 }

@@ -6,29 +6,12 @@
 
 #pragma once
 
+#include <functional>
+
 #include "ast.h"
+#include "diagnostic.h"
 #include "param.h"
 #include "type.h"
-
-class ParserError {
-  public:
-  Token* token {};
-  std::string message {};
-  std::unique_ptr<ParserError> context {};
-
-  explicit ParserError(std::string&& message) : message {std::move(message)} {}
-
-  ParserError(Token* token, std::string&& message) : token {token}, message {std::move(message)} {}
-
-  ParserError(Token* token, std::string&& message, ParserError&& context) : token {token}, message {std::move(message)},
-    context {std::make_unique<ParserError>(std::move(context))} {}
-
-  void add_context(ParserError&& c) {
-    this->context = std::make_unique<ParserError>(std::move(c));
-  }
-
-  [[nodiscard]] const char* what() const noexcept { return message.c_str(); }
-};
 
 enum class Precedence {
   NONE,           // so the compiler doesn't destroy itself trying to call the infix rule of a prefix-only token
@@ -64,8 +47,7 @@ class Parser {
   Token* current_ {};
   Token* previous_ {};
 
-  std::vector<ParserError> errors_ {};
-  std::vector<ParserError> warnings_ {};
+  std::vector<Diagnostic> diagnostics_ {};
 
   void advance() {
     previous_ = current_;
@@ -142,15 +124,17 @@ class Parser {
   }
 
   /**
-   * If the next token matches a certain type, advances, otherwise creates an error.
+   * If the next token matches a certain type, advances, and returns the token, otherwise creates an error and returns null.
    * @param type Expected type of the next token
    * @param message Error message in case the expected type is not found
    * @param error_token Token to associate the error with
+   * @return Previous token after match is called (which, in case of success, is the current token at the time of call)
    */
-  void expect(TokenType type, std::string_view message, Token* error_token = nullptr) {
+  Token* expect(TokenType type, std::string_view message, Token* error_token = nullptr) {
     error_token = (error_token == nullptr) ? current_ : error_token;
     if (!match(type))
-      errors_.emplace_back(error_token, std::string(message));
+      diagnostics_.emplace_back(std::string(message), error_token, Diagnostic::ERROR);
+    return previous_;
   }
 
   /**
@@ -160,7 +144,7 @@ class Parser {
    */
   void expect_line(std::string_view message, Token* error_token = nullptr) {
     error_token = (error_token == nullptr) ? current_ : error_token;
-    if (!match_line()) errors_.emplace_back(error_token, std::string(message));
+    if (!match_line()) diagnostics_.emplace_back(std::string(message), error_token, Diagnostic::ERROR);
   }
 
   /**
@@ -169,11 +153,30 @@ class Parser {
    * @param message Error message in case the expected type is not found
    * @param context Context to add to the error
    * @param error_token Token to associate the error with
+   * @return Previous token after match is called (which, in case of success, is the current token at the time of call)
    */
-  void expect(TokenType type, std::string_view message, ParserError& context, Token* error_token = nullptr) {
+  Token* expect(TokenType type, std::string_view message, Diagnostic& context, Token* error_token = nullptr) {
     error_token = (error_token == nullptr) ? current_ : error_token;
     if (!match(type))
-      errors_.emplace_back(error_token, std::string(message), std::move(context));
+      diagnostics_.emplace_back(std::string(message), context, error_token, Diagnostic::ERROR);
+    return previous_;
+  }
+
+  /**
+   * Parses a comma-separated list of anything up to a closing character, TRAILING COMMAS ALLOWED.
+   * @tparam T Type of items in the result list
+   * @param end_type TokenType of the closing character
+   * @param parse_item Function to parse a single item
+   * @return List of items until closing character
+   */
+  template <typename T>
+  std::vector<T> parse_list(TokenType end_type, const std::function<T()>& parse_item) {
+    std::vector<T> items {};
+    while (!check(end_type)) {
+      items.emplace_back(parse_item());
+      if (!match(TOKEN_COMMA)) break;
+    }
+    return items;
   }
 
   std::optional<StmtNode> declaration();
@@ -280,7 +283,7 @@ class Parser {
   // @formatter:off; it will separate the comments from the rest of their lines, which is horrifying.
   // IMPORTANT: Prefix rules always have a precedence of none! Their precedence is decided by the parse_expression(prec) call inside them, not the parse rule table!
   // This means that for "BOTH" rules, the precedence only applies to the infix rule.
-  std::array<ParseRule, 90> rules {{
+  static constexpr std::array<ParseRule, 90> rules {{
     /* TOKEN_LEFT_PAREN    */ BOTH(grouping, call, "", POSTFIX),
     /* TOKEN_RIGHT_PAREN   */ UNUSED,
     /* TOKEN_LEFT_BRACKET  */ BOTH(collection, subscript, "", POSTFIX),
@@ -396,6 +399,9 @@ class Parser {
    */
   void output_dot() const;
 
-  const std::vector<ParserError>& get_errors() { return errors_; }
-  const std::vector<ParserError>& get_warnings() { return warnings_; }
+  [[nodiscard]] const std::vector<Diagnostic>& get_diagnostics() const { return diagnostics_; }
+
+  [[nodiscard]] bool encountered_halt() const {
+    return std::ranges::any_of(diagnostics_, [](const Diagnostic& d) { return d.is_halting(); });
+  }
 };

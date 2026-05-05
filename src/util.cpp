@@ -6,69 +6,11 @@
 
 #include "util.h"
 
-#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <vector>
 
-#include "common.h"
 #include "parser.h"
-
-void formatting(int type) {
-  if (type == 0) { // Error.
-    #if PRINT_COLORS
-    std::cout << ERROR_COLOR << BOLD;
-    #else
-    std::cout << "Error: ";
-    #endif
-  } else if (type == 1) { // Warning.
-    #if PRINT_COLORS
-    std::cout << WARNING_COLOR << BOLD;
-    #else
-    std::cout << "Warning: ";
-    #endif
-  } else { // Note.
-    #if PRINT_COLORS
-    std::cout << NOTE_COLOR << BOLD;
-    #endif
-    std::cout << "  Note: ";
-  }
-}
-
-void print_error(size_t line, size_t col, const std::string_view module, const std::string_view line_str, const char* message, int type) {
-  // moduleName@39:14 Block comment is missing closing '-#'
-  //    39 │ print 0xABCD #- unclosed!
-  //                      ^
-  formatting(type);
-  std::cout << module << "@" << line << ":" << col << CLEAR_FORMAT << ' ' << message << '\n';
-  std::cout << std::setw(5) << line << " │ " << line_str << '\n';
-  #if PRINT_COLORS
-  std::cout << "        " << std::string(col - 1, ' ') << POINTER_COLOR << BOLD << '^' << CLEAR_FORMAT << '\n';
-  #else
-  std::cout << "        " << std::string(col - 1, ' ') << "^\n";
-  #endif
-}
-
-void print_positionless_error(const char* message, int type) {
-  formatting(type);
-  std::cout << CLEAR_FORMAT << message << '\n';
-}
-
-void print_error(const Lexer& lexer, const LexerError& err, const std::string_view module, int type) {
-  const auto [line, col] {lexer.offset_to_line_col(err.offset)};
-  print_error(line, col, module, lexer.offset_to_line_string(err.offset), err.what(), type);
-  if (err.context) print_error(lexer, *err.context, module, 2);
-}
-
-void print_error(const Lexer& lexer, const ParserError& err, const std::string_view module, int type) {
-  if (err.token) {
-    const auto [line, col] {lexer.offset_to_line_col(err.token->start_offset)};
-    print_error(line, col, module, lexer.offset_to_line_string(err.token->start_offset), err.what(), type);
-  } else
-    print_positionless_error(err.what(), type);
-
-  if (err.context) print_error(lexer, *err.context, module, 2);
-}
 
 void DotTreeWalker::walk(const ExprNode& node, int parent_id) {
   const int my_id = id_counter_++;

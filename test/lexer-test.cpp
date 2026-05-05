@@ -14,13 +14,7 @@ static Token scan_single(const std::string& src) {
 static bool has_error(const std::string& src) {
   Lexer lexer {src};
   while (lexer.next_token().type != TOKEN_EOF) {}
-  return !lexer.get_errors().empty();
-}
-
-static bool has_warning(const std::string& src) {
-  Lexer lexer {src};
-  while (lexer.next_token().type != TOKEN_EOF) {}
-  return !lexer.get_warnings().empty();
+  return !lexer.get_diagnostics().empty();
 }
 
 // Each section here will start with a "file test." These are in test/lexer/...
@@ -40,9 +34,9 @@ TEST(Comment, FileTest) {
   Parser parser {lexer};
 
   parser.populate_token_vec();
-  EXPECT_TRUE(lexer.get_errors().empty());
+  EXPECT_TRUE(lexer.get_diagnostics().empty());
   parser.parse();
-  EXPECT_TRUE(parser.get_errors().empty());
+  EXPECT_TRUE(parser.get_diagnostics().empty());
 }
 
 TEST(Comment, BlockCommentMaxNest) {
@@ -69,9 +63,9 @@ TEST(Identifier, FileTest) {
   Parser parser {lexer};
 
   parser.populate_token_vec();
-  EXPECT_TRUE(lexer.get_errors().empty());
+  EXPECT_TRUE(lexer.get_diagnostics().empty());
   parser.parse();
-  EXPECT_TRUE(parser.get_errors().empty());
+  EXPECT_TRUE(parser.get_diagnostics().empty());
 }
 
 TEST(Identifier, BacktickIdentifierUnclosed) {
@@ -100,9 +94,9 @@ TEST(Number, FileTest) {
   Parser parser {lexer};
 
   parser.populate_token_vec();
-  EXPECT_TRUE(lexer.get_errors().empty());
+  EXPECT_TRUE(lexer.get_diagnostics().empty());
   parser.parse();
-  EXPECT_TRUE(parser.get_errors().empty());
+  EXPECT_TRUE(parser.get_diagnostics().empty());
 }
 
 TEST(Number, UnderscoreInvalid) {
@@ -125,13 +119,13 @@ TEST(Number, LonelyBasePrefix) {
 }
 
 TEST(Number, LowercaseE) {
-  EXPECT_TRUE(has_warning("1.6e2"));
+  EXPECT_TRUE(has_error("1.6e2"));
 }
 
 TEST(Number, SuspiciousChar) {
-  EXPECT_TRUE(has_warning("0xabcdefg"));
-  EXPECT_TRUE(has_warning("0b102"));
-  EXPECT_TRUE(has_warning("882i"));
+  EXPECT_TRUE(has_error("0xabcdefg"));
+  EXPECT_TRUE(has_error("0b102"));
+  EXPECT_TRUE(has_error("882i"));
 }
 
 // Strings + Chars
@@ -147,9 +141,9 @@ TEST(String, FileTest) {
   Parser parser {lexer};
 
   parser.populate_token_vec();
-  EXPECT_TRUE(lexer.get_errors().empty());
+  EXPECT_TRUE(lexer.get_diagnostics().empty());
   parser.parse();
-  EXPECT_TRUE(parser.get_errors().empty());
+  EXPECT_TRUE(parser.get_diagnostics().empty());
 }
 
 TEST(String, Unterminated) {
@@ -180,9 +174,9 @@ TEST(Indentation, FileTest) {
   Parser parser {lexer};
 
   parser.populate_token_vec();
-  EXPECT_TRUE(lexer.get_errors().empty());
+  EXPECT_TRUE(lexer.get_diagnostics().empty());
   parser.parse();
-  EXPECT_TRUE(parser.get_errors().empty());
+  EXPECT_TRUE(parser.get_diagnostics().empty());
 }
 
 TEST(Indentation, NoPrevMatchingIndent) {

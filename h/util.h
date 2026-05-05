@@ -11,31 +11,6 @@
 
 #include "ast.h"
 
-class Lexer;
-class LexerError;
-class ParserError;
-
-/**
- * Prints an error, warning, or note, and all of its child contexts.
- * @param line Line number (1-based)
- * @param col Column number (1-based)
- * @param module Name of the module being compiled
- * @param line_str Line in the source code where the error occurs
- * @param message Error message
- * @param type 0 for error, 1 for warning, 2 for note
- */
-void print_error(size_t line, size_t col, std::string_view module, std::string_view line_str, const char* message, int type);
-
-/**
- * Wrapper around print_error(line, col, module, line_str, message, type).
- */
-void print_error(const Lexer& lexer, const LexerError& err, std::string_view module, int type);
-
-/**
- * Wrapper around print_error(line, col, module, line_str, message, type).
- */
-void print_error(const Lexer& lexer, const ParserError& err, std::string_view module, int type);
-
 class DotTreeWalker {
   int id_counter_ {};
   int current_parent_id_ {};

@@ -8,8 +8,7 @@
 
 #include <algorithm>
 #include <any>
-#include <functional>
-#include <memory>
+#include <array>
 #include <optional>
 #include <string>
 #include <utility>
@@ -17,24 +16,7 @@
 #include <bits/stdint-uintn.h>
 
 #include "common.h"
-
-class LexerError {
-  public:
-  size_t offset {};
-  std::string message {};
-  std::unique_ptr<LexerError> context {};
-
-  LexerError(size_t offset, std::string&& message) : offset {offset}, message {std::move(message)} {}
-
-  LexerError(size_t offset, std::string&& message, LexerError&& context) : offset {offset}, message {std::move(message)},
-    context {std::make_unique<LexerError>(std::move(context))} {}
-
-  void add_context(LexerError&& c) {
-    this->context = std::make_unique<LexerError>(std::move(c));
-  }
-
-  [[nodiscard]] const char* what() const noexcept { return message.c_str(); }
-};
+#include "diagnostic.h"
 
 enum TokenType {
   // Single-character tokens (0 - 8)
@@ -99,8 +81,7 @@ class Lexer {
   int dedents_queued_ {};       // The number of dedents waiting to be scanned.
   std::vector<int> indents_ {}; // A list of past indentation levels, to determine how many dedents are created.
 
-  std::vector<LexerError> errors_ {};
-  std::vector<LexerError> warnings_ {};
+  std::vector<Diagnostic> diagnostics_ {};
 
   [[nodiscard]] bool at_eof() const { return offset_ >= src_length_; }
 
@@ -171,7 +152,7 @@ class Lexer {
 
   /**
    * Assumes a line comment is being parsed, but will call block_comment() if it sees the next character is a hyphen.
-   * Can scan PAST the end of the line if followed by another #.
+   * Can scan past the end of the line if followed by another #.
    * @return Either a newline from block_comment() or nothing
    */
   std::optional<Token> line_comment();
@@ -300,6 +281,9 @@ class Lexer {
    */
   [[nodiscard]] std::string_view offset_to_line_string(size_t offset) const;
 
-  [[nodiscard]] const std::vector<LexerError>& get_errors() const { return errors_; }
-  [[nodiscard]] const std::vector<LexerError>& get_warnings() const { return warnings_; }
+  [[nodiscard]] const std::vector<Diagnostic>& get_diagnostics() const { return diagnostics_; }
+
+  [[nodiscard]] bool encountered_halt() const {
+    return std::ranges::any_of(diagnostics_, [](const Diagnostic& d) { return d.is_halting(); });
+  }
 };

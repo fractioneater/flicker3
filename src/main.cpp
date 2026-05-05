@@ -87,12 +87,10 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
   }
   #endif
 
-  for (const auto& err : lexer.get_errors())
-    print_error(lexer, err, module, 0);
-  for (const auto& warning : lexer.get_warnings())
-    print_error(lexer, warning, module, 1);
+  for (const auto& err : lexer.get_diagnostics())
+    err.print(&lexer, module);
 
-  if (!lexer.get_errors().empty()) {
+  if (lexer.encountered_halt()) {
     #if PRINT_COLORS
     std::cout << "Compiling halted at Lexer\n\033[4m" << ERROR_COLOR << "Lexer" << DARK_GRAY_COLOR <<
       " -> Parser -> Type Checker -> Bytecode Generator -> Virtual Machine" << CLEAR_FORMAT << '\n';
@@ -104,12 +102,10 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
 
   parser.parse();
 
-  for (const auto& err : parser.get_errors())
-    print_error(lexer, err, module, 0);
-  for (const auto& warning : parser.get_warnings())
-    print_error(lexer, warning, module, 1);
+  for (const auto& err : parser.get_diagnostics())
+    err.print(&lexer, module);
 
-  if (!parser.get_errors().empty()) {
+  if (parser.encountered_halt()) {
     #if PRINT_COLORS
     std::cout << "Compiling halted at Parser\n\033[4m" << RESULT_COLOR << "Lexer -> " << ERROR_COLOR << "Parser" << DARK_GRAY_COLOR <<
       " -> Type Checker -> Bytecode Generator -> Virtual Machine" << CLEAR_FORMAT << '\n';

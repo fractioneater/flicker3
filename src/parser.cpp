@@ -35,26 +35,24 @@ StmtNode Parser::declaration_or_statement() {
 StmtNode Parser::declaration_in_namespace() {
   if (const auto decl {declaration()}) return *decl;
 
-  errors_.emplace_back(current_, "Expected a declaration");
+  diagnostics_.emplace_back("Expected a declaration", current_, Diagnostic::ERROR);
   return std::make_shared<Statements::Pass>();
 }
 
 StmtNode Parser::val_declaration() {
-  expect(TOKEN_IDENTIFIER, "Expecting a variable name after 'val'");
-  const Token* identifier {previous_};
+  const Token* identifier {expect(TOKEN_IDENTIFIER, "Expecting a variable name after 'val'")};
 
   const TypePtr type {match(TOKEN_COLON) ? broad_type() : nullptr};
 
-  ParserError context {nullptr, "You probably don't want an immutable variable just to hold 'nil'"};
+  Diagnostic context {"You probably don't want an immutable variable just to hold 'nil'", Diagnostic::NOTE};
   if (type && type->kind() != TypeKind::OPTIONAL)
-    context.add_context({nullptr, "Your type isn't even able to hold 'nil'!"});
+    context.add_context({"Your type isn't even able to hold 'nil'!", Diagnostic::NOTE});
   expect(TOKEN_EQ, "Val declarations must have an initializer", context);
   return std::make_shared<Statements::Variable>(false, identifier, type, parse_expression());
 }
 
 StmtNode Parser::var_declaration() {
-  expect(TOKEN_IDENTIFIER, "Expecting a variable name after 'var'");
-  const Token* identifier {previous_};
+  const Token* identifier {expect(TOKEN_IDENTIFIER, "Expecting a variable name after 'var'")};
   TypePtr type {};
   ExprNode initializer {std::make_shared<Expressions::Nil>()};
 
@@ -62,7 +60,7 @@ StmtNode Parser::var_declaration() {
     type = broad_type();
     if (match(TOKEN_EQ)) initializer = parse_expression();
     else if (type && type->kind() != TypeKind::OPTIONAL)
-      errors_.emplace_back(current_, "Non-optional variable must have an initializer; the default value of 'nil' is not allowed");
+      diagnostics_.emplace_back("Non-optional variable must have an initializer; the default value of 'nil' is not allowed", current_, Diagnostic::ERROR);
   } else {
     expect(TOKEN_EQ, "Var declaration with no type must have an initializer");
     initializer = parse_expression();
@@ -71,20 +69,19 @@ StmtNode Parser::var_declaration() {
 }
 
 std::optional<StmtNode> Parser::function_declaration() {
-  // After 'fun' we can either have a name or a parameter list which is part of a lambda, not a declaration.
+  // After 'fun' we can either have a name or part of a lambda; in the latter case, we should politely ignore it.
   const auto has_next {current_ < tokens_.data() + tokens_.size() - 1};
-  if (has_next && current_[1].type == TOKEN_LEFT_PAREN) return std::nullopt;
+  if (has_next && (current_[1].type == TOKEN_LEFT_PAREN || current_[1].type == TOKEN_LEFT_BRACE)) return std::nullopt;
   // Consume TOKEN_FUN.
   advance();
 
   // Property 1: Function name
-  expect(TOKEN_IDENTIFIER, "Expecting either a function name for a function declaration or '(' for a lambda");
-  const Token* identifier {previous_};
+  const Token* identifier {expect(TOKEN_IDENTIFIER, "Expecting either a function name for a function declaration or '(' for a lambda")};
 
   // Property 2: Type parameters
   std::vector<Token*> type_params {};
   if (match_generic()) {
-    if (!check(TOKEN_IDENTIFIER)) errors_.emplace_back(current_, "Expecting a type parameter");
+    if (!check(TOKEN_IDENTIFIER)) diagnostics_.emplace_back("Expecting a type parameter", current_, Diagnostic::ERROR);
     while (match(TOKEN_IDENTIFIER))
       type_params.emplace_back(previous_);
   }
@@ -107,23 +104,18 @@ std::optional<StmtNode> Parser::function_declaration() {
 
 StmtNode Parser::class_declaration() {
   // Property 1: Name
-  expect(TOKEN_IDENTIFIER, "Expecting a class name");
-  const Token* name {previous_};
+  const Token* name {expect(TOKEN_IDENTIFIER, "Expecting a class name")};
 
   // Property 2: Type parameters
   std::vector<Token*> type_params {};
   if (match_generic()) {
-    if (!check(TOKEN_IDENTIFIER)) errors_.emplace_back(current_, "Expecting a type parameter");
+    if (!check(TOKEN_IDENTIFIER)) diagnostics_.emplace_back("Expecting a type parameter", current_, Diagnostic::ERROR);
     while (match(TOKEN_IDENTIFIER))
       type_params.emplace_back(previous_);
   }
 
   // Property 3: Superclass
-  const Token* superclass {};
-  if (match(TOKEN_IS)) {
-    expect(TOKEN_IDENTIFIER, "Expecting a superclass name");
-    superclass = previous_;
-  }
+  const Token* superclass {match(TOKEN_IS) ? expect(TOKEN_IDENTIFIER, "Expecting a superclass name") : nullptr};
 
   // Properties 4, 5 & 6: Contents
   match_line();
@@ -161,8 +153,7 @@ StmtNode Parser::class_declaration() {
 }
 
 StmtNode Parser::namespace_declaration() {
-  expect(TOKEN_IDENTIFIER, "Expecting a name for this namespace");
-  Token* name {previous_};
+  Token* name {expect(TOKEN_IDENTIFIER, "Expecting a name for this namespace")};
   match_line();
   expect(TOKEN_INDENT, "Expecting indentation to increase when namespace block begins");
 
@@ -188,11 +179,7 @@ StmtNode Parser::using_declaration() {
         // You can skip the for clause, or inside it use either a star or use a dot.
         advance();
       } else {
-        do {
-          if (check(TOKEN_EOF) || check(TOKEN_LINE)) break;
-          expect(TOKEN_IDENTIFIER, "Expecting a name for an object to import");
-          imports.emplace_back(previous_);
-        } while (match(TOKEN_COMMA));
+        imports = parse_list<Token*>(TOKEN_LINE, [this] { return expect(TOKEN_IDENTIFIER, "Expecting a name for an object to import"); });
       }
     }
 
@@ -200,8 +187,7 @@ StmtNode Parser::using_declaration() {
   }
 
   // 'using' for type alias.
-  expect(TOKEN_IDENTIFIER, "Expecting either a type alias name or a path for an import file");
-  const Token* name {previous_};
+  const Token* name {expect(TOKEN_IDENTIFIER, "Expecting either a type alias name or a path for an import file")};
   expect(TOKEN_EQ, "Expecting '=' and a type to create alias for");
   return std::make_shared<Statements::Typealias>(name, broad_type());
 }
@@ -211,32 +197,24 @@ StmtNode Parser::initializer() {
   advance();
 
   expect(TOKEN_LEFT_PAREN, "Expecting '(' to start a parameter list");
-  std::vector<Param> params {};
-  if (!check(TOKEN_RIGHT_PAREN))
-    // TODO: Repetition. I think this pattern is used in a few places.
-    do {
-      if (check(TOKEN_RIGHT_PAREN)) {
-        errors_.emplace_back(previous_, "Trailing commas are not allowed");
-        break;
+  std::vector params {
+    parse_list<Param>(
+      TOKEN_RIGHT_PAREN, [this] {
+        auto mod {Param::Modifier::NONE};
+        if (match(TOKEN_VAL)) mod = Param::Modifier::VAL;
+        else if (match(TOKEN_VAR)) mod = Param::Modifier::VAR;
+
+        const auto id {expect(TOKEN_IDENTIFIER, "Expecting a parameter name")};
+        expect(TOKEN_COLON, "Expecting ':' then a parameter type");
+        return Param {id, standard_type("a type for this parameter", true), mod};
       }
-
-      auto mod {Param::Modifier::NONE};
-      if (match(TOKEN_VAL))
-        mod = Param::Modifier::VAL;
-      else if (match(TOKEN_VAR))
-        mod = Param::Modifier::VAR;
-
-      expect(TOKEN_IDENTIFIER, "Expecting a parameter name");
-      const auto id {previous_};
-      expect(TOKEN_COLON, "Expecting ':' then a parameter type");
-      params.emplace_back(id, standard_type("a type for this parameter", true), mod);
-    } while (match(TOKEN_COMMA));
-
+    )
+  };
   expect(TOKEN_RIGHT_PAREN, "Expecting ')' after parameter list");
 
   // TODO: Superclass initializers?
 
-  if (match(TOKEN_EQ)) errors_.emplace_back(previous_, "Cannot return from initializer");
+  if (match(TOKEN_EQ)) diagnostics_.emplace_back("Cannot return from initializer", previous_, Diagnostic::ERROR);
   StmtNode body {match(TOKEN_SEMICOLON) ? std::make_shared<Statements::Pass>() : block_or_statement()};
 
   // TODO.
@@ -250,8 +228,7 @@ StmtNode Parser::initializer() {
 
 StmtNode Parser::method() {
   // Essentially just a function without type parameters.
-  expect(TOKEN_IDENTIFIER, "Expecting a method name");
-  const Token* identifier {previous_};
+  const Token* identifier {expect(TOKEN_IDENTIFIER, "Expecting a method name")};
 
   const std::vector params {param_list()};
 
@@ -273,7 +250,7 @@ TypePtr Parser::broad_type() {
   if (match(TOKEN_LEFT_PAREN)) return function_type();
 
   if (match(TOKEN_RIGHT_ARROW)) {
-    errors_.emplace_back(previous_, "Place empty parentheses for a function type with no parameters");
+    diagnostics_.emplace_back("Place empty parentheses for a function type with no parameters", previous_, Diagnostic::ERROR);
     return nullptr;
   }
 
@@ -281,12 +258,9 @@ TypePtr Parser::broad_type() {
 }
 
 TypePtr Parser::function_type() {
-  std::vector<TypePtr> param_types {};
-  do {
-    if (check(TOKEN_RIGHT_PAREN)) break;
-    param_types.emplace_back(standard_type("a parameter type", true));
-  } while (match(TOKEN_COMMA));
-
+  std::vector param_types {
+    parse_list<TypePtr>(TOKEN_RIGHT_PAREN, [this] { return standard_type("a parameter type", true); })
+  };
   expect(TOKEN_RIGHT_PAREN, "Expecting ')' after parameter list in function type");
 
   if (match(TOKEN_RIGHT_ARROW)) {
@@ -298,17 +272,18 @@ TypePtr Parser::function_type() {
 
 TypePtr Parser::standard_type(const std::string& thing_to_look_for, bool allow_generics) {
   if (match(TOKEN_LEFT_PAREN)) {
-    errors_.emplace_back(
-      ParserError {
-        previous_,
+    diagnostics_.emplace_back(
+      Diagnostic {
         "For readability's sake, inside a complex type, you must define other complex types with an alias",
-        {nullptr, "How to create an alias: 'using YourAliasName = (...) -> ...'"}
+        {"How to create an alias: 'using YourAliasName = (...) -> ...'", Diagnostic::NOTE},
+        previous_,
+        Diagnostic::ERROR
       }
     );
   }
 
-  expect(TOKEN_IDENTIFIER, "Expecting " + thing_to_look_for);
-  const std::string name {previous_->src_string};
+  // Hacky, but I think it's okay... ish.
+  const std::string name {expect(TOKEN_IDENTIFIER, "Expecting " + thing_to_look_for)->src_string};
   TypePtr type {std::make_shared<NamedType>(name)};
 
   const bool is_optional {match(TOKEN_QUEST)};
@@ -322,11 +297,12 @@ TypePtr Parser::standard_type(const std::string& thing_to_look_for, bool allow_g
       type = std::make_shared<AppliedType>(type, std::move(args));
     } else {
       // Generics are not allowed! Oh, no!
-      errors_.emplace_back(
-        ParserError {
-          previous_,
+      diagnostics_.emplace_back(
+        Diagnostic {
           "For readability's sake, inside a complex type, you must define other complex types with an alias",
-          {nullptr, "How to create an alias: 'using YourAliasName = ... for/of ...'"}
+          {"How to create an alias: 'using YourAliasName = ... for/of ...'", Diagnostic::NOTE},
+          previous_,
+          Diagnostic::ERROR
         }
       );
     }
@@ -375,13 +351,11 @@ StmtNode Parser::while_statement() {
 StmtNode Parser::each_statement() {
   Token* label {loop_label()};
 
-  expect(TOKEN_IDENTIFIER, "Expecting a loop variable name");
-  Token* iter_var {previous_};
+  Token* iter_var {expect(TOKEN_IDENTIFIER, "Expecting a loop variable name")};
 
   Token* index_var {};
   if (match(TOKEN_LEFT_BRACKET)) {
-    expect(TOKEN_IDENTIFIER, "Expecting a loop index variable name");
-    index_var = previous_;
+    index_var = expect(TOKEN_IDENTIFIER, "Expecting a loop index variable name");
     expect(TOKEN_RIGHT_BRACKET, "Expecting ']' after loop index variable");
   }
 
@@ -409,7 +383,7 @@ StmtNode Parser::for_statement() {
         : std::make_shared<Statements::Expression>(parse_expression())
   };
 
-  ParserError context {for_token, "'for' creates a C-style for loop; use 'each' for iteration"};
+  Diagnostic context {"'for' creates a C-style for loop; use 'each' for iteration", for_token, Diagnostic::NOTE};
   expect(TOKEN_SEMICOLON, "Expecting ';' between for loop clauses", context);
 
   // Only expressions are acceptable for the next two clauses.
@@ -469,29 +443,22 @@ StmtNode Parser::optional_else_body() {
 }
 
 Token* Parser::loop_label() {
-  if (match(TOKEN_COLON)) {
-    expect(TOKEN_IDENTIFIER, "Expecting loop label after ':'");
-    return previous_;
-  }
+  if (match(TOKEN_COLON))
+    return expect(TOKEN_IDENTIFIER, "Expecting loop label after ':'");
   return nullptr;
 }
 
 std::vector<Param> Parser::param_list() {
   expect(TOKEN_LEFT_PAREN, "Expecting '(' to start a parameter list");
-  std::vector<Param> params {};
-  if (!check(TOKEN_RIGHT_PAREN))
-    do {
-      if (check(TOKEN_RIGHT_PAREN)) {
-        errors_.emplace_back(previous_, "Trailing commas are not allowed");
-        break;
+  std::vector params {
+    parse_list<Param>(
+      TOKEN_RIGHT_PAREN, [this] {
+        const auto id {expect(TOKEN_IDENTIFIER, "Expecting a parameter name")};
+        expect(TOKEN_COLON, "Expecting ':' then a parameter type");
+        return Param {id, standard_type("a type for this parameter", true)};
       }
-
-      expect(TOKEN_IDENTIFIER, "Expecting a parameter name");
-      const auto id {previous_};
-      expect(TOKEN_COLON, "Expecting ':' then a parameter type");
-      params.emplace_back(id, standard_type("a type for this parameter", true));
-    } while (match(TOKEN_COMMA));
-
+    )
+  };
   expect(TOKEN_RIGHT_PAREN, "Expecting ')' after parameter list");
   return params;
 }
@@ -542,23 +509,16 @@ ExprNode Parser::if_expr(const ExprNode& left) {
 }
 
 ExprNode Parser::postfix_inc_dec(const ExprNode& expr) {
-  warnings_.emplace_back(previous_, "Postfix increment and decrement operators behave as their prefix equivalent; prefer the prefix version");
+  diagnostics_.emplace_back(
+    "Postfix increment and decrement operators behave as their prefix equivalent; prefer the prefix version", previous_, Diagnostic::NOTE
+  );
   return std::make_shared<Expressions::Unary>(rules[previous_->type].fn_name, expr);
 }
 
 ExprNode Parser::call(const ExprNode& expr) {
-  ParserError start_context {previous_, "To match this one"};
-  std::vector<ExprNode> args {};
-  // The one error case that comes to mind immediately is an attempted trailing comma.
-  if (!check(TOKEN_RIGHT_PAREN))
-    do {
-      if (check(TOKEN_RIGHT_PAREN)) {
-        errors_.emplace_back(previous_, "Trailing commas are not allowed");
-        break;
-      }
-      args.emplace_back(parse_expression());
-    } while (match(TOKEN_COMMA));
-  expect(TOKEN_RIGHT_PAREN, "Expecting a closing parenthesis", start_context);
+  Diagnostic start_context {"To match this one", previous_, Diagnostic::NOTE};
+  std::vector args {parse_list<ExprNode>(TOKEN_RIGHT_PAREN, [this] { return parse_expression(); })};
+  expect(TOKEN_RIGHT_PAREN, "Expecting a closing parenthesis ')'", start_context);
 
   return std::make_shared<Expressions::Call>(expr, args);
 }
@@ -568,33 +528,23 @@ ExprNode Parser::lambda_call(const ExprNode& expr) {
 }
 
 ExprNode Parser::subscript(const ExprNode& expr) {
-  ParserError start_context {previous_, "To match this one"};
-  std::vector<ExprNode> args {};
-  if (!check(TOKEN_RIGHT_BRACKET))
-    do {
-      if (check(TOKEN_RIGHT_BRACKET)) {
-        errors_.emplace_back(previous_, "Trailing commas are not allowed");
-        break;
-      }
-      args.emplace_back(parse_expression());
-    } while (match(TOKEN_COMMA));
-  expect(TOKEN_RIGHT_BRACKET, "Expecting ']' after subscript", start_context);
+  Diagnostic start_context {"To match this one", previous_, Diagnostic::NOTE};
+  std::vector args {parse_list<ExprNode>(TOKEN_RIGHT_BRACKET, [this] { return parse_expression(); })};
+  expect(TOKEN_RIGHT_BRACKET, "Expecting a closing bracket ']'", start_context);
 
   return std::make_shared<Expressions::Subscript>(expr, args);
 }
 
 ExprNode Parser::member(const ExprNode& expr) {
   const bool safe_access {previous_->type == TOKEN_QUEST_DOT};
-  expect(TOKEN_IDENTIFIER, "Expecting a member name");
-  return std::make_shared<Expressions::Member>(expr, previous_, safe_access);
+  return std::make_shared<Expressions::Member>(expr, expect(TOKEN_IDENTIFIER, "Expecting a member name"), safe_access);
 }
 
 ExprNode Parser::namespace_member(const ExprNode& expr) {
   if (const auto var_expr {std::dynamic_pointer_cast<Expressions::Variable>(expr)}) {
-    expect(TOKEN_IDENTIFIER, "Expecting a namespace member");
-    return std::make_shared<Expressions::NamespaceMember>(var_expr->identifier, previous_);
+    return std::make_shared<Expressions::NamespaceMember>(var_expr->identifier, expect(TOKEN_IDENTIFIER, "Expecting a namespace member"));
   }
-  errors_.emplace_back(previous_, "'::' (namespace access) only works for namespaces");
+  diagnostics_.emplace_back("'::' (namespace access) only works for namespaces", previous_, Diagnostic::ERROR);
   return std::make_shared<Expressions::Nil>();
 }
 
@@ -612,14 +562,8 @@ ExprNode Parser::print() {
 
 ExprNode Parser::list(ExprNode first_item) {
   std::vector items {std::move(first_item)};
-
-  while (match(TOKEN_COMMA)) {
-    if (check(TOKEN_RIGHT_BRACKET)) {
-      errors_.emplace_back(previous_, "Trailing commas are not allowed");
-      break;
-    }
-    items.emplace_back(parse_expression());
-  }
+  std::vector other {parse_list<ExprNode>(TOKEN_RIGHT_BRACKET, [this] { return parse_expression(); })};
+  items.insert(items.end(), other.begin(), other.end());
   expect(TOKEN_RIGHT_BRACKET, "Expecting ']' after list");
 
   return std::make_shared<Expressions::List>(items);
@@ -634,13 +578,13 @@ ExprNode Parser::map(const ExprNode& first_item) {
     // A string is valid, but identifiers are the preferred style for readability.
     if (const auto str {std::dynamic_pointer_cast<Expressions::String>(key)}) {
       keys.emplace_back(str->value);
-      warnings_.emplace_back(previous_, "It's recommended to use identifiers instead of strings as keys");
+      diagnostics_.emplace_back("It's recommended to use identifiers instead of strings as keys", previous_, Diagnostic::WARNING);
       return;
     }
 
     // String interpolation for keys is not supported yet.
     if (std::dynamic_pointer_cast<Expressions::Interpolation>(key)) {
-      errors_.emplace_back(previous_, "String interpolation for keys is not yet supported");
+      diagnostics_.emplace_back("String interpolation for keys is not yet supported", previous_, Diagnostic::ERROR);
       keys.emplace_back("");
       return;
     }
@@ -650,7 +594,12 @@ ExprNode Parser::map(const ExprNode& first_item) {
       return;
     }
 
-    errors_.emplace_back(previous_, "Invalid key type", ParserError {"If you're trying to use a reserved word, wrap it in backticks (ex. `class`)"});
+    diagnostics_.emplace_back(
+      "Invalid key type",
+      Diagnostic {"If you're trying to use a reserved word, wrap it in backticks (ex. `class`)", Diagnostic::NOTE},
+      previous_,
+      Diagnostic::ERROR
+    );
   };
 
   // Step 1: First key (already parsed by collection()) and its value.
@@ -661,7 +610,8 @@ ExprNode Parser::map(const ExprNode& first_item) {
   // Step 2: Parse the rest of the map.
   while (match(TOKEN_COMMA)) {
     if (check(TOKEN_RIGHT_BRACKET)) {
-      errors_.emplace_back(previous_, "Trailing commas are not allowed");
+      // TODO: Use parse_list() on this, or at least allow trailing commas.
+      diagnostics_.emplace_back("Trailing commas are not allowed", previous_, Diagnostic::ERROR);
       break;
     }
 
@@ -757,7 +707,7 @@ ExprNode Parser::string_interpolation() {
     }
     if (check(TOKEN_INTERPOLATION)) end_strings.emplace_back(std::any_cast<std::string>(current_->value));
     else {
-      errors_.emplace_back("You've found a lexer bug: string interpolation with no ending token—tell this to the developer");
+      diagnostics_.emplace_back("You've found a lexer bug: string interpolation with no ending token—tell this to the developer", current_, Diagnostic::ERROR);
       break;
     }
   } while (match(TOKEN_INTERPOLATION));
@@ -792,7 +742,7 @@ ExprNode Parser::super_id() {
 }
 
 ExprNode Parser::grouping() {
-  ParserError start_context {previous_, "To match this one"};
+  Diagnostic start_context {"To match this one", previous_, Diagnostic::NOTE};
   const auto grouping {std::make_shared<Expressions::Grouping>(parse_expression())};
   expect(TOKEN_RIGHT_PAREN, "Expecting a closing parenthesis", start_context);
   return grouping;
@@ -804,7 +754,7 @@ ExprNode Parser::parse_expression(Precedence precedence) {
   advance();
   const PrefixFn prefix_rule {rules[previous_->type].prefix};
   if (prefix_rule == nullptr) {
-    errors_.emplace_back(previous_, "Expecting an expression");
+    diagnostics_.emplace_back("Expecting an expression", previous_, Diagnostic::ERROR);
     return nullptr;
   }
 
@@ -832,7 +782,7 @@ void Parser::populate_token_vec() {
 
 void Parser::parse() {
   if (tokens_.empty()) {
-    errors_.emplace_back("No tokens to parse");
+    diagnostics_.emplace_back("No tokens to parse", Diagnostic::ERROR);
     return;
   }
 

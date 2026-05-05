@@ -1,8 +1,0 @@
-class A for Jim is Truthy
-  namespace
-    var a: Int = 16
-
-  init(x: Strategy of Jim Jim)
-    print "creating an A!"
-
-  fun method() = 32 / 3
