@@ -66,51 +66,51 @@ namespace Expressions {
 
 class StmtVisitorVoid {
   public:
-  virtual void visit_block_stmt(std::shared_ptr<Statements::Block> stmt) = 0;
-  virtual void visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) = 0;
-  virtual void visit_variable_stmt(std::shared_ptr<Statements::Variable> stmt) = 0;
-  virtual void visit_function_stmt(std::shared_ptr<Statements::Function> stmt) = 0;
-  virtual void visit_initializer_stmt(std::shared_ptr<Statements::Initializer> stmt) = 0;
-  virtual void visit_method_stmt(std::shared_ptr<Statements::Method> stmt) = 0;
-  virtual void visit_class_stmt(std::shared_ptr<Statements::Class> stmt) = 0;
-  virtual void visit_namespace_stmt(std::shared_ptr<Statements::Namespace> stmt) = 0;
-  virtual void visit_import_stmt(std::shared_ptr<Statements::Import> stmt) = 0;
-  virtual void visit_typealias_stmt(std::shared_ptr<Statements::Typealias> stmt) = 0;
-  virtual void visit_if_stmt(std::shared_ptr<Statements::If> stmt) = 0;
-  virtual void visit_while_stmt(std::shared_ptr<Statements::While> stmt) = 0;
-  virtual void visit_each_stmt(std::shared_ptr<Statements::Each> stmt) = 0;
-  virtual void visit_for_stmt(std::shared_ptr<Statements::For> stmt) = 0;
-  virtual void visit_break_stmt(std::shared_ptr<Statements::Break> stmt) = 0;
-  virtual void visit_continue_stmt(std::shared_ptr<Statements::Continue> stmt) = 0;
-  virtual void visit_return_stmt(std::shared_ptr<Statements::Return> stmt) = 0;
-  virtual void visit_pass_stmt(std::shared_ptr<Statements::Pass> stmt) = 0;
+  virtual void visit_block_stmt(const Statements::Block& stmt) = 0;
+  virtual void visit_expression_stmt(const Statements::Expression& stmt) = 0;
+  virtual void visit_variable_stmt(const Statements::Variable& stmt) = 0;
+  virtual void visit_function_stmt(const Statements::Function& stmt) = 0;
+  virtual void visit_initializer_stmt(const Statements::Initializer& stmt) = 0;
+  virtual void visit_method_stmt(const Statements::Method& stmt) = 0;
+  virtual void visit_class_stmt(const Statements::Class& stmt) = 0;
+  virtual void visit_namespace_stmt(const Statements::Namespace& stmt) = 0;
+  virtual void visit_import_stmt(const Statements::Import& stmt) = 0;
+  virtual void visit_typealias_stmt(const Statements::Typealias& stmt) = 0;
+  virtual void visit_if_stmt(const Statements::If& stmt) = 0;
+  virtual void visit_while_stmt(const Statements::While& stmt) = 0;
+  virtual void visit_each_stmt(const Statements::Each& stmt) = 0;
+  virtual void visit_for_stmt(const Statements::For& stmt) = 0;
+  virtual void visit_break_stmt(const Statements::Break& stmt) = 0;
+  virtual void visit_continue_stmt(const Statements::Continue& stmt) = 0;
+  virtual void visit_return_stmt(const Statements::Return& stmt) = 0;
+  virtual void visit_pass_stmt(const Statements::Pass& stmt) = 0;
   virtual ~StmtVisitorVoid() = default;
 };
 
 class ExprVisitorVoid {
   public:
-  virtual void visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) = 0;
-  virtual void visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) = 0;
-  virtual void visit_if_expr(std::shared_ptr<Expressions::If> expr) = 0;
-  virtual void visit_call_expr(std::shared_ptr<Expressions::Call> expr) = 0;
-  virtual void visit_subscript_expr(std::shared_ptr<Expressions::Subscript> expr) = 0;
-  virtual void visit_member_expr(std::shared_ptr<Expressions::Member> expr) = 0;
-  virtual void visit_namespace_member_expr(std::shared_ptr<Expressions::NamespaceMember> expr) = 0;
-  virtual void visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) = 0;
-  virtual void visit_interpolation_expr(std::shared_ptr<Expressions::Interpolation> expr) = 0;
-  virtual void visit_lambda_expr(std::shared_ptr<Expressions::Lambda> expr) = 0;
-  virtual void visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) = 0;
-  virtual void visit_list_expr(std::shared_ptr<Expressions::List> expr) = 0;
-  virtual void visit_map_expr(std::shared_ptr<Expressions::Map> expr) = 0;
-  virtual void visit_number_expr(std::shared_ptr<Expressions::Number> expr) = 0;
-  virtual void visit_boolean_expr(std::shared_ptr<Expressions::Boolean> expr) = 0;
-  virtual void visit_nil_expr(std::shared_ptr<Expressions::Nil> expr) = 0;
-  virtual void visit_char_expr(std::shared_ptr<Expressions::Char> expr) = 0;
-  virtual void visit_string_expr(std::shared_ptr<Expressions::String> expr) = 0;
-  virtual void visit_variable_expr(std::shared_ptr<Expressions::Variable> expr) = 0;
-  virtual void visit_this_expr(std::shared_ptr<Expressions::This> expr) = 0;
-  virtual void visit_super_expr(std::shared_ptr<Expressions::Super> expr) = 0;
-  virtual void visit_print_expr(std::shared_ptr<Expressions::Print> expr) = 0;
+  virtual void visit_binary_expr(const Expressions::Binary& expr) = 0;
+  virtual void visit_comparison_expr(const Expressions::Comparison& expr) = 0;
+  virtual void visit_if_expr(const Expressions::If& expr) = 0;
+  virtual void visit_call_expr(const Expressions::Call& expr) = 0;
+  virtual void visit_subscript_expr(const Expressions::Subscript& expr) = 0;
+  virtual void visit_member_expr(const Expressions::Member& expr) = 0;
+  virtual void visit_namespace_member_expr(const Expressions::NamespaceMember& expr) = 0;
+  virtual void visit_unary_expr(const Expressions::Unary& expr) = 0;
+  virtual void visit_interpolation_expr(const Expressions::Interpolation& expr) = 0;
+  virtual void visit_lambda_expr(const Expressions::Lambda& expr) = 0;
+  virtual void visit_grouping_expr(const Expressions::Grouping& expr) = 0;
+  virtual void visit_list_expr(const Expressions::List& expr) = 0;
+  virtual void visit_map_expr(const Expressions::Map& expr) = 0;
+  virtual void visit_number_expr(const Expressions::Number& expr) = 0;
+  virtual void visit_boolean_expr(const Expressions::Boolean& expr) = 0;
+  virtual void visit_nil_expr(const Expressions::Nil& expr) = 0;
+  virtual void visit_char_expr(const Expressions::Char& expr) = 0;
+  virtual void visit_string_expr(const Expressions::String& expr) = 0;
+  virtual void visit_variable_expr(const Expressions::Variable& expr) = 0;
+  virtual void visit_this_expr(const Expressions::This& expr) = 0;
+  virtual void visit_super_expr(const Expressions::Super& expr) = 0;
+  virtual void visit_print_expr(const Expressions::Print& expr) = 0;
   virtual ~ExprVisitorVoid() = default;
 };
 
@@ -120,51 +120,51 @@ class ExprVisitorVoid {
 
 class StmtVisitorAny {
   public:
-  virtual std::any visit_block_stmt_any(std::shared_ptr<Statements::Block> stmt) = 0;
-  virtual std::any visit_expression_stmt_any(std::shared_ptr<Statements::Expression> stmt) = 0;
-  virtual std::any visit_variable_stmt_any(std::shared_ptr<Statements::Variable> stmt) = 0;
-  virtual std::any visit_function_stmt_any(std::shared_ptr<Statements::Function> stmt) = 0;
-  virtual std::any visit_initializer_stmt_any(std::shared_ptr<Statements::Initializer> stmt) = 0;
-  virtual std::any visit_method_stmt_any(std::shared_ptr<Statements::Method> stmt) = 0;
-  virtual std::any visit_class_stmt_any(std::shared_ptr<Statements::Class> stmt) = 0;
-  virtual std::any visit_namespace_stmt_any(std::shared_ptr<Statements::Namespace> stmt) = 0;
-  virtual std::any visit_import_stmt_any(std::shared_ptr<Statements::Import> stmt) = 0;
-  virtual std::any visit_typealias_stmt_any(std::shared_ptr<Statements::Typealias> stmt) = 0;
-  virtual std::any visit_if_stmt_any(std::shared_ptr<Statements::If> stmt) = 0;
-  virtual std::any visit_while_stmt_any(std::shared_ptr<Statements::While> stmt) = 0;
-  virtual std::any visit_each_stmt_any(std::shared_ptr<Statements::Each> stmt) = 0;
-  virtual std::any visit_for_stmt_any(std::shared_ptr<Statements::For> stmt) = 0;
-  virtual std::any visit_break_stmt_any(std::shared_ptr<Statements::Break> stmt) = 0;
-  virtual std::any visit_continue_stmt_any(std::shared_ptr<Statements::Continue> stmt) = 0;
-  virtual std::any visit_return_stmt_any(std::shared_ptr<Statements::Return> stmt) = 0;
-  virtual std::any visit_pass_stmt_any(std::shared_ptr<Statements::Pass> stmt) = 0;
+  virtual std::any visit_block_stmt_any(const Statements::Block& stmt) = 0;
+  virtual std::any visit_expression_stmt_any(const Statements::Expression& stmt) = 0;
+  virtual std::any visit_variable_stmt_any(const Statements::Variable& stmt) = 0;
+  virtual std::any visit_function_stmt_any(const Statements::Function& stmt) = 0;
+  virtual std::any visit_initializer_stmt_any(const Statements::Initializer& stmt) = 0;
+  virtual std::any visit_method_stmt_any(const Statements::Method& stmt) = 0;
+  virtual std::any visit_class_stmt_any(const Statements::Class& stmt) = 0;
+  virtual std::any visit_namespace_stmt_any(const Statements::Namespace& stmt) = 0;
+  virtual std::any visit_import_stmt_any(const Statements::Import& stmt) = 0;
+  virtual std::any visit_typealias_stmt_any(const Statements::Typealias& stmt) = 0;
+  virtual std::any visit_if_stmt_any(const Statements::If& stmt) = 0;
+  virtual std::any visit_while_stmt_any(const Statements::While& stmt) = 0;
+  virtual std::any visit_each_stmt_any(const Statements::Each& stmt) = 0;
+  virtual std::any visit_for_stmt_any(const Statements::For& stmt) = 0;
+  virtual std::any visit_break_stmt_any(const Statements::Break& stmt) = 0;
+  virtual std::any visit_continue_stmt_any(const Statements::Continue& stmt) = 0;
+  virtual std::any visit_return_stmt_any(const Statements::Return& stmt) = 0;
+  virtual std::any visit_pass_stmt_any(const Statements::Pass& stmt) = 0;
   virtual ~StmtVisitorAny() = default;
 };
 
 class ExprVisitorAny {
   public:
-  virtual std::any visit_binary_expr_any(std::shared_ptr<Expressions::Binary> expr) = 0;
-  virtual std::any visit_comparison_expr_any(std::shared_ptr<Expressions::Comparison> expr) = 0;
-  virtual std::any visit_if_expr_any(std::shared_ptr<Expressions::If> expr) = 0;
-  virtual std::any visit_call_expr_any(std::shared_ptr<Expressions::Call> expr) = 0;
-  virtual std::any visit_subscript_expr_any(std::shared_ptr<Expressions::Subscript> expr) = 0;
-  virtual std::any visit_member_expr_any(std::shared_ptr<Expressions::Member> expr) = 0;
-  virtual std::any visit_namespace_member_expr_any(std::shared_ptr<Expressions::NamespaceMember> expr) = 0;
-  virtual std::any visit_unary_expr_any(std::shared_ptr<Expressions::Unary> expr) = 0;
-  virtual std::any visit_interpolation_expr_any(std::shared_ptr<Expressions::Interpolation> expr) = 0;
-  virtual std::any visit_lambda_expr_any(std::shared_ptr<Expressions::Lambda> expr) = 0;
-  virtual std::any visit_grouping_expr_any(std::shared_ptr<Expressions::Grouping> expr) = 0;
-  virtual std::any visit_list_expr_any(std::shared_ptr<Expressions::List> expr) = 0;
-  virtual std::any visit_map_expr_any(std::shared_ptr<Expressions::Map> expr) = 0;
-  virtual std::any visit_number_expr_any(std::shared_ptr<Expressions::Number> expr) = 0;
-  virtual std::any visit_boolean_expr_any(std::shared_ptr<Expressions::Boolean> expr) = 0;
-  virtual std::any visit_nil_expr_any(std::shared_ptr<Expressions::Nil> expr) = 0;
-  virtual std::any visit_char_expr_any(std::shared_ptr<Expressions::Char> expr) = 0;
-  virtual std::any visit_string_expr_any(std::shared_ptr<Expressions::String> expr) = 0;
-  virtual std::any visit_variable_expr_any(std::shared_ptr<Expressions::Variable> expr) = 0;
-  virtual std::any visit_this_expr_any(std::shared_ptr<Expressions::This> expr) = 0;
-  virtual std::any visit_super_expr_any(std::shared_ptr<Expressions::Super> expr) = 0;
-  virtual std::any visit_print_expr_any(std::shared_ptr<Expressions::Print> expr) = 0;
+  virtual std::any visit_binary_expr_any(const Expressions::Binary& expr) = 0;
+  virtual std::any visit_comparison_expr_any(const Expressions::Comparison& expr) = 0;
+  virtual std::any visit_if_expr_any(const Expressions::If& expr) = 0;
+  virtual std::any visit_call_expr_any(const Expressions::Call& expr) = 0;
+  virtual std::any visit_subscript_expr_any(const Expressions::Subscript& expr) = 0;
+  virtual std::any visit_member_expr_any(const Expressions::Member& expr) = 0;
+  virtual std::any visit_namespace_member_expr_any(const Expressions::NamespaceMember& expr) = 0;
+  virtual std::any visit_unary_expr_any(const Expressions::Unary& expr) = 0;
+  virtual std::any visit_interpolation_expr_any(const Expressions::Interpolation& expr) = 0;
+  virtual std::any visit_lambda_expr_any(const Expressions::Lambda& expr) = 0;
+  virtual std::any visit_grouping_expr_any(const Expressions::Grouping& expr) = 0;
+  virtual std::any visit_list_expr_any(const Expressions::List& expr) = 0;
+  virtual std::any visit_map_expr_any(const Expressions::Map& expr) = 0;
+  virtual std::any visit_number_expr_any(const Expressions::Number& expr) = 0;
+  virtual std::any visit_boolean_expr_any(const Expressions::Boolean& expr) = 0;
+  virtual std::any visit_nil_expr_any(const Expressions::Nil& expr) = 0;
+  virtual std::any visit_char_expr_any(const Expressions::Char& expr) = 0;
+  virtual std::any visit_string_expr_any(const Expressions::String& expr) = 0;
+  virtual std::any visit_variable_expr_any(const Expressions::Variable& expr) = 0;
+  virtual std::any visit_this_expr_any(const Expressions::This& expr) = 0;
+  virtual std::any visit_super_expr_any(const Expressions::Super& expr) = 0;
+  virtual std::any visit_print_expr_any(const Expressions::Print& expr) = 0;
   virtual ~ExprVisitorAny() = default;
 };
 
@@ -175,212 +175,212 @@ class ExprVisitorAny {
 template <typename R>
 class StmtVisitor : public StmtVisitorAny {
   public:
-  virtual R visit_block_stmt(std::shared_ptr<Statements::Block> stmt) = 0;
-  virtual R visit_expression_stmt(std::shared_ptr<Statements::Expression> stmt) = 0;
-  virtual R visit_variable_stmt(std::shared_ptr<Statements::Variable> stmt) = 0;
-  virtual R visit_function_stmt(std::shared_ptr<Statements::Function> stmt) = 0;
-  virtual R visit_initializer_stmt(std::shared_ptr<Statements::Initializer> stmt) = 0;
-  virtual R visit_method_stmt(std::shared_ptr<Statements::Method> stmt) = 0;
-  virtual R visit_class_stmt(std::shared_ptr<Statements::Class> stmt) = 0;
-  virtual R visit_namespace_stmt(std::shared_ptr<Statements::Namespace> stmt) = 0;
-  virtual R visit_import_stmt(std::shared_ptr<Statements::Import> stmt) = 0;
-  virtual R visit_typealias_stmt(std::shared_ptr<Statements::Typealias> stmt) = 0;
-  virtual R visit_if_stmt(std::shared_ptr<Statements::If> stmt) = 0;
-  virtual R visit_while_stmt(std::shared_ptr<Statements::While> stmt) = 0;
-  virtual R visit_each_stmt(std::shared_ptr<Statements::Each> stmt) = 0;
-  virtual R visit_for_stmt(std::shared_ptr<Statements::For> stmt) = 0;
-  virtual R visit_break_stmt(std::shared_ptr<Statements::Break> stmt) = 0;
-  virtual R visit_continue_stmt(std::shared_ptr<Statements::Continue> stmt) = 0;
-  virtual R visit_return_stmt(std::shared_ptr<Statements::Return> stmt) = 0;
-  virtual R visit_pass_stmt(std::shared_ptr<Statements::Pass> stmt) = 0;
+  virtual R visit_block_stmt(const Statements::Block& stmt) = 0;
+  virtual R visit_expression_stmt(const Statements::Expression& stmt) = 0;
+  virtual R visit_variable_stmt(const Statements::Variable& stmt) = 0;
+  virtual R visit_function_stmt(const Statements::Function& stmt) = 0;
+  virtual R visit_initializer_stmt(const Statements::Initializer& stmt) = 0;
+  virtual R visit_method_stmt(const Statements::Method& stmt) = 0;
+  virtual R visit_class_stmt(const Statements::Class& stmt) = 0;
+  virtual R visit_namespace_stmt(const Statements::Namespace& stmt) = 0;
+  virtual R visit_import_stmt(const Statements::Import& stmt) = 0;
+  virtual R visit_typealias_stmt(const Statements::Typealias& stmt) = 0;
+  virtual R visit_if_stmt(const Statements::If& stmt) = 0;
+  virtual R visit_while_stmt(const Statements::While& stmt) = 0;
+  virtual R visit_each_stmt(const Statements::Each& stmt) = 0;
+  virtual R visit_for_stmt(const Statements::For& stmt) = 0;
+  virtual R visit_break_stmt(const Statements::Break& stmt) = 0;
+  virtual R visit_continue_stmt(const Statements::Continue& stmt) = 0;
+  virtual R visit_return_stmt(const Statements::Return& stmt) = 0;
+  virtual R visit_pass_stmt(const Statements::Pass& stmt) = 0;
 
   private:
-  std::any visit_block_stmt_any(std::shared_ptr<Statements::Block> stmt) final {
-    return visit_block_stmt(std::move(stmt));
+  std::any visit_block_stmt_any(const Statements::Block& stmt) final {
+    return visit_block_stmt(stmt);
   }
 
-  std::any visit_expression_stmt_any(std::shared_ptr<Statements::Expression> stmt) final {
-    return visit_expression_stmt(std::move(stmt));
+  std::any visit_expression_stmt_any(const Statements::Expression& stmt) final {
+    return visit_expression_stmt(stmt);
   }
 
-  std::any visit_variable_stmt_any(std::shared_ptr<Statements::Variable> stmt) final {
-    return visit_variable_stmt(std::move(stmt));
+  std::any visit_variable_stmt_any(const Statements::Variable& stmt) final {
+    return visit_variable_stmt(stmt);
   }
 
-  std::any visit_function_stmt_any(std::shared_ptr<Statements::Function> stmt) final {
-    return visit_function_stmt(std::move(stmt));
+  std::any visit_function_stmt_any(const Statements::Function& stmt) final {
+    return visit_function_stmt(stmt);
   }
 
-  std::any visit_initializer_stmt_any(std::shared_ptr<Statements::Initializer> stmt) final {
-    return visit_initializer_stmt(std::move(stmt));
+  std::any visit_initializer_stmt_any(const Statements::Initializer& stmt) final {
+    return visit_initializer_stmt(stmt);
   }
 
-  std::any visit_method_stmt_any(std::shared_ptr<Statements::Method> stmt) final {
-    return visit_method_stmt(std::move(stmt));
+  std::any visit_method_stmt_any(const Statements::Method& stmt) final {
+    return visit_method_stmt(stmt);
   }
 
-  std::any visit_class_stmt_any(std::shared_ptr<Statements::Class> stmt) final {
-    return visit_class_stmt(std::move(stmt));
+  std::any visit_class_stmt_any(const Statements::Class& stmt) final {
+    return visit_class_stmt(stmt);
   }
 
-  std::any visit_namespace_stmt_any(std::shared_ptr<Statements::Namespace> stmt) final {
-    return visit_namespace_stmt(std::move(stmt));
+  std::any visit_namespace_stmt_any(const Statements::Namespace& stmt) final {
+    return visit_namespace_stmt(stmt);
   }
 
-  std::any visit_import_stmt_any(std::shared_ptr<Statements::Import> stmt) final {
-    return visit_import_stmt(std::move(stmt));
+  std::any visit_import_stmt_any(const Statements::Import& stmt) final {
+    return visit_import_stmt(stmt);
   }
 
-  std::any visit_typealias_stmt_any(std::shared_ptr<Statements::Typealias> stmt) final {
-    return visit_typealias_stmt(std::move(stmt));
+  std::any visit_typealias_stmt_any(const Statements::Typealias& stmt) final {
+    return visit_typealias_stmt(stmt);
   }
 
-  std::any visit_if_stmt_any(std::shared_ptr<Statements::If> stmt) final {
-    return visit_if_stmt(std::move(stmt));
+  std::any visit_if_stmt_any(const Statements::If& stmt) final {
+    return visit_if_stmt(stmt);
   }
 
-  std::any visit_while_stmt_any(std::shared_ptr<Statements::While> stmt) final {
-    return visit_while_stmt(std::move(stmt));
+  std::any visit_while_stmt_any(const Statements::While& stmt) final {
+    return visit_while_stmt(stmt);
   }
 
-  std::any visit_each_stmt_any(std::shared_ptr<Statements::Each> stmt) final {
-    return visit_each_stmt(std::move(stmt));
+  std::any visit_each_stmt_any(const Statements::Each& stmt) final {
+    return visit_each_stmt(stmt);
   }
 
-  std::any visit_for_stmt_any(std::shared_ptr<Statements::For> stmt) final {
-    return visit_for_stmt(std::move(stmt));
+  std::any visit_for_stmt_any(const Statements::For& stmt) final {
+    return visit_for_stmt(stmt);
   }
 
-  std::any visit_break_stmt_any(std::shared_ptr<Statements::Break> stmt) final {
-    return visit_break_stmt(std::move(stmt));
+  std::any visit_break_stmt_any(const Statements::Break& stmt) final {
+    return visit_break_stmt(stmt);
   }
 
-  std::any visit_continue_stmt_any(std::shared_ptr<Statements::Continue> stmt) final {
-    return visit_continue_stmt(std::move(stmt));
+  std::any visit_continue_stmt_any(const Statements::Continue& stmt) final {
+    return visit_continue_stmt(stmt);
   }
 
-  std::any visit_return_stmt_any(std::shared_ptr<Statements::Return> stmt) final {
-    return visit_return_stmt(std::move(stmt));
+  std::any visit_return_stmt_any(const Statements::Return& stmt) final {
+    return visit_return_stmt(stmt);
   }
 
-  std::any visit_pass_stmt_any(std::shared_ptr<Statements::Pass> stmt) final {
-    return visit_pass_stmt(std::move(stmt));
+  std::any visit_pass_stmt_any(const Statements::Pass& stmt) final {
+    return visit_pass_stmt(stmt);
   }
 };
 
 template <typename R>
 class ExprVisitor : public ExprVisitorAny {
   public:
-  virtual R visit_binary_expr(std::shared_ptr<Expressions::Binary> expr) = 0;
-  virtual R visit_comparison_expr(std::shared_ptr<Expressions::Comparison> expr) = 0;
-  virtual R visit_if_expr(std::shared_ptr<Expressions::If> expr) = 0;
-  virtual R visit_call_expr(std::shared_ptr<Expressions::Call> expr) = 0;
-  virtual R visit_subscript_expr(std::shared_ptr<Expressions::Subscript> expr) = 0;
-  virtual R visit_member_expr(std::shared_ptr<Expressions::Member> expr) = 0;
-  virtual R visit_namespace_member_expr(std::shared_ptr<Expressions::NamespaceMember> expr) = 0;
-  virtual R visit_unary_expr(std::shared_ptr<Expressions::Unary> expr) = 0;
-  virtual R visit_interpolation_expr(std::shared_ptr<Expressions::Interpolation> expr) = 0;
-  virtual R visit_lambda_expr(std::shared_ptr<Expressions::Lambda> expr) = 0;
-  virtual R visit_grouping_expr(std::shared_ptr<Expressions::Grouping> expr) = 0;
-  virtual R visit_list_expr(std::shared_ptr<Expressions::List> expr) = 0;
-  virtual R visit_map_expr(std::shared_ptr<Expressions::Map> expr) = 0;
-  virtual R visit_number_expr(std::shared_ptr<Expressions::Number> expr) = 0;
-  virtual R visit_boolean_expr(std::shared_ptr<Expressions::Boolean> expr) = 0;
-  virtual R visit_nil_expr(std::shared_ptr<Expressions::Nil> expr) = 0;
-  virtual R visit_char_expr(std::shared_ptr<Expressions::Char> expr) = 0;
-  virtual R visit_string_expr(std::shared_ptr<Expressions::String> expr) = 0;
-  virtual R visit_variable_expr(std::shared_ptr<Expressions::Variable> expr) = 0;
-  virtual R visit_this_expr(std::shared_ptr<Expressions::This> expr) = 0;
-  virtual R visit_super_expr(std::shared_ptr<Expressions::Super> expr) = 0;
-  virtual R visit_print_expr(std::shared_ptr<Expressions::Print> expr) = 0;
+  virtual R visit_binary_expr(const Expressions::Binary& expr) = 0;
+  virtual R visit_comparison_expr(const Expressions::Comparison& expr) = 0;
+  virtual R visit_if_expr(const Expressions::If& expr) = 0;
+  virtual R visit_call_expr(const Expressions::Call& expr) = 0;
+  virtual R visit_subscript_expr(const Expressions::Subscript& expr) = 0;
+  virtual R visit_member_expr(const Expressions::Member& expr) = 0;
+  virtual R visit_namespace_member_expr(const Expressions::NamespaceMember& expr) = 0;
+  virtual R visit_unary_expr(const Expressions::Unary& expr) = 0;
+  virtual R visit_interpolation_expr(const Expressions::Interpolation& expr) = 0;
+  virtual R visit_lambda_expr(const Expressions::Lambda& expr) = 0;
+  virtual R visit_grouping_expr(const Expressions::Grouping& expr) = 0;
+  virtual R visit_list_expr(const Expressions::List& expr) = 0;
+  virtual R visit_map_expr(const Expressions::Map& expr) = 0;
+  virtual R visit_number_expr(const Expressions::Number& expr) = 0;
+  virtual R visit_boolean_expr(const Expressions::Boolean& expr) = 0;
+  virtual R visit_nil_expr(const Expressions::Nil& expr) = 0;
+  virtual R visit_char_expr(const Expressions::Char& expr) = 0;
+  virtual R visit_string_expr(const Expressions::String& expr) = 0;
+  virtual R visit_variable_expr(const Expressions::Variable& expr) = 0;
+  virtual R visit_this_expr(const Expressions::This& expr) = 0;
+  virtual R visit_super_expr(const Expressions::Super& expr) = 0;
+  virtual R visit_print_expr(const Expressions::Print& expr) = 0;
 
   private:
-  std::any visit_binary_expr_any(std::shared_ptr<Expressions::Binary> expr) final {
-    return visit_binary_expr(std::move(expr));
+  std::any visit_binary_expr_any(const Expressions::Binary& expr) final {
+    return visit_binary_expr(expr);
   }
 
-  std::any visit_comparison_expr_any(std::shared_ptr<Expressions::Comparison> expr) final {
-    return visit_comparison_expr(std::move(expr));
+  std::any visit_comparison_expr_any(const Expressions::Comparison& expr) final {
+    return visit_comparison_expr(expr);
   }
 
-  std::any visit_if_expr_any(std::shared_ptr<Expressions::If> expr) final {
-    return visit_if_expr(std::move(expr));
+  std::any visit_if_expr_any(const Expressions::If& expr) final {
+    return visit_if_expr(expr);
   }
 
-  std::any visit_call_expr_any(std::shared_ptr<Expressions::Call> expr) final {
-    return visit_call_expr(std::move(expr));
+  std::any visit_call_expr_any(const Expressions::Call& expr) final {
+    return visit_call_expr(expr);
   }
 
-  std::any visit_subscript_expr_any(std::shared_ptr<Expressions::Subscript> expr) final {
-    return visit_subscript_expr(std::move(expr));
+  std::any visit_subscript_expr_any(const Expressions::Subscript& expr) final {
+    return visit_subscript_expr(expr);
   }
 
-  std::any visit_member_expr_any(std::shared_ptr<Expressions::Member> expr) final {
-    return visit_member_expr(std::move(expr));
+  std::any visit_member_expr_any(const Expressions::Member& expr) final {
+    return visit_member_expr(expr);
   }
 
-  std::any visit_namespace_member_expr_any(std::shared_ptr<Expressions::NamespaceMember> expr) final {
-    return visit_namespace_member_expr(std::move(expr));
+  std::any visit_namespace_member_expr_any(const Expressions::NamespaceMember& expr) final {
+    return visit_namespace_member_expr(expr);
   }
 
-  std::any visit_unary_expr_any(std::shared_ptr<Expressions::Unary> expr) final {
-    return visit_unary_expr(std::move(expr));
+  std::any visit_unary_expr_any(const Expressions::Unary& expr) final {
+    return visit_unary_expr(expr);
   }
 
-  std::any visit_interpolation_expr_any(std::shared_ptr<Expressions::Interpolation> expr) final {
-    return visit_interpolation_expr(std::move(expr));
+  std::any visit_interpolation_expr_any(const Expressions::Interpolation& expr) final {
+    return visit_interpolation_expr(expr);
   }
 
-  std::any visit_lambda_expr_any(std::shared_ptr<Expressions::Lambda> expr) final {
-    return visit_lambda_expr(std::move(expr));
+  std::any visit_lambda_expr_any(const Expressions::Lambda& expr) final {
+    return visit_lambda_expr(expr);
   }
 
-  std::any visit_grouping_expr_any(std::shared_ptr<Expressions::Grouping> expr) final {
-    return visit_grouping_expr(std::move(expr));
+  std::any visit_grouping_expr_any(const Expressions::Grouping& expr) final {
+    return visit_grouping_expr(expr);
   }
 
-  std::any visit_list_expr_any(std::shared_ptr<Expressions::List> expr) final {
-    return visit_list_expr(std::move(expr));
+  std::any visit_list_expr_any(const Expressions::List& expr) final {
+    return visit_list_expr(expr);
   }
 
-  std::any visit_map_expr_any(std::shared_ptr<Expressions::Map> expr) final {
-    return visit_map_expr(std::move(expr));
+  std::any visit_map_expr_any(const Expressions::Map& expr) final {
+    return visit_map_expr(expr);
   }
 
-  std::any visit_number_expr_any(std::shared_ptr<Expressions::Number> expr) final {
-    return visit_number_expr(std::move(expr));
+  std::any visit_number_expr_any(const Expressions::Number& expr) final {
+    return visit_number_expr(expr);
   }
 
-  std::any visit_boolean_expr_any(std::shared_ptr<Expressions::Boolean> expr) final {
-    return visit_boolean_expr(std::move(expr));
+  std::any visit_boolean_expr_any(const Expressions::Boolean& expr) final {
+    return visit_boolean_expr(expr);
   }
 
-  std::any visit_nil_expr_any(std::shared_ptr<Expressions::Nil> expr) final {
-    return visit_nil_expr(std::move(expr));
+  std::any visit_nil_expr_any(const Expressions::Nil& expr) final {
+    return visit_nil_expr(expr);
   }
 
-  std::any visit_char_expr_any(std::shared_ptr<Expressions::Char> expr) final {
-    return visit_char_expr(std::move(expr));
+  std::any visit_char_expr_any(const Expressions::Char& expr) final {
+    return visit_char_expr(expr);
   }
 
-  std::any visit_string_expr_any(std::shared_ptr<Expressions::String> expr) final {
-    return visit_string_expr(std::move(expr));
+  std::any visit_string_expr_any(const Expressions::String& expr) final {
+    return visit_string_expr(expr);
   }
 
-  std::any visit_variable_expr_any(std::shared_ptr<Expressions::Variable> expr) final {
-    return visit_variable_expr(std::move(expr));
+  std::any visit_variable_expr_any(const Expressions::Variable& expr) final {
+    return visit_variable_expr(expr);
   }
 
-  std::any visit_this_expr_any(std::shared_ptr<Expressions::This> expr) final {
-    return visit_this_expr(std::move(expr));
+  std::any visit_this_expr_any(const Expressions::This& expr) final {
+    return visit_this_expr(expr);
   }
 
-  std::any visit_super_expr_any(std::shared_ptr<Expressions::Super> expr) final {
-    return visit_super_expr(std::move(expr));
+  std::any visit_super_expr_any(const Expressions::Super& expr) final {
+    return visit_super_expr(expr);
   }
 
-  std::any visit_print_expr_any(std::shared_ptr<Expressions::Print> expr) final {
-    return visit_print_expr(std::move(expr));
+  std::any visit_print_expr_any(const Expressions::Print& expr) final {
+    return visit_print_expr(expr);
   }
 };
 
@@ -419,46 +419,46 @@ using ExprNode      = std::shared_ptr<Expr>;
 using NamedFunction = std::string_view;
 
 // Statements --------------------------------------------------
-class Statements::Block : public Stmt, public std::enable_shared_from_this<Block> {
+class Statements::Block : public Stmt {
   public:
   explicit Block(std::vector<StmtNode> statements) : statements {std::move(statements)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_block_stmt_any(shared_from_this());
+    return visitor.visit_block_stmt_any(*this);
   }
 
   void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_block_stmt(shared_from_this());
+    visitor.visit_block_stmt(*this);
   }
 
   const std::vector<StmtNode> statements {};
 };
 
-class Statements::Expression : public Stmt, public std::enable_shared_from_this<Expression> {
+class Statements::Expression : public Stmt {
   public:
   explicit Expression(ExprNode expression) : expression {std::move(expression)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_expression_stmt_any(shared_from_this());
+    return visitor.visit_expression_stmt_any(*this);
   }
 
   void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_expression_stmt(shared_from_this());
+    visitor.visit_expression_stmt(*this);
   }
 
   const ExprNode expression {};
 };
 
-class Statements::Variable : public Stmt, public std::enable_shared_from_this<Variable> {
+class Statements::Variable : public Stmt {
   public:
   Variable(bool is_mutable, const Token* identifier, TypePtr type, ExprNode initializer) : is_mutable {is_mutable}, identifier {identifier}, type {std::move(type)}, initializer {std::move(initializer)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_variable_stmt_any(shared_from_this());
+    return visitor.visit_variable_stmt_any(*this);
   }
 
   void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_variable_stmt(shared_from_this());
+    visitor.visit_variable_stmt(*this);
   }
 
   const bool is_mutable {};
@@ -467,16 +467,16 @@ class Statements::Variable : public Stmt, public std::enable_shared_from_this<Va
   const ExprNode initializer {};
 };
 
-class Statements::Function : public Stmt, public std::enable_shared_from_this<Function> {
+class Statements::Function : public Stmt {
   public:
   Function(const Token* identifier, std::vector<Token*> type_params, std::vector<Param> params, TypePtr return_type, StmtNode body) : identifier {identifier}, type_params {std::move(type_params)}, params {std::move(params)}, return_type {std::move(return_type)}, body {std::move(body)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_function_stmt_any(shared_from_this());
+    return visitor.visit_function_stmt_any(*this);
   }
 
   void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_function_stmt(shared_from_this());
+    visitor.visit_function_stmt(*this);
   }
 
   const Token* identifier {};
@@ -486,32 +486,32 @@ class Statements::Function : public Stmt, public std::enable_shared_from_this<Fu
   const StmtNode body {};
 };
 
-class Statements::Initializer : public Stmt, public std::enable_shared_from_this<Initializer> {
+class Statements::Initializer : public Stmt {
   public:
   Initializer(std::vector<Param> params, StmtNode body) : params {std::move(params)}, body {std::move(body)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_initializer_stmt_any(shared_from_this());
+    return visitor.visit_initializer_stmt_any(*this);
   }
 
   void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_initializer_stmt(shared_from_this());
+    visitor.visit_initializer_stmt(*this);
   }
 
   const std::vector<Param> params {};
   const StmtNode body {};
 };
 
-class Statements::Method : public Stmt, public std::enable_shared_from_this<Method> {
+class Statements::Method : public Stmt {
   public:
   Method(const Token* identifier, std::vector<Param> params, TypePtr return_type, StmtNode body) : identifier {identifier}, params {std::move(params)}, return_type {std::move(return_type)}, body {std::move(body)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_method_stmt_any(shared_from_this());
+    return visitor.visit_method_stmt_any(*this);
   }
 
   void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_method_stmt(shared_from_this());
+    visitor.visit_method_stmt(*this);
   }
 
   const Token* identifier {};
@@ -520,16 +520,16 @@ class Statements::Method : public Stmt, public std::enable_shared_from_this<Meth
   const StmtNode body {};
 };
 
-class Statements::Class : public Stmt, public std::enable_shared_from_this<Class> {
+class Statements::Class : public Stmt {
   public:
   Class(const Token* identifier, std::vector<Token*> type_params, const Token* superclass, std::vector<StmtNode> namespace_items, std::vector<StmtNode> initializers, std::vector<StmtNode> declarations) : identifier {identifier}, type_params {std::move(type_params)}, superclass {superclass}, namespace_items {std::move(namespace_items)}, initializers {std::move(initializers)}, declarations {std::move(declarations)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_class_stmt_any(shared_from_this());
+    return visitor.visit_class_stmt_any(*this);
   }
 
   void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_class_stmt(shared_from_this());
+    visitor.visit_class_stmt(*this);
   }
 
   const Token* identifier {};
@@ -540,64 +540,64 @@ class Statements::Class : public Stmt, public std::enable_shared_from_this<Class
   const std::vector<StmtNode> declarations {};
 };
 
-class Statements::Namespace : public Stmt, public std::enable_shared_from_this<Namespace> {
+class Statements::Namespace : public Stmt {
   public:
   Namespace(const Token* identifier, std::vector<StmtNode> declarations) : identifier {identifier}, declarations {std::move(declarations)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_namespace_stmt_any(shared_from_this());
+    return visitor.visit_namespace_stmt_any(*this);
   }
 
   void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_namespace_stmt(shared_from_this());
+    visitor.visit_namespace_stmt(*this);
   }
 
   const Token* identifier {};
   const std::vector<StmtNode> declarations {};
 };
 
-class Statements::Import : public Stmt, public std::enable_shared_from_this<Import> {
+class Statements::Import : public Stmt {
   public:
   Import(std::string path, std::vector<Token*> imports) : path {std::move(path)}, imports {std::move(imports)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_import_stmt_any(shared_from_this());
+    return visitor.visit_import_stmt_any(*this);
   }
 
   void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_import_stmt(shared_from_this());
+    visitor.visit_import_stmt(*this);
   }
 
   const std::string path {};
   const std::vector<Token*> imports {};
 };
 
-class Statements::Typealias : public Stmt, public std::enable_shared_from_this<Typealias> {
+class Statements::Typealias : public Stmt {
   public:
   Typealias(const Token* identifier, TypePtr type) : identifier {identifier}, type {std::move(type)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_typealias_stmt_any(shared_from_this());
+    return visitor.visit_typealias_stmt_any(*this);
   }
 
   void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_typealias_stmt(shared_from_this());
+    visitor.visit_typealias_stmt(*this);
   }
 
   const Token* identifier {};
   const TypePtr type {};
 };
 
-class Statements::If : public Stmt, public std::enable_shared_from_this<If> {
+class Statements::If : public Stmt {
   public:
   If(ExprNode condition, StmtNode then_body, StmtNode else_body) : condition {std::move(condition)}, then_body {std::move(then_body)}, else_body {std::move(else_body)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_if_stmt_any(shared_from_this());
+    return visitor.visit_if_stmt_any(*this);
   }
 
   void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_if_stmt(shared_from_this());
+    visitor.visit_if_stmt(*this);
   }
 
   const ExprNode condition {};
@@ -605,16 +605,16 @@ class Statements::If : public Stmt, public std::enable_shared_from_this<If> {
   const StmtNode else_body {};
 };
 
-class Statements::While : public Stmt, public std::enable_shared_from_this<While> {
+class Statements::While : public Stmt {
   public:
   While(const Token* label, ExprNode condition, StmtNode loop_body, StmtNode else_body) : label {label}, condition {std::move(condition)}, loop_body {std::move(loop_body)}, else_body {std::move(else_body)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_while_stmt_any(shared_from_this());
+    return visitor.visit_while_stmt_any(*this);
   }
 
   void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_while_stmt(shared_from_this());
+    visitor.visit_while_stmt(*this);
   }
 
   const Token* label {};
@@ -623,16 +623,16 @@ class Statements::While : public Stmt, public std::enable_shared_from_this<While
   const StmtNode else_body {};
 };
 
-class Statements::Each : public Stmt, public std::enable_shared_from_this<Each> {
+class Statements::Each : public Stmt {
   public:
   Each(const Token* label, const Token* iter_var, const Token* index_var, ExprNode iterator, StmtNode loop_body, StmtNode else_body) : label {label}, iter_var {iter_var}, index_var {index_var}, iterator {std::move(iterator)}, loop_body {std::move(loop_body)}, else_body {std::move(else_body)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_each_stmt_any(shared_from_this());
+    return visitor.visit_each_stmt_any(*this);
   }
 
   void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_each_stmt(shared_from_this());
+    visitor.visit_each_stmt(*this);
   }
 
   const Token* label {};
@@ -643,16 +643,16 @@ class Statements::Each : public Stmt, public std::enable_shared_from_this<Each> 
   const StmtNode else_body {};
 };
 
-class Statements::For : public Stmt, public std::enable_shared_from_this<For> {
+class Statements::For : public Stmt {
   public:
   For(const Token* label, StmtNode begin, ExprNode condition, ExprNode end, StmtNode loop_body, StmtNode else_body) : label {label}, begin {std::move(begin)}, condition {std::move(condition)}, end {std::move(end)}, loop_body {std::move(loop_body)}, else_body {std::move(else_body)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_for_stmt_any(shared_from_this());
+    return visitor.visit_for_stmt_any(*this);
   }
 
   void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_for_stmt(shared_from_this());
+    visitor.visit_for_stmt(*this);
   }
 
   const Token* label {};
@@ -663,76 +663,76 @@ class Statements::For : public Stmt, public std::enable_shared_from_this<For> {
   const StmtNode else_body {};
 };
 
-class Statements::Break : public Stmt, public std::enable_shared_from_this<Break> {
+class Statements::Break : public Stmt {
   public:
   explicit Break(const Token* label) : label {label} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_break_stmt_any(shared_from_this());
+    return visitor.visit_break_stmt_any(*this);
   }
 
   void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_break_stmt(shared_from_this());
+    visitor.visit_break_stmt(*this);
   }
 
   const Token* label {};
 };
 
-class Statements::Continue : public Stmt, public std::enable_shared_from_this<Continue> {
+class Statements::Continue : public Stmt {
   public:
   explicit Continue(const Token* label) : label {label} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_continue_stmt_any(shared_from_this());
+    return visitor.visit_continue_stmt_any(*this);
   }
 
   void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_continue_stmt(shared_from_this());
+    visitor.visit_continue_stmt(*this);
   }
 
   const Token* label {};
 };
 
-class Statements::Return : public Stmt, public std::enable_shared_from_this<Return> {
+class Statements::Return : public Stmt {
   public:
   explicit Return(ExprNode value) : value {std::move(value)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_return_stmt_any(shared_from_this());
+    return visitor.visit_return_stmt_any(*this);
   }
 
   void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_return_stmt(shared_from_this());
+    visitor.visit_return_stmt(*this);
   }
 
   const ExprNode value {};
 };
 
-class Statements::Pass : public Stmt, public std::enable_shared_from_this<Pass> {
+class Statements::Pass : public Stmt {
   public:
   Pass() = default;
 
   std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_pass_stmt_any(shared_from_this());
+    return visitor.visit_pass_stmt_any(*this);
   }
 
   void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_pass_stmt(shared_from_this());
+    visitor.visit_pass_stmt(*this);
   }
 
 };
 
 // Expressions --------------------------------------------------
-class Expressions::Binary : public Expr, public std::enable_shared_from_this<Binary> {
+class Expressions::Binary : public Expr {
   public:
   Binary(NamedFunction fn_name, ExprNode left, ExprNode right) : fn_name {fn_name}, left {std::move(left)}, right {std::move(right)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_binary_expr_any(shared_from_this());
+    return visitor.visit_binary_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_binary_expr(shared_from_this());
+    visitor.visit_binary_expr(*this);
   }
 
   const NamedFunction fn_name {};
@@ -740,32 +740,32 @@ class Expressions::Binary : public Expr, public std::enable_shared_from_this<Bin
   const ExprNode right {};
 };
 
-class Expressions::Comparison : public Expr, public std::enable_shared_from_this<Comparison> {
+class Expressions::Comparison : public Expr {
   public:
   Comparison(std::vector<NamedFunction> fn_names, std::vector<ExprNode> expressions) : fn_names {std::move(fn_names)}, expressions {std::move(expressions)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_comparison_expr_any(shared_from_this());
+    return visitor.visit_comparison_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_comparison_expr(shared_from_this());
+    visitor.visit_comparison_expr(*this);
   }
 
   const std::vector<NamedFunction> fn_names {};
   const std::vector<ExprNode> expressions {};
 };
 
-class Expressions::If : public Expr, public std::enable_shared_from_this<If> {
+class Expressions::If : public Expr {
   public:
   If(ExprNode condition, ExprNode then, ExprNode else_expr) : condition {std::move(condition)}, then {std::move(then)}, else_expr {std::move(else_expr)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_if_expr_any(shared_from_this());
+    return visitor.visit_if_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_if_expr(shared_from_this());
+    visitor.visit_if_expr(*this);
   }
 
   const ExprNode condition {};
@@ -773,48 +773,48 @@ class Expressions::If : public Expr, public std::enable_shared_from_this<If> {
   const ExprNode else_expr {};
 };
 
-class Expressions::Call : public Expr, public std::enable_shared_from_this<Call> {
+class Expressions::Call : public Expr {
   public:
   Call(ExprNode object, std::vector<ExprNode> arguments) : object {std::move(object)}, arguments {std::move(arguments)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_call_expr_any(shared_from_this());
+    return visitor.visit_call_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_call_expr(shared_from_this());
+    visitor.visit_call_expr(*this);
   }
 
   const ExprNode object {};
   const std::vector<ExprNode> arguments {};
 };
 
-class Expressions::Subscript : public Expr, public std::enable_shared_from_this<Subscript> {
+class Expressions::Subscript : public Expr {
   public:
   Subscript(ExprNode object, std::vector<ExprNode> arguments) : object {std::move(object)}, arguments {std::move(arguments)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_subscript_expr_any(shared_from_this());
+    return visitor.visit_subscript_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_subscript_expr(shared_from_this());
+    visitor.visit_subscript_expr(*this);
   }
 
   const ExprNode object {};
   const std::vector<ExprNode> arguments {};
 };
 
-class Expressions::Member : public Expr, public std::enable_shared_from_this<Member> {
+class Expressions::Member : public Expr {
   public:
   Member(ExprNode object, const Token* member, bool is_safe) : object {std::move(object)}, member {member}, is_safe {is_safe} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_member_expr_any(shared_from_this());
+    return visitor.visit_member_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_member_expr(shared_from_this());
+    visitor.visit_member_expr(*this);
   }
 
   const ExprNode object {};
@@ -822,48 +822,48 @@ class Expressions::Member : public Expr, public std::enable_shared_from_this<Mem
   const bool is_safe {};
 };
 
-class Expressions::NamespaceMember : public Expr, public std::enable_shared_from_this<NamespaceMember> {
+class Expressions::NamespaceMember : public Expr {
   public:
   NamespaceMember(const Token* namespace_id, const Token* member) : namespace_id {namespace_id}, member {member} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_namespace_member_expr_any(shared_from_this());
+    return visitor.visit_namespace_member_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_namespace_member_expr(shared_from_this());
+    visitor.visit_namespace_member_expr(*this);
   }
 
   const Token* namespace_id {};
   const Token* member {};
 };
 
-class Expressions::Unary : public Expr, public std::enable_shared_from_this<Unary> {
+class Expressions::Unary : public Expr {
   public:
   Unary(NamedFunction fn_name, ExprNode expr) : fn_name {fn_name}, expr {std::move(expr)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_unary_expr_any(shared_from_this());
+    return visitor.visit_unary_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_unary_expr(shared_from_this());
+    visitor.visit_unary_expr(*this);
   }
 
   const NamedFunction fn_name {};
   const ExprNode expr {};
 };
 
-class Expressions::Interpolation : public Expr, public std::enable_shared_from_this<Interpolation> {
+class Expressions::Interpolation : public Expr {
   public:
   Interpolation(std::string start, std::vector<ExprNode> expressions, std::vector<std::string> end_strings) : start {std::move(start)}, expressions {std::move(expressions)}, end_strings {std::move(end_strings)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_interpolation_expr_any(shared_from_this());
+    return visitor.visit_interpolation_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_interpolation_expr(shared_from_this());
+    visitor.visit_interpolation_expr(*this);
   }
 
   const std::string start {};
@@ -871,197 +871,197 @@ class Expressions::Interpolation : public Expr, public std::enable_shared_from_t
   const std::vector<std::string> end_strings {};
 };
 
-class Expressions::Lambda : public Expr, public std::enable_shared_from_this<Lambda> {
+class Expressions::Lambda : public Expr {
   public:
   Lambda(std::vector<Param> params, StmtNode body) : params {std::move(params)}, body {std::move(body)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_lambda_expr_any(shared_from_this());
+    return visitor.visit_lambda_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_lambda_expr(shared_from_this());
+    visitor.visit_lambda_expr(*this);
   }
 
   const std::vector<Param> params {};
   const StmtNode body {};
 };
 
-class Expressions::Grouping : public Expr, public std::enable_shared_from_this<Grouping> {
+class Expressions::Grouping : public Expr {
   public:
   explicit Grouping(ExprNode expr) : expr {std::move(expr)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_grouping_expr_any(shared_from_this());
+    return visitor.visit_grouping_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_grouping_expr(shared_from_this());
+    visitor.visit_grouping_expr(*this);
   }
 
   const ExprNode expr {};
 };
 
-class Expressions::List : public Expr, public std::enable_shared_from_this<List> {
+class Expressions::List : public Expr {
   public:
   explicit List(std::vector<ExprNode> items) : items {std::move(items)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_list_expr_any(shared_from_this());
+    return visitor.visit_list_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_list_expr(shared_from_this());
+    visitor.visit_list_expr(*this);
   }
 
   const std::vector<ExprNode> items {};
 };
 
-class Expressions::Map : public Expr, public std::enable_shared_from_this<Map> {
+class Expressions::Map : public Expr {
   public:
   Map(std::vector<std::string> keys, std::vector<ExprNode> values) : keys {std::move(keys)}, values {std::move(values)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_map_expr_any(shared_from_this());
+    return visitor.visit_map_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_map_expr(shared_from_this());
+    visitor.visit_map_expr(*this);
   }
 
   const std::vector<std::string> keys {};
   const std::vector<ExprNode> values {};
 };
 
-class Expressions::Number : public Expr, public std::enable_shared_from_this<Number> {
+class Expressions::Number : public Expr {
   public:
   explicit Number(double value) : value {value} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_number_expr_any(shared_from_this());
+    return visitor.visit_number_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_number_expr(shared_from_this());
+    visitor.visit_number_expr(*this);
   }
 
   const double value {};
 };
 
-class Expressions::Boolean : public Expr, public std::enable_shared_from_this<Boolean> {
+class Expressions::Boolean : public Expr {
   public:
   explicit Boolean(bool value) : value {value} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_boolean_expr_any(shared_from_this());
+    return visitor.visit_boolean_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_boolean_expr(shared_from_this());
+    visitor.visit_boolean_expr(*this);
   }
 
   const bool value {};
 };
 
-class Expressions::Nil : public Expr, public std::enable_shared_from_this<Nil> {
+class Expressions::Nil : public Expr {
   public:
   Nil() = default;
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_nil_expr_any(shared_from_this());
+    return visitor.visit_nil_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_nil_expr(shared_from_this());
+    visitor.visit_nil_expr(*this);
   }
 
 };
 
-class Expressions::Char : public Expr, public std::enable_shared_from_this<Char> {
+class Expressions::Char : public Expr {
   public:
   explicit Char(char value) : value {value} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_char_expr_any(shared_from_this());
+    return visitor.visit_char_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_char_expr(shared_from_this());
+    visitor.visit_char_expr(*this);
   }
 
   const char value {};
 };
 
-class Expressions::String : public Expr, public std::enable_shared_from_this<String> {
+class Expressions::String : public Expr {
   public:
   explicit String(std::string value) : value {std::move(value)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_string_expr_any(shared_from_this());
+    return visitor.visit_string_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_string_expr(shared_from_this());
+    visitor.visit_string_expr(*this);
   }
 
   const std::string value {};
 };
 
-class Expressions::Variable : public Expr, public std::enable_shared_from_this<Variable> {
+class Expressions::Variable : public Expr {
   public:
   explicit Variable(const Token* identifier) : identifier {identifier} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_variable_expr_any(shared_from_this());
+    return visitor.visit_variable_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_variable_expr(shared_from_this());
+    visitor.visit_variable_expr(*this);
   }
 
   const Token* identifier {};
 };
 
-class Expressions::This : public Expr, public std::enable_shared_from_this<This> {
+class Expressions::This : public Expr {
   public:
   explicit This(const Token* identifier) : identifier {identifier} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_this_expr_any(shared_from_this());
+    return visitor.visit_this_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_this_expr(shared_from_this());
+    visitor.visit_this_expr(*this);
   }
 
   const Token* identifier {};
 };
 
-class Expressions::Super : public Expr, public std::enable_shared_from_this<Super> {
+class Expressions::Super : public Expr {
   public:
   explicit Super(const Token* identifier) : identifier {identifier} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_super_expr_any(shared_from_this());
+    return visitor.visit_super_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_super_expr(shared_from_this());
+    visitor.visit_super_expr(*this);
   }
 
   const Token* identifier {};
 };
 
-class Expressions::Print : public Expr, public std::enable_shared_from_this<Print> {
+class Expressions::Print : public Expr {
   public:
   Print(NamedFunction fn_name, ExprNode expr) : fn_name {fn_name}, expr {std::move(expr)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
-    return visitor.visit_print_expr_any(shared_from_this());
+    return visitor.visit_print_expr_any(*this);
   }
 
   void accept(ExprVisitorVoid& visitor) override {
-    visitor.visit_print_expr(shared_from_this());
+    visitor.visit_print_expr(*this);
   }
 
   const NamedFunction fn_name {};
