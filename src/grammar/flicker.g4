@@ -35,6 +35,11 @@ tokens {
   INDENT, DEDENT, LINE
 }
 
+// DISCLAIMER: This grammar is out-of-date, especially in terms of types. Most of it is alright, but I wouldn't trust any of these things to be accurate:
+// - classes (or any of their members)
+// - generics
+// - loops, once I add "around" clauses
+
 // RULES (important):
 // If a grammar rule involves a block, it must work WITH OR WITHOUT a newline before the closing dedent.
 
@@ -46,7 +51,6 @@ codeItem : statement | expression ;
 
 type : IDENTIFIER QUEST? ((OF | FOR) IDENTIFIER QUEST?)? ;
 // List of Int, Bagel?, List? of Bagel?, FunctionWrapper? for SpecialFunction
-// TODO: I need things like "map for A, B"
 
 // Statement ------------------------------
 
@@ -76,7 +80,7 @@ variableDecl : (VAR | VAL) IDENTIFIER (COLON type)? (EQ expression)?;
 typeParam : (OF | FOR) IDENTIFIER ;
 functionDecl : FUN IDENTIFIER typeParam? LEFT_PAREN (paramList)? RIGHT_PAREN (funcReturnType)? functionContents;
 
-funcReturnType : (COLON | RIGHT_ARROW) IDENTIFIER; // TODO: Decide on a symbol.
+funcReturnType : RIGHT_ARROW IDENTIFIER;
 functionContents : blockOrStatement | (EQ expression);
 
 paramList : param (COMMA param)* ;

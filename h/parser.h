@@ -408,6 +408,11 @@ class Parser {
   void populate_token_vec();
 
   /**
+   * @return The parser's tokens, assuming populate_token_vec is already called
+   */
+  [[nodiscard]] const std::vector<Token>& get_tokens() const { return tokens_; }
+
+  /**
    * Parses the input token stream and generates an AST which is stored in program_ if there are no errors.
    * @return True if parsing completes without syntax errors; otherwise false
    */

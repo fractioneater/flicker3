@@ -129,19 +129,19 @@ StmtNode Parser::class_declaration() {
   std::vector<StmtNode> initializers {};
   while (!check(TOKEN_DEDENT)) {
     // TODO: Access specifiers/things.
-    // Good things:
     if (match(TOKEN_VAL)) declarations.emplace_back(val_declaration());
     else if (match(TOKEN_VAR)) declarations.emplace_back(var_declaration());
     else if (match(TOKEN_FUN)) declarations.emplace_back(method());
     else if (check(TOKEN_IDENTIFIER) && current_->src_string == "init")
       initializers.emplace_back(initializer());
-    // Bad things:
     else if (match(TOKEN_NAMESPACE))
+      // Not good!
       if (namespace_items.empty())
         diagnostics_.emplace_back("Namespace must come first", previous_, Diagnostic::ERROR);
       else
         diagnostics_.emplace_back("Classes can only have one namespace", previous_, Diagnostic::ERROR);
     else {
+      // Not good!
       diagnostics_.emplace_back("Invalid class item—expecting a namespace, initializer, method, or variable declaration", current_, Diagnostic::ERROR);
       advance();
     }
@@ -203,16 +203,8 @@ StmtNode Parser::initializer() {
   };
   expect(TOKEN_RIGHT_PAREN, "Expecting ')' after parameter list");
 
-  // TODO: Superclass initializers?
-
   if (match(TOKEN_EQ)) diagnostics_.emplace_back("Cannot return from initializer", previous_, Diagnostic::ERROR);
-  StmtNode body {match(TOKEN_SEMICOLON) ? std::make_shared<Statements::Pass>() : block_or_statement()};
-
-  // TODO.
-  // if (!body) {
-  //   errors_.emplace_back(ParserError {current_, "Expected a body for initializer", {nullptr, "Use a semicolon (';') to skip the body"}});
-  //   body = std::make_shared<Statements::Pass>();
-  // }
+  StmtNode body {block_or_statement()};
 
   return std::make_shared<Statements::Initializer>(params, body);
 }

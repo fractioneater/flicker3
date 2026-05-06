@@ -63,26 +63,23 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
   parser.populate_token_vec();
 
   #if DEBUG_PRINT_TOKENS
-  // TODO: Make this work again (non-ANTLR)
-  for (const auto token : token_stream.getTokens()) {
-    if (token->getType() == antlr4::Token::EOF) { // EOF:
-      std::cout << "EOF: col " << token->getCharPositionInLine() << "\n";
+  for (const auto& token : parser.get_tokens()) {
+    if (token.type == TOKEN_EOF) {
+      std::cout << "EOF: col " << lexer.offset_to_line_col(token.start_offset).second << "\n";
       continue;
     }
 
-    const auto type = token->getType() - 1;
-    if (type == TOKEN_IDENTIFIER) { // Identifier:
-      std::cout << "Identifier '" << token->getText() << "': " << token->getLine() << ':' << token->getCharPositionInLine() << ", length "
-        << token->getText().length() << "\n";
-    } else if (type == TOKEN_INDENT) {
+    const auto [line, col] = lexer.offset_to_line_col(token.start_offset);
+    if (token.type == TOKEN_IDENTIFIER) { // Identifier:
+      std::cout << "Identifier '" << token.src_string << "': " << line << ':' << col << ", length " << token.length << "\n";
+    } else if (token.type == TOKEN_INDENT) {
       std::cout << "Indent\n";
-    } else if (type == TOKEN_DEDENT) {
+    } else if (token.type == TOKEN_DEDENT) {
       std::cout << "Dedent\n";
-    } else if (type == TOKEN_LINE) {
+    } else if (token.type == TOKEN_LINE) {
       std::cout << "Newline\n";
     } else { // Other:
-      std::cout << "Token: type " << type << ", " << token->getLine() << ":" << token->getCharPositionInLine() << ", length "
-        << token->getText().length() << "\n";
+      std::cout << "Token: type " << token.type << ", " << line << ":" << col << ", length " << token.length << "\n";
     }
   }
   #endif
