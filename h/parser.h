@@ -179,6 +179,26 @@ class Parser {
     return items;
   }
 
+  /**
+   * Parses an indented block of any item, line-separated.
+   * @tparam T Type of items in the result list/block
+   * @param name String for error messages: "expecting indentation to increase/decrease for/after " + name + " block"
+   * @param parse_item Function to parse a single line
+   * @return List of items (statements) for lines
+   */
+  template <typename T>
+  std::vector<T> parse_block(const std::string& name, const std::function<T()>& parse_item) {
+    match_line();
+    expect(TOKEN_INDENT, "Expecting indentation to increase for " + name + " block");
+    std::vector<T> items {};
+    while (!check(TOKEN_DEDENT)) {
+      items.emplace_back(parse_item());
+      if (!match_line()) break;
+    }
+    expect(TOKEN_DEDENT, "Extraneous line content (" + name + " block item has already been fully parsed)");
+    return items;
+  }
+
   std::optional<StmtNode> declaration();
   StmtNode declaration_or_statement();
   StmtNode declaration_in_namespace();

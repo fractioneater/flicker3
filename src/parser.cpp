@@ -122,50 +122,41 @@ StmtNode Parser::class_declaration() {
   expect(TOKEN_INDENT, "Expecting indentation to increase when class block begins");
 
   std::vector<StmtNode> namespace_items {};
-  if (match(TOKEN_NAMESPACE)) {
-    match_line();
-    expect(TOKEN_INDENT, "Expecting indentation to increase when namespace block begins");
-
-    while (!check(TOKEN_DEDENT)) {
-      namespace_items.emplace_back(declaration_in_namespace());
-      if (!match_line()) break;
-    }
-    // TODO: This error will be shown if there are two statements on one line. Same issue in block().
-    expect(TOKEN_DEDENT, "Expecting indentation to decrease after namespace block ends");
-  }
+  if (match(TOKEN_NAMESPACE))
+    namespace_items = parse_block<StmtNode>("namespace", [this] { return declaration_in_namespace(); });
 
   std::vector<StmtNode> declarations {};
   std::vector<StmtNode> initializers {};
   while (!check(TOKEN_DEDENT)) {
     // TODO: Access specifiers/things.
+    // Good things:
     if (match(TOKEN_VAL)) declarations.emplace_back(val_declaration());
     else if (match(TOKEN_VAR)) declarations.emplace_back(var_declaration());
     else if (match(TOKEN_FUN)) declarations.emplace_back(method());
     else if (check(TOKEN_IDENTIFIER) && current_->src_string == "init")
       initializers.emplace_back(initializer());
+    // Bad things:
+    else if (match(TOKEN_NAMESPACE))
+      if (namespace_items.empty())
+        diagnostics_.emplace_back("Namespace must come first", previous_, Diagnostic::ERROR);
+      else
+        diagnostics_.emplace_back("Classes can only have one namespace", previous_, Diagnostic::ERROR);
+    else {
+      diagnostics_.emplace_back("Invalid class item—expecting a namespace, initializer, method, or variable declaration", current_, Diagnostic::ERROR);
+      advance();
+    }
+
     if (!match_line()) break;
   }
 
-  // TODO: See the error in namespace. Same problem applies here.
-  expect(TOKEN_DEDENT, "Expecting indentation to decrease after class block ends");
+  expect(TOKEN_DEDENT, "Extraneous line content (class member has already been fully parsed)");
 
   return std::make_shared<Statements::Class>(name, type_params, superclass, namespace_items, initializers, declarations);
 }
 
 StmtNode Parser::namespace_declaration() {
   Token* name {expect(TOKEN_IDENTIFIER, "Expecting a name for this namespace")};
-  match_line();
-  expect(TOKEN_INDENT, "Expecting indentation to increase when namespace block begins");
-
-  std::vector<StmtNode> contents {};
-  while (!check(TOKEN_DEDENT)) {
-    contents.emplace_back(declaration_in_namespace());
-    if (!match_line()) break;
-  }
-  // TODO: This error will be shown if there are two statements on one line. Same issue in block().
-  expect(TOKEN_DEDENT, "Expecting indentation to decrease after namespace block ends");
-
-  return std::make_shared<Statements::Namespace>(name, std::move(contents));
+  return std::make_shared<Statements::Namespace>(name, parse_block<StmtNode>("namespace", [this] { return declaration_in_namespace(); }));
 }
 
 StmtNode Parser::using_declaration() {
@@ -416,17 +407,7 @@ StmtNode Parser::return_statement() {
 }
 
 StmtNode Parser::block() {
-  match_line();
-  expect(TOKEN_INDENT, "Expecting indentation to increase when block begins");
-  std::vector<StmtNode> contents {};
-  while (!check(TOKEN_EOF) && !check(TOKEN_DEDENT)) {
-    contents.emplace_back(declaration_or_statement());
-    if (!match_line()) break;
-  }
-  expect(TOKEN_DEDENT, "Expecting indentation to decrease after block ends"); // Users shouldn't see this error if Lexer is doing its job.
-  // TODO: The above error will always be paired with the "expecting indentation increase" one, and the EOF check should be unnecessary for the same reason,
-  //   so is there anything I can do about that?
-  return std::make_shared<Statements::Block>(contents);
+  return std::make_shared<Statements::Block>(parse_block<StmtNode>("code", [this] { return declaration_or_statement(); }));
 }
 
 StmtNode Parser::block_or_statement() {
@@ -608,16 +589,11 @@ ExprNode Parser::map(const ExprNode& first_item) {
   values.emplace_back(parse_expression());
 
   // Step 2: Parse the rest of the map.
-  while (match(TOKEN_COMMA)) {
-    if (check(TOKEN_RIGHT_BRACKET)) {
-      // TODO: Use parse_list() on this, or at least allow trailing commas.
-      diagnostics_.emplace_back("Trailing commas are not allowed", previous_, Diagnostic::ERROR);
-      break;
-    }
-
+  while (!check(TOKEN_RIGHT_BRACKET)) {
     validate_key(parse_expression());
     expect(TOKEN_RIGHT_ARROW, "Expecting '->' after map key");
     values.emplace_back(parse_expression());
+    if (!match(TOKEN_COMMA)) break;
   }
 
   expect(TOKEN_RIGHT_BRACKET, "Expecting ']' after map");
