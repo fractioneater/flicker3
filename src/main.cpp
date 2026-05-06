@@ -70,16 +70,14 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
     }
 
     const auto [line, col] = lexer.offset_to_line_col(token.start_offset);
-    if (token.type == TOKEN_IDENTIFIER) { // Identifier:
-      std::cout << "Identifier '" << token.src_string << "': " << line << ':' << col << ", length " << token.length << "\n";
-    } else if (token.type == TOKEN_INDENT) {
+    if (token.type == TOKEN_INDENT) {
       std::cout << "Indent\n";
     } else if (token.type == TOKEN_DEDENT) {
       std::cout << "Dedent\n";
     } else if (token.type == TOKEN_LINE) {
       std::cout << "Newline\n";
     } else { // Other:
-      std::cout << "Token: type " << token.type << ", " << line << ":" << col << ", length " << token.length << "\n";
+      std::cout << "Token '" << token.src_string << "': type " << token.type << ", " << line << ":" << col << ", length " << token.length << "\n";
     }
   }
   #endif
