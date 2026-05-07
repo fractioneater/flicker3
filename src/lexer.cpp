@@ -20,6 +20,7 @@ namespace Helpers {
   //   although CAPITALIZED would be okay.
   const std::unordered_map<std::string_view, TokenType> keywords {
     {"and", TOKEN_AND},
+    {"around", TOKEN_AROUND},
     {"break", TOKEN_BREAK},
     {"class", TOKEN_CLASS},
     {"continue", TOKEN_CONTINUE},

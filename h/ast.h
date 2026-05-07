@@ -607,7 +607,7 @@ class Statements::If : public Stmt {
 
 class Statements::While : public Stmt {
   public:
-  While(const Token* label, ExprNode condition, StmtNode loop_body, StmtNode else_body) : label {label}, condition {std::move(condition)}, loop_body {std::move(loop_body)}, else_body {std::move(else_body)} {}
+  While(const Token* label, ExprNode condition, StmtNode loop_body, StmtNode around_body, StmtNode else_body) : label {label}, condition {std::move(condition)}, loop_body {std::move(loop_body)}, around_body {std::move(around_body)}, else_body {std::move(else_body)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_while_stmt_any(*this);
@@ -620,12 +620,13 @@ class Statements::While : public Stmt {
   const Token* label {};
   const ExprNode condition {};
   const StmtNode loop_body {};
+  const StmtNode around_body {};
   const StmtNode else_body {};
 };
 
 class Statements::Each : public Stmt {
   public:
-  Each(const Token* label, const Token* iter_var, const Token* index_var, ExprNode iterator, StmtNode loop_body, StmtNode else_body) : label {label}, iter_var {iter_var}, index_var {index_var}, iterator {std::move(iterator)}, loop_body {std::move(loop_body)}, else_body {std::move(else_body)} {}
+  Each(const Token* label, const Token* iter_var, const Token* index_var, ExprNode iterator, StmtNode loop_body, StmtNode around_body, StmtNode else_body) : label {label}, iter_var {iter_var}, index_var {index_var}, iterator {std::move(iterator)}, loop_body {std::move(loop_body)}, around_body {std::move(around_body)}, else_body {std::move(else_body)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_each_stmt_any(*this);
@@ -640,12 +641,13 @@ class Statements::Each : public Stmt {
   const Token* index_var {};
   const ExprNode iterator {};
   const StmtNode loop_body {};
+  const StmtNode around_body {};
   const StmtNode else_body {};
 };
 
 class Statements::For : public Stmt {
   public:
-  For(const Token* label, StmtNode begin, ExprNode condition, ExprNode end, StmtNode loop_body, StmtNode else_body) : label {label}, begin {std::move(begin)}, condition {std::move(condition)}, end {std::move(end)}, loop_body {std::move(loop_body)}, else_body {std::move(else_body)} {}
+  For(const Token* label, StmtNode begin, ExprNode condition, ExprNode end, StmtNode loop_body, StmtNode around_body, StmtNode else_body) : label {label}, begin {std::move(begin)}, condition {std::move(condition)}, end {std::move(end)}, loop_body {std::move(loop_body)}, around_body {std::move(around_body)}, else_body {std::move(else_body)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_for_stmt_any(*this);
@@ -660,6 +662,7 @@ class Statements::For : public Stmt {
   const ExprNode condition {};
   const ExprNode end {};
   const StmtNode loop_body {};
+  const StmtNode around_body {};
   const StmtNode else_body {};
 };
 

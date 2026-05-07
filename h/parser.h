@@ -242,7 +242,11 @@ class Parser {
 
   StmtNode block();
   StmtNode block_or_statement();
-  StmtNode optional_else_body();
+  /** Parse a code block (block_or_statement()) starting with a leading word, or return Statements::Pass if the leading word is not found.
+   * @param type The token to start the block
+   * @return Statement inside the parsed block, or Pass
+   */
+  StmtNode optional_block(TokenType type);
   Token* loop_label();
   /**
    * Parse a parameter list for a function or lambda.
@@ -303,7 +307,7 @@ class Parser {
   // @formatter:off; it will separate the comments from the rest of their lines, which is horrifying.
   // IMPORTANT: Prefix rules always have a precedence of none! Their precedence is decided by the parse_expression(prec) call inside them, not the parse rule table!
   // This means that for "BOTH" rules, the precedence only applies to the infix rule.
-  static constexpr std::array<ParseRule, 90> rules {{
+  static constexpr std::array<ParseRule, 91> rules {{
     /* TOKEN_LEFT_PAREN    */ BOTH(grouping, call, "", POSTFIX),
     /* TOKEN_RIGHT_PAREN   */ UNUSED,
     /* TOKEN_LEFT_BRACKET  */ BOTH(collection, subscript, "", POSTFIX),
@@ -358,6 +362,7 @@ class Parser {
     /* TOKEN_CHAR          */ PREFIX_RULE(literal, ""),
     /* TOKEN_NUMBER        */ PREFIX_RULE(literal, ""),
     /* TOKEN_AND           */ INFIX_RULE(binary, "and", AND),
+    /* TOKEN_AROUND        */ UNUSED,
     /* TOKEN_BREAK         */ UNUSED,
     /* TOKEN_CLASS         */ UNUSED,
     /* TOKEN_CONTINUE      */ UNUSED,

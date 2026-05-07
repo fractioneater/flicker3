@@ -135,7 +135,7 @@ StmtNode Parser::class_declaration() {
     else if (check(TOKEN_IDENTIFIER) && current_->src_string == "init")
       initializers.emplace_back(initializer());
     else if (match(TOKEN_NAMESPACE))
-      // Not good!
+    // Not good!
       if (namespace_items.empty())
         diagnostics_.emplace_back("Namespace must come first", previous_, Diagnostic::ERROR);
       else
@@ -300,7 +300,7 @@ TypePtr Parser::standard_type(const std::string& thing_to_look_for, bool allow_g
 
 StmtNode Parser::statement() {
   if (match(TOKEN_IF)) return if_statement();
-  if (match(TOKEN_WHILE)) return while_statement(); // TODO: 'around' clause for loops.
+  if (match(TOKEN_WHILE)) return while_statement();
   if (match(TOKEN_EACH)) return each_statement();
   if (match(TOKEN_FOR)) return for_statement();
   if (match(TOKEN_BREAK)) return break_statement();
@@ -319,7 +319,7 @@ StmtNode Parser::if_statement() {
   if (match_after_newlines(TOKEN_ELIF))
     else_body = if_statement();
   else // The final else (if existent) will be handled by the nested/recursed if.
-    else_body = optional_else_body();
+    else_body = optional_block(TOKEN_ELSE);
   return std::make_shared<Statements::If>(condition, then_body, else_body);
 }
 
@@ -327,8 +327,13 @@ StmtNode Parser::while_statement() {
   Token* label {loop_label()};
   const ExprNode condition {parse_expression()};
   const StmtNode loop_body {block_or_statement()};
-  const StmtNode else_body {optional_else_body()};
-  return std::make_shared<Statements::While>(label, condition, loop_body, else_body);
+  const StmtNode around_body {optional_block(TOKEN_AROUND)};
+  const StmtNode else_body {optional_block(TOKEN_ELSE)};
+
+  if (match_after_newlines(TOKEN_AROUND))
+    diagnostics_.emplace_back("Place 'around' clause before 'else' clause", previous_, Diagnostic::ERROR);
+
+  return std::make_shared<Statements::While>(label, condition, loop_body, around_body, else_body);
 }
 
 StmtNode Parser::each_statement() {
@@ -346,9 +351,13 @@ StmtNode Parser::each_statement() {
 
   const ExprNode expr {parse_expression()};
   const StmtNode loop_body {block_or_statement()};
-  const StmtNode else_body {optional_else_body()};
+  const StmtNode around_body {optional_block(TOKEN_AROUND)};
+  const StmtNode else_body {optional_block(TOKEN_ELSE)};
 
-  return std::make_shared<Statements::Each>(label, iter_var, index_var, expr, loop_body, else_body);
+  if (match_after_newlines(TOKEN_AROUND))
+    diagnostics_.emplace_back("Place 'around' clause before 'else' clause", previous_, Diagnostic::ERROR);
+
+  return std::make_shared<Statements::Each>(label, iter_var, index_var, expr, loop_body, around_body, else_body);
 }
 
 StmtNode Parser::for_statement() {
@@ -379,9 +388,13 @@ StmtNode Parser::for_statement() {
   if (!check(TOKEN_LINE) && !check(TOKEN_DO)) end = parse_expression();
 
   const StmtNode loop_body {block_or_statement()};
-  const StmtNode else_body {optional_else_body()};
+  const StmtNode around_body {optional_block(TOKEN_AROUND)};
+  const StmtNode else_body {optional_block(TOKEN_ELSE)};
 
-  return std::make_shared<Statements::For>(label, begin, condition, end, loop_body, else_body);
+  if (match_after_newlines(TOKEN_AROUND))
+    diagnostics_.emplace_back("Place 'around' clause before 'else' clause", previous_, Diagnostic::ERROR);
+
+  return std::make_shared<Statements::For>(label, begin, condition, end, loop_body, around_body, else_body);
 }
 
 StmtNode Parser::break_statement() {
@@ -409,8 +422,8 @@ StmtNode Parser::block_or_statement() {
   return statement();
 }
 
-StmtNode Parser::optional_else_body() {
-  if (match_after_newlines(TOKEN_ELSE)) // Won't consume newlines if there isn't an ELSE afterward.
+StmtNode Parser::optional_block(TokenType type) {
+  if (match_after_newlines(type)) // Won't consume newlines if there isn't an else/around afterward.
     return block_or_statement();
   return std::make_shared<Statements::Pass>();
 }

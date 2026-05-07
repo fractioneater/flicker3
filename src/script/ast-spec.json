@@ -77,6 +77,7 @@
 				{"type": "Token*", "name": "label"},
 				{"type": "ExprNode", "name": "condition", "move": true},
 				{"type": "StmtNode", "name": "loop_body", "move": true},
+				{"type": "StmtNode", "name": "around_body", "move": true},
 				{"type": "StmtNode", "name": "else_body", "move": true}
 			]
 		}, {
@@ -86,6 +87,7 @@
 				{"type": "Token*", "name": "index_var"},
 				{"type": "ExprNode", "name": "iterator", "move": true},
 				{"type": "StmtNode", "name": "loop_body", "move": true},
+				{"type": "StmtNode", "name": "around_body", "move": true},
 				{"type": "StmtNode", "name": "else_body", "move": true}
 			]
 		}, {
@@ -95,6 +97,7 @@
 				{"type": "ExprNode", "name": "condition", "move": true},
 				{"type": "ExprNode", "name": "end", "move": true},
 				{"type": "StmtNode", "name": "loop_body", "move": true},
+				{"type": "StmtNode", "name": "around_body", "move": true},
 				{"type": "StmtNode", "name": "else_body", "move": true}
 			]
 		}, {

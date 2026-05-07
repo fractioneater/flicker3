@@ -1,2 +1,9 @@
 class Banana
   var a = 32
+
+  init()
+    super()
+    each i in 0..a
+      print i
+    around
+      print " then "

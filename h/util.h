@@ -94,6 +94,8 @@ class DotTreeWalker {
       const int parent_id {owner_.current_parent_id_};
       owner_.walk(stmt.condition, parent_id);
       owner_.walk(stmt.loop_body, parent_id);
+      if (!std::dynamic_pointer_cast<Statements::Pass>(stmt.around_body))
+        owner_.walk(stmt.around_body, parent_id);
       if (!std::dynamic_pointer_cast<Statements::Pass>(stmt.else_body))
         owner_.walk(stmt.else_body, parent_id);
     }
@@ -102,6 +104,8 @@ class DotTreeWalker {
       const int parent_id {owner_.current_parent_id_};
       owner_.walk(stmt.iterator, parent_id);
       owner_.walk(stmt.loop_body, parent_id);
+      if (!std::dynamic_pointer_cast<Statements::Pass>(stmt.around_body))
+        owner_.walk(stmt.around_body, parent_id);
       if (!std::dynamic_pointer_cast<Statements::Pass>(stmt.else_body))
         owner_.walk(stmt.else_body, parent_id);
     }
@@ -112,6 +116,8 @@ class DotTreeWalker {
       owner_.walk(stmt.condition, parent_id);
       owner_.walk(stmt.end, parent_id);
       owner_.walk(stmt.loop_body, parent_id);
+      if (!std::dynamic_pointer_cast<Statements::Pass>(stmt.around_body))
+        owner_.walk(stmt.around_body, parent_id);
       if (!std::dynamic_pointer_cast<Statements::Pass>(stmt.else_body))
         owner_.walk(stmt.else_body, parent_id);
     }
@@ -342,7 +348,9 @@ class DotTreeWalker {
         blah += stmt.label->src_string;
       }
       blah += " ... do ...";
-      if (std::dynamic_pointer_cast<Statements::Pass>(stmt.else_body))
+      if (!std::dynamic_pointer_cast<Statements::Pass>(stmt.around_body))
+        blah += " around ...";
+      if (!std::dynamic_pointer_cast<Statements::Pass>(stmt.else_body))
         blah += " else ...";
       return blah;
     }
@@ -361,7 +369,9 @@ class DotTreeWalker {
         blah += "]";
       }
       blah += " in ... do ...";
-      if (std::dynamic_pointer_cast<Statements::Pass>(stmt.else_body))
+      if (!std::dynamic_pointer_cast<Statements::Pass>(stmt.around_body))
+        blah += " around ...";
+      if (!std::dynamic_pointer_cast<Statements::Pass>(stmt.else_body))
         blah += " else ...";
       return blah;
     }
@@ -373,7 +383,9 @@ class DotTreeWalker {
         blah += stmt.label->src_string;
       }
       blah += " ...; ...; ... do ...";
-      if (std::dynamic_pointer_cast<Statements::Pass>(stmt.else_body))
+      if (!std::dynamic_pointer_cast<Statements::Pass>(stmt.around_body))
+        blah += " around ...";
+      if (!std::dynamic_pointer_cast<Statements::Pass>(stmt.else_body))
         blah += " else ...";
       return blah;
     }
