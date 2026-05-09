@@ -40,14 +40,31 @@ enum class Precedence {
 };
 
 class Parser {
-  Lexer& lexer_;
+  // Final AST tree once parsed.
   std::vector<StmtNode> program_ {};
-
+  // The lexer that created the tokens for this parser. Used for one purpose: populate_token_vec().
+  Lexer& lexer_;
+  // Self-explanatory.
   std::vector<Token> tokens_ {};
+  // Next token in line to be parsed.
   Token* current_ {};
+  // Token most recently parsed.
   Token* previous_ {};
-
+  // Whether the parser is having an existential crisis.
+  bool panic_mode_ {false};
+  // previous_ when report_error() was called. So it's not exactly always the token that was wrong, it's just a good estimate
+  // of "somewhere at least before the problematic bit." Used for counting indents and dedents in synchronization.
+  Token* panic_causing_token_or_not_really_ {};
+  // Errors AND warnings (and notes)---gotta use inclusive language, folks.
   std::vector<Diagnostic> diagnostics_ {};
+
+  void report_error(const Diagnostic& d) {
+    if (panic_mode_) return;
+    panic_mode_                        = true;
+    panic_causing_token_or_not_really_ = previous_;
+
+    diagnostics_.emplace_back(d);
+  }
 
   void advance() {
     previous_ = current_;
@@ -85,7 +102,7 @@ class Parser {
   }
 
   /**
-   * Consume as many TOKEN_LINES as are available, as well as the token afterward, BUT CONSUME NOTHING IF THE TOKEN AFTER A SET OF LINES IS NOT 'type'.
+   * Consume as many TOKEN_LINES as are available, as well as the token afterward, but consume NOTHING if the token after a set of lines is not 'type'.
    * @param type Type to check for
    * @return A boolean, true if the token after newlines matches 'type'
    */
@@ -133,7 +150,7 @@ class Parser {
   Token* expect(TokenType type, std::string_view message, Token* error_token = nullptr) {
     error_token = (error_token == nullptr) ? current_ : error_token;
     if (!match(type))
-      diagnostics_.emplace_back(std::string(message), error_token, Diagnostic::ERROR);
+      report_error({std::string(message), error_token, Diagnostic::ERROR});
     return previous_;
   }
 
@@ -144,7 +161,7 @@ class Parser {
    */
   void expect_line(std::string_view message, Token* error_token = nullptr) {
     error_token = (error_token == nullptr) ? current_ : error_token;
-    if (!match_line()) diagnostics_.emplace_back(std::string(message), error_token, Diagnostic::ERROR);
+    if (!match_line()) report_error({std::string(message), error_token, Diagnostic::ERROR});
   }
 
   /**
@@ -158,7 +175,7 @@ class Parser {
   Token* expect(TokenType type, std::string_view message, Diagnostic& context, Token* error_token = nullptr) {
     error_token = (error_token == nullptr) ? current_ : error_token;
     if (!match(type))
-      diagnostics_.emplace_back(std::string(message), context, error_token, Diagnostic::ERROR);
+      report_error({std::string(message), context, error_token, Diagnostic::ERROR});
     return previous_;
   }
 
@@ -287,6 +304,8 @@ class Parser {
 
   ExprNode parse_expression();
   ExprNode parse_expression(Precedence precedence);
+
+  void synchronize();
 
   // Helper data structures and parse rules
   using PrefixFn = ExprNode(Parser::*)();

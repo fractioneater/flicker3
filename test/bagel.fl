@@ -1,9 +1,9 @@
-class Banana
-  var a = 32
+# Error finding (no bagels involved)
 
-  init()
-    super()
-    each i in 0..a
-      print i
-    around
-      print " then "
+print "hello" .                 # <-- will find this one
+
+print 32
+print 32::32                    # but not this one
+
+if H and                        # <-- this one, yes
+  print "nope" "nope nope "     # this one, no
