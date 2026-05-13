@@ -147,6 +147,8 @@ StmtNode Parser::class_declaration() {
       advance();
     }
 
+    if (panic_mode_) synchronize();
+
     if (!check(TOKEN_DEDENT) && !match_line())
       report_error(
         {"Extraneous line content (class member has already been fully parsed)", current_, Diagnostic::ERROR}

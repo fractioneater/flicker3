@@ -1,4 +1,7 @@
-namespace Hmmm
-var a = 1
-val b = 1
-  var x = 3
+class Hmmm
+  var a = 1
+  val b = 1
+    var x = 3
+
+  fun a() -> Return
+    print 00::0
