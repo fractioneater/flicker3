@@ -249,6 +249,50 @@ fun a for X (b: X)
   print "Only two declarations to go: classes and aliases/imports"
 ```
 
+## ???
+
+Sometime in between these dates, I added parsing for classes.
+
+Loops also got a nice little feature: "around clauses." They make it really easy to implement `joinToString()`:
+
+```
+string a = ""
+each item in list
+  a += item
+around
+  a += ", "
+
+print a
+```
+
+## May 9, 2026
+
+Error handling is one of the most challenging things to get right, and although a perfect approach would be a lot of work, it can easily be faked with a nice
+panic mode and synchronization function.
+
+It's still headache-inducing, in case you're wondering.
+
+After an afternoon of deliberation, I think I've got something working. On an error, the parser will start ignoring everything until one of the following
+appears _after a newline:_
+
+- EOF
+- Start of a statement or declaration (this doesn't include `print` unfortunately)
+- A dedent **that takes the parser out of the current scope**
+
+I haven't tested it on lambdas yet. I think I'll need a new function for that, because there's no significant whitespace inside them.
+
+## May 11 & 12, 2026
+
+I've found a couple of cases where two errors are shown when there should be one:
+
+- **Random blocks formed by an unexpected indent**  
+  This was fixed by creating a new token type, `TOKEN_IGNORED`, that the lexer never creates. It is created on one occasion: when the parser finds an unexpected
+  indent, then silently disables the matching dedent to prevent it from erroring later.
+- **Other things with blocks (I don't remember)**  
+  I had to redo how blocks report their errors to make sure parsing couldn't end early and leave an extra dedent lying around to cause an error later.
+
+I still haven't gotten to lambda error handling.
+
 [learncpp]: https://learncpp.com
 
 [thing]: https://github.com/

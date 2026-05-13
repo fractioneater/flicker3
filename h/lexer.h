@@ -47,6 +47,8 @@ enum TokenType {
   TOKEN_INDENT, TOKEN_DEDENT, TOKEN_LINE,
   // EOF (90)
   TOKEN_EOF,
+  // Ignored tokens (91), only created during parsing, and only used to minimize unnecessary errors. There should be a better way, but I can't find it.
+  TOKEN_IGNORED,
 };
 
 struct Token {

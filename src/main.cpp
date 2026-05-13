@@ -57,10 +57,7 @@ std::string read_entire_file(const char* path) {
 
 InterpretResult interpret(const std::string& source, std::string_view module) {
   Lexer lexer {source};
-  Parser parser {lexer};
-
-  // Run the lexer.
-  parser.populate_token_vec();
+  Parser parser {lexer}; // Lexer is run when parser is initialized.
 
   #if DEBUG_PRINT_TOKENS
   for (const auto& token : parser.get_tokens()) {

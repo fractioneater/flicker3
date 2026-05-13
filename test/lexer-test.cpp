@@ -33,7 +33,6 @@ TEST(Comment, FileTest) {
   Lexer lexer {source};
   Parser parser {lexer};
 
-  parser.populate_token_vec();
   EXPECT_TRUE(lexer.get_diagnostics().empty());
   parser.parse();
   EXPECT_TRUE(parser.get_diagnostics().empty());
@@ -62,7 +61,6 @@ TEST(Identifier, FileTest) {
   Lexer lexer {source};
   Parser parser {lexer};
 
-  parser.populate_token_vec();
   EXPECT_TRUE(lexer.get_diagnostics().empty());
   parser.parse();
   EXPECT_TRUE(parser.get_diagnostics().empty());
@@ -93,7 +91,6 @@ TEST(Number, FileTest) {
   Lexer lexer {source};
   Parser parser {lexer};
 
-  parser.populate_token_vec();
   EXPECT_TRUE(lexer.get_diagnostics().empty());
   parser.parse();
   EXPECT_TRUE(parser.get_diagnostics().empty());
@@ -140,7 +137,6 @@ TEST(String, FileTest) {
   Lexer lexer {source};
   Parser parser {lexer};
 
-  parser.populate_token_vec();
   EXPECT_TRUE(lexer.get_diagnostics().empty());
   parser.parse();
   EXPECT_TRUE(parser.get_diagnostics().empty());
@@ -173,7 +169,6 @@ TEST(Indentation, FileTest) {
   Lexer lexer {source};
   Parser parser {lexer};
 
-  parser.populate_token_vec();
   EXPECT_TRUE(lexer.get_diagnostics().empty());
   parser.parse();
   EXPECT_TRUE(parser.get_diagnostics().empty());

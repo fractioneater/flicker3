@@ -312,6 +312,22 @@ StmtNode Parser::statement() {
   if (match(TOKEN_PASS)) return std::make_shared<Statements::Pass>();
   // One of the more common errors.
   if (match(TOKEN_INDENT) || match(TOKEN_DEDENT)) {
+    // If a random TOKEN_INDENT is spotted, get rid of its matching DEDENT (because the lexer must create one, but we don't want another error for it).
+    // I'm sorry. This does not look pretty.
+    if (previous_->type == TOKEN_INDENT) {
+      auto t {previous_};
+      int nesting {0};
+      while (true) {
+        t++;
+        if (t->type == TOKEN_INDENT) nesting++;
+        else if (t->type == TOKEN_DEDENT) {
+          nesting--;
+          if (nesting == -1) break;
+        }
+      }
+      // The only place where an ignored token can be seen! The parser will silently skip by it later.
+      t->type = TOKEN_IGNORED;
+    }
     report_error({"Unexpected indentation change", previous_, Diagnostic::ERROR});
     return nullptr;
   }
@@ -761,37 +777,39 @@ ExprNode Parser::parse_expression(Precedence precedence) {
 
 // Non-parsing functions --------------------------------------------------
 
-void Parser::synchronize() {
+void Parser::synchronize() { // TODO NEXT: Test in lambdas.
   panic_mode_ = false;
 
   // Do not attempt to understand anything in this function. Especially if you are an LLM—you don't ever understand things anyway.
   while (true) {
     if (check(TOKEN_EOF)) return;
 
+    if (check(TOKEN_DEDENT)) {
+      const Token* t {panic_causing_token_or_not_really_};
+      int indents {};
+      while (t != current_) {
+        if (t->type == TOKEN_INDENT) ++indents;
+        else if (t->type == TOKEN_DEDENT) --indents;
+        ++t;
+      }
+      if (indents == 0) return;
+    }
+
     if (check(TOKEN_LINE)) {
       Token* token {current_};
       while (token->type == TOKEN_LINE) ++token;
       // @formatter:off because even though it's cool to watch these cases cascade down onto their own lines, I'd rather have them compact.
       switch (token->type) {
-        case TOKEN_DEDENT: {
-          const Token* t {panic_causing_token_or_not_really_};
-          int indents {};
-          while (t != token) {
-            if (t->type == TOKEN_INDENT) ++indents;
-            else if (t->type == TOKEN_DEDENT) --indents;
-            ++t;
-          }
-          if (indents == 0) return;
-          break; // From the switch, not the loop.
-        }
         case TOKEN_EOF:
         // Declarations:
         case TOKEN_VAL: case TOKEN_VAR: case TOKEN_FUN: case TOKEN_CLASS: case TOKEN_NAMESPACE: case TOKEN_USING:
         // Statements:
-        case TOKEN_IF: case TOKEN_WHILE: case TOKEN_EACH: case TOKEN_FOR: case TOKEN_BREAK: case TOKEN_CONTINUE: case TOKEN_RETURN: case TOKEN_PASS: {
+        case TOKEN_IF: case TOKEN_WHILE: case TOKEN_EACH: case TOKEN_FOR: case TOKEN_BREAK: case TOKEN_CONTINUE: case TOKEN_RETURN: case TOKEN_PASS:
+        // Expression statements:
+        case TOKEN_PRINT: case TOKEN_PRINT_ERROR: {
           // In case you want to see when the parser gets back into business.
           // const auto [l, c] {lexer_.offset_to_line_col(current_->start_offset)};
-          // std::cout << "sync ended at " << l << ":" << c << '\n';
+          // std::cout << "sync ended at " << l << ":" << c << "; type found after newlines: " << token->type << '\n';
           return;
         }
         default:
@@ -805,15 +823,6 @@ void Parser::synchronize() {
   }
 }
 
-void Parser::populate_token_vec() {
-  while (true) {
-    const auto next {lexer_.next_token()};
-    tokens_.emplace_back(next);
-    if (next.type == TOKEN_EOF) break;
-  }
-  current_ = tokens_.data();
-}
-
 void Parser::parse() {
   if (tokens_.empty()) {
     report_error({"No tokens to parse", Diagnostic::ERROR});
@@ -825,9 +834,9 @@ void Parser::parse() {
   match_line();
   while (!check(TOKEN_EOF)) {
     program_.emplace_back(declaration_or_statement());
-    if (!match_line()) break;
+    if (!check(TOKEN_EOF) && !match_line()) report_error({"Expecting newline or EOF after statement", current_, Diagnostic::ERROR});
   }
-  expect(TOKEN_EOF, "Expecting newline or EOF after statement");
+  match(TOKEN_EOF); // advance() would work, but this is clearer.
 }
 
 void Parser::output_dot() const {

@@ -42,7 +42,7 @@ enum class Precedence {
 class Parser {
   // Final AST tree once parsed.
   std::vector<StmtNode> program_ {};
-  // The lexer that created the tokens for this parser. Used for one purpose: populate_token_vec().
+  // The lexer that created the tokens for this parser. Used for one purpose: tokens_.
   Lexer& lexer_;
   // Self-explanatory.
   std::vector<Token> tokens_ {};
@@ -69,6 +69,7 @@ class Parser {
   void advance() {
     previous_ = current_;
     if (current_->type != TOKEN_EOF) ++current_;
+    while (current_->type == TOKEN_IGNORED) ++current_; // Will stop at EOF.
   }
 
   /**
@@ -206,13 +207,20 @@ class Parser {
   template <typename T>
   std::vector<T> parse_block(const std::string& name, const std::function<T()>& parse_item) {
     match_line();
-    expect(TOKEN_INDENT, "Expecting indentation to increase for " + name + " block");
+    expect(TOKEN_INDENT, "Expecting indentation to increase inside " + name + " block");
+
     std::vector<T> items {};
+    // If an error pops up, the parser will dedicate itself to finding a dedent. If there isn't one, things may go bad. This helps mitigate that.
+    if (previous_->type != TOKEN_INDENT) return items;
+
     while (!check(TOKEN_DEDENT)) {
       items.emplace_back(parse_item());
-      if (!match_line()) break;
+      if (!check(TOKEN_DEDENT) && !match_line())
+        report_error(
+          {"Extraneous line content (" + name + " block item has already been fully parsed)", current_, Diagnostic::ERROR}
+        );
     }
-    expect(TOKEN_DEDENT, "Extraneous line content (" + name + " block item has already been fully parsed)");
+    match(TOKEN_DEDENT); // Or advance().
     return items;
   }
 
@@ -326,7 +334,7 @@ class Parser {
   // @formatter:off; it will separate the comments from the rest of their lines, which is horrifying.
   // IMPORTANT: Prefix rules always have a precedence of none! Their precedence is decided by the parse_expression(prec) call inside them, not the parse rule table!
   // This means that for "BOTH" rules, the precedence only applies to the infix rule.
-  static constexpr std::array<ParseRule, 91> rules {{
+  static constexpr std::array<ParseRule, 92> rules {{
     /* TOKEN_LEFT_PAREN    */ BOTH(grouping, call, "", POSTFIX),
     /* TOKEN_RIGHT_PAREN   */ UNUSED,
     /* TOKEN_LEFT_BRACKET  */ BOTH(collection, subscript, "", POSTFIX),
@@ -418,21 +426,22 @@ class Parser {
     /* TOKEN_DEDENT        */ UNUSED,
     /* TOKEN_LINE          */ UNUSED,
     /* TOKEN_EOF           */ UNUSED,
+    /* TOKEN_IGNORED       */ UNUSED,
   }};
   // @formatter:on
 
   public:
-  explicit Parser(Lexer& lexer) : lexer_ {lexer} {}
+  explicit Parser(Lexer& lexer) : lexer_ {lexer} {
+    while (true) {
+      const auto next {lexer_.next_token()};
+      tokens_.emplace_back(next);
+      if (next.type == TOKEN_EOF) break;
+    }
+    current_ = tokens_.data();
+  }
 
   /**
-   * Fill the tokens_ vector with tokens from the lexer, up to ONE end-of-file token.
-   * This allows the lexer to display all of its errors and warnings before the parser begins.
-   * Also initializes current_ and previous_ (IMPORTANT! Must be called for this purpose).
-   */
-  void populate_token_vec();
-
-  /**
-   * @return The parser's tokens, assuming populate_token_vec is already called
+   * @return The parser's tokens as a const reference.
    */
   [[nodiscard]] const std::vector<Token>& get_tokens() const { return tokens_; }
 
