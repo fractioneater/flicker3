@@ -1,7 +1,4 @@
-var a = 3
-  var b = 3
-  if true
-    print "exactly"
-    print 32::32
-  var c = 3
-var d = 32
+namespace Hmmm
+var a = 1
+val b = 1
+  var x = 3

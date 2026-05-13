@@ -69,7 +69,7 @@ class Parser {
   void advance() {
     previous_ = current_;
     if (current_->type != TOKEN_EOF) ++current_;
-    while (current_->type == TOKEN_IGNORED) ++current_; // Will stop at EOF.
+    while (current_->type == TOKEN_IGNORED_DEDENT) ++current_; // Will stop at EOF.
   }
 
   /**
@@ -110,7 +110,7 @@ class Parser {
   bool match_after_newlines(TokenType type) {
     // Taking advantage of infinite lookahead here.
     const Token* token = current_;
-    while (token->type == TOKEN_LINE) ++token;
+    while (token->type == TOKEN_LINE || token->type == TOKEN_IGNORED_DEDENT) ++token;
     if (token->type != type) return false;
 
     while (current_->type == TOKEN_LINE) advance();
@@ -200,27 +200,34 @@ class Parser {
   /**
    * Parses an indented block of any item, line-separated.
    * @tparam T Type of items in the result list/block
-   * @param name String for error messages: "expecting indentation to increase/decrease for/after " + name + " block"
+   * @param indented Whether this block has indents and dedents to begin and end it (as opposed to just EOF)
+   * @param name String for error messages: "expecting indentation to increase inside " + name
    * @param parse_item Function to parse a single line
    * @return List of items (statements) for lines
    */
   template <typename T>
-  std::vector<T> parse_block(const std::string& name, const std::function<T()>& parse_item) {
+  std::vector<T> parse_block(const bool indented, const std::string& name, const std::function<T()>& parse_item) {
     match_line();
-    expect(TOKEN_INDENT, "Expecting indentation to increase inside " + name + " block");
+    if (indented)
+      expect(TOKEN_INDENT, "Expecting indentation to increase inside " + name);
 
     std::vector<T> items {};
     // If an error pops up, the parser will dedicate itself to finding a dedent. If there isn't one, things may go bad. This helps mitigate that.
-    if (previous_->type != TOKEN_INDENT) return items;
+    if (indented && previous_->type != TOKEN_INDENT) return items;
 
-    while (!check(TOKEN_DEDENT)) {
+    const TokenType end_type {indented ? TOKEN_DEDENT : TOKEN_EOF};
+    while (!check(end_type)) {
+      if (unexpected_indent()) continue;
+
       items.emplace_back(parse_item());
-      if (!check(TOKEN_DEDENT) && !match_line())
+      if (panic_mode_) synchronize();
+
+      if (!check(end_type) && !match_line())
         report_error(
-          {"Extraneous line content (" + name + " block item has already been fully parsed)", current_, Diagnostic::ERROR}
+          {"Extraneous line content (" + name + " item has already been fully parsed)", current_, Diagnostic::ERROR}
         );
     }
-    match(TOKEN_DEDENT); // Or advance().
+    advance(); // Match the end_type we've already checked for.
     return items;
   }
 
@@ -278,6 +285,11 @@ class Parser {
    * @return A list of param objects
    */
   std::vector<Param> param_list();
+  /**
+   * Call whenever you don't want to see an indent.
+   * A whole function just for a specific little error! How crazy is that?
+   */
+  bool unexpected_indent();
 
   // Infix
   ExprNode binary_right_assoc(const ExprNode& left);
@@ -426,7 +438,7 @@ class Parser {
     /* TOKEN_DEDENT        */ UNUSED,
     /* TOKEN_LINE          */ UNUSED,
     /* TOKEN_EOF           */ UNUSED,
-    /* TOKEN_IGNORED       */ UNUSED,
+    /* TOKEN_IGNORED_DEDENT*/ UNUSED,
   }};
   // @formatter:on
 

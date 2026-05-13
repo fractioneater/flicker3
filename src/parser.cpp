@@ -28,19 +28,16 @@ std::optional<StmtNode> Parser::declaration() {
 }
 
 StmtNode Parser::declaration_or_statement() {
+  // Do not use declaration().value_or(statement())! It's tempting, but don't do it!
   if (const auto decl {declaration()}) return *decl;
-  const auto stmt {statement()};
-  if (panic_mode_) synchronize();
-  return stmt;
+  return statement();
 }
 
 StmtNode Parser::declaration_in_namespace() {
-  const auto decl {declaration()};
-  if (panic_mode_) synchronize();
-  if (decl) return *decl;
+  if (const auto decl {declaration()}) return *decl;
 
   report_error({"Expected a declaration", current_, Diagnostic::ERROR});
-  return std::make_shared<Statements::Pass>();
+  return nullptr;
 }
 
 StmtNode Parser::val_declaration() {
@@ -127,7 +124,7 @@ StmtNode Parser::class_declaration() {
 
   std::vector<StmtNode> namespace_items {};
   if (match(TOKEN_NAMESPACE))
-    namespace_items = parse_block<StmtNode>("namespace", [this] { return declaration_in_namespace(); });
+    namespace_items = parse_block<StmtNode>(true, "class namespace", [this] { return declaration_in_namespace(); });
 
   std::vector<StmtNode> declarations {};
   std::vector<StmtNode> initializers {};
@@ -139,27 +136,30 @@ StmtNode Parser::class_declaration() {
     else if (check(TOKEN_IDENTIFIER) && current_->src_string == "init")
       initializers.emplace_back(initializer());
 
-    else if (match(TOKEN_NAMESPACE))
+    else if (unexpected_indent()) continue;
+    else if (match(TOKEN_NAMESPACE)) {
       if (namespace_items.empty())
         report_error({"Namespace must come first", previous_, Diagnostic::ERROR});
       else
         report_error({"Classes can only have one namespace", previous_, Diagnostic::ERROR});
-    else {
+    } else {
       report_error({"Invalid class item—expecting a namespace, initializer, method, or variable declaration", current_, Diagnostic::ERROR});
       advance();
     }
 
-    if (!match_line()) break;
+    if (!check(TOKEN_DEDENT) && !match_line())
+      report_error(
+        {"Extraneous line content (class member has already been fully parsed)", current_, Diagnostic::ERROR}
+      );
   }
-
-  expect(TOKEN_DEDENT, "Extraneous line content (class member has already been fully parsed)");
+  advance(); // Match the dedent we've already checked for.
 
   return std::make_shared<Statements::Class>(name, type_params, superclass, namespace_items, initializers, declarations);
 }
 
 StmtNode Parser::namespace_declaration() {
   Token* name {expect(TOKEN_IDENTIFIER, "Expecting a name for this namespace")};
-  return std::make_shared<Statements::Namespace>(name, parse_block<StmtNode>("namespace", [this] { return declaration_in_namespace(); }));
+  return std::make_shared<Statements::Namespace>(name, parse_block<StmtNode>(true, "namespace", [this] { return declaration_in_namespace(); }));
 }
 
 StmtNode Parser::using_declaration() {
@@ -310,27 +310,6 @@ StmtNode Parser::statement() {
   if (match(TOKEN_CONTINUE)) return continue_statement();
   if (match(TOKEN_RETURN)) return return_statement();
   if (match(TOKEN_PASS)) return std::make_shared<Statements::Pass>();
-  // One of the more common errors.
-  if (match(TOKEN_INDENT) || match(TOKEN_DEDENT)) {
-    // If a random TOKEN_INDENT is spotted, get rid of its matching DEDENT (because the lexer must create one, but we don't want another error for it).
-    // I'm sorry. This does not look pretty.
-    if (previous_->type == TOKEN_INDENT) {
-      auto t {previous_};
-      int nesting {0};
-      while (true) {
-        t++;
-        if (t->type == TOKEN_INDENT) nesting++;
-        else if (t->type == TOKEN_DEDENT) {
-          nesting--;
-          if (nesting == -1) break;
-        }
-      }
-      // The only place where an ignored token can be seen! The parser will silently skip by it later.
-      t->type = TOKEN_IGNORED;
-    }
-    report_error({"Unexpected indentation change", previous_, Diagnostic::ERROR});
-    return nullptr;
-  }
   // Otherwise, expect an expression statement.
   //   TODO: This creates a weird situation with errors if there's nothing valid here ("Expected an expression" when a statement or expression would be okay)
   return std::make_shared<Statements::Expression>(parse_expression());
@@ -436,7 +415,7 @@ StmtNode Parser::return_statement() {
 }
 
 StmtNode Parser::block() {
-  return std::make_shared<Statements::Block>(parse_block<StmtNode>("code", [this] { return declaration_or_statement(); }));
+  return std::make_shared<Statements::Block>(parse_block<StmtNode>(true, "code block", [this] { return declaration_or_statement(); }));
 }
 
 StmtNode Parser::block_or_statement() {
@@ -471,6 +450,27 @@ std::vector<Param> Parser::param_list() {
   };
   expect(TOKEN_RIGHT_PAREN, "Expecting ')' after parameter list");
   return params;
+}
+
+bool Parser::unexpected_indent() {
+  if (!match(TOKEN_INDENT)) return false;
+  // If a random TOKEN_INDENT is spotted, get rid of its matching DEDENT (because the lexer must create one, but we don't want another error for it).
+  // I'm sorry. This does not look pretty.
+  auto t {previous_};
+  int nesting {0};
+  while (true) {
+    t++;
+    if (t->type == TOKEN_INDENT) nesting++;
+    else if (t->type == TOKEN_DEDENT) {
+      nesting--;
+      if (nesting == -1) break;
+    }
+  }
+  // The only place where an ignored token can be seen! The parser will silently skip by it later.
+  t->type = TOKEN_IGNORED_DEDENT;
+
+  report_error({"Unexpected indentation change", previous_, Diagnostic::ERROR});
+  return true;
 }
 
 // Expressions --------------------------------------------------
@@ -789,7 +789,7 @@ void Parser::synchronize() { // TODO NEXT: Test in lambdas.
       int indents {};
       while (t != current_) {
         if (t->type == TOKEN_INDENT) ++indents;
-        else if (t->type == TOKEN_DEDENT) --indents;
+        else if (t->type == TOKEN_DEDENT || t->type == TOKEN_IGNORED_DEDENT) --indents;
         ++t;
       }
       if (indents == 0) return;
@@ -829,14 +829,7 @@ void Parser::parse() {
     return;
   }
 
-  // From the grammar, this is the top level structure:
-  // program : newline? (codeItem newline)* codeItem? EOF ;
-  match_line();
-  while (!check(TOKEN_EOF)) {
-    program_.emplace_back(declaration_or_statement());
-    if (!check(TOKEN_EOF) && !match_line()) report_error({"Expecting newline or EOF after statement", current_, Diagnostic::ERROR});
-  }
-  match(TOKEN_EOF); // advance() would work, but this is clearer.
+  program_ = parse_block<StmtNode>(false, "top-level program", [this] { return declaration_or_statement(); });
 }
 
 void Parser::output_dot() const {

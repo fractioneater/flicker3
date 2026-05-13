@@ -119,3 +119,16 @@ TEST(ErrorRecovery, ErrorInsideRandomBlock) {
   parser.parse();
   EXPECT_EQ(parser.get_diagnostics().size(), 2);
 }
+
+TEST(ErrorRecovery, RandomBlockInNamespaceBeforeEOF) {
+  const std::string src {
+    "namespace Hmmm\n"
+    "  var a = 1\n"
+    "  val b = 1\n"
+    "    var x = 3\n"
+  };
+  Lexer lexer {src};
+  Parser parser {lexer};
+  parser.parse();
+  EXPECT_EQ(parser.get_diagnostics().size(), 1);
+}
