@@ -32,7 +32,7 @@ nil or true or false
 4 < Random().byte() < 40  # Chained comparisons for the Python fans
 4..2
 variable ?: ""            # Nil coalescing operator (Elvis)
-variable?.type            # Safe membel access
+variable?.type            # Safe member access
 
 # And when expressions get boring, you can have fun with functions:
 fun double(num: Int) -> Int = num * 2
@@ -53,7 +53,7 @@ fun callAndReturn for T (function: () -> T) -> T
 
 callAndReturn { print "lambdas are cool"; return [1, 2, 3]; }
 
-# We've also got control flow. I assume you know the general idea of this, but take a look at this:
+# We've also got control flow. I assume you know the general idea, but take a look at this:
 var string = ""
 each item[index] in 78..93
   string += "#=(index): =(item)"
