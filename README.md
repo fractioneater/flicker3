@@ -13,18 +13,14 @@ Flicker 3 will be...
 
 ## Code Sample
 
-```
+```ruby
 # In Flicker, the world does not exist. Instead, we use a bagel.
 print "Hello, Bagel!"
 
 # And because printing things is nice, I've made it an expression:
 var a = print "Hello again, Bagel!"
 
-#- Block comments can continue
-onto
-a new
-line
-  -#
+#- Block comment -#
 
 ## Double-comments are the current hacky solution to skip a newline:
 print 3 + ##
