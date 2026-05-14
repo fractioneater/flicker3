@@ -1,0 +1,1 @@
+**This repository is a mirror. It is still being updated, but to fully guarantee you're seeing the most recent code, please clone or download from [Codeberg](https://codeberg.org/fractioneater/flicker3) instead.**
