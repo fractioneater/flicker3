@@ -5,3 +5,10 @@
  */
 
 #include "analyzer.h"
+
+#include <iostream>
+
+void Analyzer::run() {
+  // Just for now, don't worry.
+  std::cout << typeid(program_.front()).name() << '\n';
+}

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#include "util.h"
+#include "dot-printer.h"
 
 #include <iostream>
 #include <sstream>

@@ -10,9 +10,10 @@
 #include <fstream>
 #include <iostream>
 
+#include "analyzer.h"
+#include "dot-printer.h"
 #include "lexer.h"
 #include "parser.h"
-#include "util.h"
 
 enum InterpretResult {
   INTERPRET_OK, INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERROR
@@ -85,7 +86,7 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
   if (lexer.encountered_halt()) {
     #if PRINT_COLORS
     std::cout << "Compiling halted at Lexer\n\033[4m" << ERROR_COLOR << "Lexer" << DARK_GRAY_COLOR <<
-      " -> Parser -> Type Checker -> Bytecode Generator -> Virtual Machine" << CLEAR_FORMAT << '\n';
+      " -> Parser -> Analyzer -> Bytecode Generator -> Virtual Machine" << CLEAR_FORMAT << '\n';
     #else
     std::cout << "Compiling halted at Lexer\n";
     #endif
@@ -100,7 +101,7 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
   if (parser.encountered_halt()) {
     #if PRINT_COLORS
     std::cout << "Compiling halted at Parser\n\033[4m" << RESULT_COLOR << "Lexer -> " << ERROR_COLOR << "Parser" << DARK_GRAY_COLOR <<
-      " -> Type Checker -> Bytecode Generator -> Virtual Machine" << CLEAR_FORMAT << '\n';
+      " -> Analyzer -> Bytecode Generator -> Virtual Machine" << CLEAR_FORMAT << '\n';
     #else
     std::cout << "Compiling halted at Parser\n";
     #endif
@@ -110,6 +111,21 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
   #if DEBUG_PRINT_DOT
   parser.output_dot();
   #endif
+
+  Analyzer analyzer {parser.get_tree()};
+  analyzer.run();
+
+  if (analyzer.encountered_halt()) {
+    #if PRINT_COLORS
+    std::cout << "Compiling halted at Analyzer\n\033[4m" << RESULT_COLOR << "Lexer -> Parser -> " << ERROR_COLOR << "Analyzer" << DARK_GRAY_COLOR <<
+      " -> Bytecode Generator -> Virtual Machine" << CLEAR_FORMAT << '\n';
+    #else
+    std::cout << "Compiling halted at Analyzer"
+    #endif
+    return INTERPRET_COMPILE_ERROR;
+  }
+
+  // Next step: Turn the tree into bytecode. It'd probably be good to return something from the analyzer that is a better representation than the AST.
 
   #if DEBUG_PRINT_CODE
   #endif

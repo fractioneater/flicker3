@@ -11,9 +11,9 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 add_library(flicker_lib
 	src/analyzer.cpp
 	src/diagnostic.cpp
+	src/dot-printer.cpp
 	src/lexer.cpp
 	src/parser.cpp
-	src/util.cpp
 	src/vm.cpp
 )
 

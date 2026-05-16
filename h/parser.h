@@ -469,6 +469,8 @@ class Parser {
    */
   void output_dot() const;
 
+  [[nodiscard]] const std::vector<StmtNode>& get_tree() const { return program_; };
+
   [[nodiscard]] const std::vector<Diagnostic>& get_diagnostics() const { return diagnostics_; }
 
   [[nodiscard]] bool encountered_halt() const {
