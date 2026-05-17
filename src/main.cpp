@@ -115,6 +115,9 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
   Analyzer analyzer {parser.get_tree()};
   analyzer.run();
 
+  for (const auto& err : analyzer.get_diagnostics())
+    err.print(&lexer, module);
+
   if (analyzer.encountered_halt()) {
     #if PRINT_COLORS
     std::cout << "Compiling halted at Analyzer\n\033[4m" << RESULT_COLOR << "Lexer -> Parser -> " << ERROR_COLOR << "Analyzer" << DARK_GRAY_COLOR <<

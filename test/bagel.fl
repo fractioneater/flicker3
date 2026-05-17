@@ -1,7 +1,10 @@
-class Hmmm
-  var a = 1
-  val b = 1
-    var x = 3
+while:ab true
+  print 32
+else
+  continue:ab
 
-  fun a() -> Return
-    print 00::0
+while:jorge a == 3
+  while:jorge b == 4
+    print 3
+    break:jorge
+    break:ab
