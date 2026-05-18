@@ -59,6 +59,7 @@ std::string read_entire_file(const char* path) {
 InterpretResult interpret(const std::string& source, std::string_view module) {
   Lexer lexer {source};
   Parser parser {lexer}; // Lexer is run when parser is initialized.
+  Analyzer analyzer {};
 
   #if DEBUG_PRINT_TOKENS
   for (const auto& token : parser.get_tokens()) {
@@ -93,7 +94,7 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
     return INTERPRET_COMPILE_ERROR;
   }
 
-  parser.parse();
+  const auto program = parser.parse();
 
   for (const auto& err : parser.get_diagnostics())
     err.print(&lexer, module);
@@ -112,8 +113,7 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
   parser.output_dot();
   #endif
 
-  Analyzer analyzer {parser.get_tree()};
-  analyzer.run();
+  program->accept(analyzer);
 
   for (const auto& err : analyzer.get_diagnostics())
     err.print(&lexer, module);

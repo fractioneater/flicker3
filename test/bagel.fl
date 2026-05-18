@@ -1,10 +1,15 @@
-while:ab true
+while:raphael true
   print 32
 else
-  continue:ab
+  continue:raphael
 
 while:jorge a == 3
   while:jorge b == 4
     print 3
     break:jorge
-    break:ab
+    break:raphael
+
+# Actual use case for labels:
+while:outer b
+  while c
+    break:outer

@@ -18,8 +18,6 @@ struct LoopFrame {
 };
 
 class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
-  // AST from the parser.
-  const std::vector<StmtNode>& program_ {};
   // Errors/warnings/notes.
   std::vector<Diagnostic> diagnostics_ {};
 
@@ -71,12 +69,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   void break_or_continue(const char* name, const Token* label);
 
   public:
-  explicit Analyzer(const std::vector<StmtNode>& program) : program_ {program} {}
-
-  /**
-   * Checks the parsed AST to make sure all names and types are correct.
-   */
-  void run();
+  Analyzer() = default;
 
   [[nodiscard]] const std::vector<Diagnostic>& get_diagnostics() const { return diagnostics_; }
 

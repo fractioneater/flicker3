@@ -41,7 +41,7 @@ enum class Precedence {
 
 class Parser {
   // Final AST tree once parsed.
-  std::vector<StmtNode> program_ {};
+  StmtNode program_ {};
   // The lexer that created the tokens for this parser. Used for one purpose: tokens_.
   Lexer& lexer_;
   // Self-explanatory.
@@ -461,15 +461,13 @@ class Parser {
    * Parses the input token stream and generates an AST which is stored in program_ if there are no errors.
    * @return True if parsing completes without syntax errors; otherwise false
    */
-  void parse();
+  StmtNode parse();
 
   /**
    * Output in GraphViz DOT format, to a file specified by DEBUG_DOT_FILENAME, from the tree stored in program_.
    * There must be a tree already—parse() must have been called.
    */
   void output_dot() const;
-
-  [[nodiscard]] const std::vector<StmtNode>& get_tree() const { return program_; };
 
   [[nodiscard]] const std::vector<Diagnostic>& get_diagnostics() const { return diagnostics_; }
 

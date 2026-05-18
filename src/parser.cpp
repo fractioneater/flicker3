@@ -825,25 +825,30 @@ void Parser::synchronize() { // TODO NEXT: Test in lambdas.
   }
 }
 
-void Parser::parse() {
+StmtNode Parser::parse() {
   if (tokens_.empty()) {
     report_error({"No tokens to parse", Diagnostic::ERROR});
-    return;
+    return nullptr;
   }
 
-  program_ = parse_block<StmtNode>(false, "top-level program", [this] { return declaration_or_statement(); });
+  program_ = std::make_shared<Statements::Block>(parse_block<StmtNode>(false, "top-level program", [this] { return declaration_or_statement(); }));
+  return program_;
 }
 
 void Parser::output_dot() const {
-  if (program_.empty()) {
+  if (program_ == nullptr) {
     std::cerr << "Parser's AST is empty; run parse() before calling\n";
     return;
   }
 
   if (std::ofstream out {DEBUG_DOT_FILENAME}) {
-    out << to_dot(program_) << '\n';
+    out << to_dot(std::dynamic_pointer_cast<Statements::Block>(program_)->statements) << '\n';
     out.close();
+    #if PRINT_COLORS
+    std::cout << DARK_GRAY_COLOR << "Parse tree exported to " << DEBUG_DOT_FILENAME << CLEAR_FORMAT << '\n';
+    #else
     std::cout << "Parse tree exported to " << DEBUG_DOT_FILENAME << '\n';
+    #endif
   } else {
     std::cerr << "Could not open " << DEBUG_DOT_FILENAME << " to export parse tree\n";
   }
