@@ -6,9 +6,28 @@
 
 #pragma once
 
+#include <unordered_map>
 #include <vector>
 
 #include "ast.h"
+
+struct ObjectSymbol {
+  bool is_mutable {false};
+  TypePtr declared_type {};
+};
+
+struct TypeSymbol {
+  TypePtr type {};
+};
+
+struct ScopeFrame {
+  std::unordered_map<std::string, ObjectSymbol> objects {};
+  std::unordered_map<std::string, TypeSymbol> types {};
+};
+
+struct FunctionFrame {
+  TypePtr return_type {};
+};
 
 struct LoopFrame {
   bool labeled;
@@ -17,11 +36,22 @@ struct LoopFrame {
   explicit LoopFrame(const Token* token) : labeled {token != nullptr}, label {token ? token->src_string : ""} {}
 };
 
+// Tiny interface for some fun exceptions.
+enum class ExceptionKind { REDECLARED_NAME, SHADOWED_NAME, INDETERMINABLE_TYPE };
+
+struct AnalyzerException : std::exception {
+  ExceptionKind kind;
+  explicit AnalyzerException(ExceptionKind k) : kind {k} {}
+};
+
 class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   // Errors/warnings/notes.
   std::vector<Diagnostic> diagnostics_ {};
 
   // CONTEXT --------------------------------------------------
+  // Scopes for symbol tables.
+  std::vector<ScopeFrame> scopes_ {};
+  // Loop contexts (for labels).
   std::vector<LoopFrame> loops_ {};
 
   void visit_block_stmt(const Statements::Block& stmt) override;
@@ -66,7 +96,98 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   void visit_super_expr(const Expressions::Super& expr) override;
   void visit_print_expr(const Expressions::Print& expr) override;
 
+  /**
+   * Scans loop frames looking for one with a specific label, traversing backward through loops_.
+   * @param match_label Label token to match against the name of
+   * @return nullopt if the label isn't found, otherwise the number of loops from the innermost out until it was matched
+   */
+  std::optional<int> loop_id_with_label(const Token* match_label);
   void break_or_continue(const char* name, const Token* label);
+
+  /**
+   * Infers the type of an expression, and if it's indeterminable, throws an INDETERMINABLE_TYPE exception.
+   * @param expr Expression to determine the type of
+   * @return Type
+   */
+  TypePtr infer_type(const ExprNode& expr);
+
+  // Functions that look nicer when you write them like this:
+  void begin_scope() {
+    scopes_.emplace_back();
+  }
+
+  void end_scope() {
+    scopes_.pop_back();
+  }
+
+  /**
+   * Makes sure a name isn't already declared.
+   * @param is_type Which symbol table to scan (true for type, false for object)
+   * @param name Name of the symbol in question
+   */
+  void check_duplicate_name(bool is_type, const std::string& name) {
+    for (auto iter {std::begin(scopes_)}; iter != std::end(scopes_); ++iter) {
+      if (is_type ? iter->types.contains(name) : iter->objects.contains(name)) {
+        if (std::next(iter) == scopes_.end())
+          throw AnalyzerException {ExceptionKind::REDECLARED_NAME};
+        throw AnalyzerException {ExceptionKind::SHADOWED_NAME};
+      }
+    }
+  }
+
+  void add_object(std::string&& name, ObjectSymbol&& symbol) {
+    scopes_.back().objects.emplace(std::move(name), std::move(symbol));
+    check_duplicate_name(false, name);
+  }
+
+  void add_object(std::string_view name, ObjectSymbol&& symbol) {
+    auto str {std::string(name)};
+    scopes_.back().objects.emplace(str, std::move(symbol));
+    check_duplicate_name(false, str);
+  }
+
+  /**
+   * Add an object to the symbol table and report duplicate names.
+   * @param token Identifier token for symbol name and error positioning
+   * @param symbol Symbol to add to the object table
+   */
+  void add_object_safe(const Token* const token, ObjectSymbol&& symbol) noexcept {
+    try {
+      add_object(token->src_string, std::move(symbol));
+    } catch (AnalyzerException& e) {
+      if (e.kind == ExceptionKind::REDECLARED_NAME)
+        diagnostics_.emplace_back("Name has already been declared in this scope", token, Diagnostic::ERROR);
+      else
+        diagnostics_.emplace_back("Name shadows a declaration from another scope", token, Diagnostic::WARNING);
+    }
+  }
+
+  void add_type(std::string&& name, TypeSymbol&& symbol) {
+    scopes_.back().types.emplace(std::move(name), std::move(symbol));
+    check_duplicate_name(true, name);
+  }
+
+  void add_type(std::string_view name, TypeSymbol&& symbol) {
+    auto str {std::string(name)};
+    scopes_.back().types.emplace(str, std::move(symbol));
+    check_duplicate_name(true, str);
+  }
+
+  /**
+   * Add a type to the symbol table and report duplicate names.
+   * @param token Identifier token for symbol name and error positioning
+   * @param symbol Symbol to add to the type table
+   */
+  void add_type_safe(const Token* const token, TypeSymbol&& symbol) noexcept {
+    try {
+      add_type(token->src_string, std::move(symbol));
+    } catch (AnalyzerException& e) {
+      if (e.kind == ExceptionKind::REDECLARED_NAME)
+        diagnostics_.emplace_back("Type name has already been declared in this scope", token, Diagnostic::ERROR);
+      else
+        diagnostics_.emplace_back("Type name shadows a declaration from another scope", token, Diagnostic::WARNING);
+    }
+  }
 
   public:
   Analyzer() = default;
