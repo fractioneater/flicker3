@@ -503,7 +503,7 @@ class DotTreeWalker {
 
   void walk(const ExprNode& node, int parent_id);
   void walk(const StmtNode& node, int parent_id);
-  void walk(const TypePtr& type, int parent_id);
+  void walk(const SyntacticTypePtr& type, int parent_id);
 
   public:
   std::string render(const std::vector<StmtNode>& tree);

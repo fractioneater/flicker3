@@ -19,7 +19,7 @@
 			"name": "Variable", "fields": [
 				{"type": "bool", "name": "is_mutable"},
 				{"type": "Token*", "name": "identifier"},
-				{"type": "TypePtr", "name": "type", "move": true},
+				{"type": "SyntacticTypePtr", "name": "type", "move": true},
 				{"type": "ExprNode", "name": "initializer", "move": true}
 			]
 		}, {
@@ -27,7 +27,7 @@
 				{"type": "Token*", "name": "identifier"},
 				{"type": "std::vector<Token*>", "name": "type_params", "move": true},
 				{"type": "std::vector<Param>", "name": "params", "move": true},
-				{"type": "TypePtr", "name": "return_type", "move": true},
+				{"type": "SyntacticTypePtr", "name": "return_type", "move": true},
 				{"type": "StmtNode", "name": "body", "move": true}
 			]
 		}, {
@@ -39,7 +39,7 @@
 			"name": "Method", "fields": [
 				{"type": "Token*", "name": "identifier"},
 				{"type": "std::vector<Param>", "name": "params", "move": true},
-				{"type": "TypePtr", "name": "return_type", "move": true},
+				{"type": "SyntacticTypePtr", "name": "return_type", "move": true},
 				{"type": "StmtNode", "name": "body", "move": true}
 			]
 		}, {
@@ -64,7 +64,7 @@
 		}, {
 			"name": "Typealias", "fields": [
 				{"type": "Token*", "name": "identifier"},
-				{"type": "TypePtr", "name": "type", "move": true}
+				{"type": "SyntacticTypePtr", "name": "type", "move": true}
 			]
 		}, {
 			"name": "If", "fields": [

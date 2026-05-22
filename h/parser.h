@@ -249,19 +249,19 @@ class Parser {
    * This includes optionals, applied types, function types, and named types (see h/type.h for explanation).
    * @return Type parsed (possibly nullptr in error case)
    */
-  TypePtr broad_type();
+  SyntacticTypePtr broad_type();
   /**
    * Parses a function type, like this: (String, String) -> String.
    * @return Function type parsed (possibly nullptr in error case)
    */
-  TypePtr function_type();
+  SyntacticTypePtr function_type();
   /**
    * Parses a type that is not a function type—could be applied (with generics), nullable, or anything but a function type.
    * @param thing_to_look_for For the error message of the expect(IDENTIFIER)—this type always starts with an identifier—"Expecting " + thing_to_look_for
    * @param allow_generics Whether applied types are allowed.
    * @return Type parsed (possibly nullptr in error case)
    */
-  TypePtr standard_type(const std::string& thing_to_look_for, bool allow_generics);
+  SyntacticTypePtr standard_type(const std::string& thing_to_look_for, bool allow_generics);
 
   StmtNode statement();
   StmtNode if_statement();

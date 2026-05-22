@@ -6,9 +6,11 @@
 
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 /**
@@ -30,16 +32,18 @@ enum class TypeKind {
   OVERLOAD_SET,
 };
 
-class Type {
+// Syntactic (parser) types --------------------------------------------------
+
+class SyntacticType {
   public:
-  virtual ~Type() = default;
+  virtual ~SyntacticType() = default;
   [[nodiscard]] virtual TypeKind kind() const = 0;
 };
 
-using TypePtr = std::shared_ptr<Type>;
+using SyntacticTypePtr = std::shared_ptr<SyntacticType>;
 
-class NamedType final : public Type {
-  std::string name_ {}; // TODO: We may want more than a name later.
+class NamedType final : public SyntacticType {
+  std::string name_ {};
 
   public:
   explicit NamedType(std::string name) : name_ {std::move(name)} {}
@@ -48,41 +52,41 @@ class NamedType final : public Type {
   [[nodiscard]] const std::string& name() const { return name_; }
 };
 
-class AppliedType final : public Type {
-  TypePtr constructor_ {};
-  std::vector<TypePtr> args_ {};
+class AppliedType final : public SyntacticType {
+  SyntacticTypePtr constructor_ {};
+  std::vector<SyntacticTypePtr> args_ {};
 
   public:
-  AppliedType(TypePtr constructor, std::vector<TypePtr> args) : constructor_ {std::move(constructor)}, args_ {std::move(args)} {}
+  AppliedType(SyntacticTypePtr constructor, std::vector<SyntacticTypePtr> args) : constructor_ {std::move(constructor)}, args_ {std::move(args)} {}
 
   [[nodiscard]] TypeKind kind() const override { return TypeKind::APPLIED; }
-  [[nodiscard]] const TypePtr& constructor() const { return constructor_; }
-  [[nodiscard]] const std::vector<TypePtr>& args() const { return args_; }
+  [[nodiscard]] const SyntacticTypePtr& constructor() const { return constructor_; }
+  [[nodiscard]] const std::vector<SyntacticTypePtr>& args() const { return args_; }
 };
 
-class OptionalType final : public Type {
-  TypePtr inner_ {};
+class OptionalType final : public SyntacticType {
+  SyntacticTypePtr inner_ {};
 
   public:
-  explicit OptionalType(TypePtr inner) : inner_ {std::move(inner)} {}
+  explicit OptionalType(SyntacticTypePtr inner) : inner_ {std::move(inner)} {}
 
   [[nodiscard]] TypeKind kind() const override { return TypeKind::OPTIONAL; }
-  [[nodiscard]] const TypePtr& inner() const { return inner_; }
+  [[nodiscard]] const SyntacticTypePtr& inner() const { return inner_; }
 };
 
-class FunctionType final : public Type {
-  std::vector<TypePtr> params_ {};
-  TypePtr result_ {};
+class FunctionType final : public SyntacticType {
+  std::vector<SyntacticTypePtr> params_ {};
+  SyntacticTypePtr result_ {};
 
   public:
-  FunctionType(std::vector<TypePtr> params, TypePtr result) : params_ {std::move(params)}, result_ {std::move(result)} {}
+  FunctionType(std::vector<SyntacticTypePtr> params, SyntacticTypePtr result) : params_ {std::move(params)}, result_ {std::move(result)} {}
 
   [[nodiscard]] TypeKind kind() const override { return TypeKind::FUNCTION; }
-  [[nodiscard]] const std::vector<TypePtr>& params() const { return params_; }
-  [[nodiscard]] const TypePtr& result() const { return result_; }
+  [[nodiscard]] const std::vector<SyntacticTypePtr>& params() const { return params_; }
+  [[nodiscard]] const SyntacticTypePtr& result() const { return result_; }
 };
 
-class TypeVar final : public Type {
+class TypeVar final : public SyntacticType {
   std::string name_ {};
 
   public:
@@ -92,12 +96,66 @@ class TypeVar final : public Type {
   [[nodiscard]] const std::string& name() const { return name_; }
 };
 
-class OverloadSetType final : public Type {
-  std::vector<TypePtr> functions_ {};
+class OverloadSetType final : public SyntacticType {
+  std::vector<SyntacticTypePtr> functions_ {};
 
   public:
-  explicit OverloadSetType(std::vector<TypePtr> functions) : functions_ {std::move(functions)} {}
+  explicit OverloadSetType(std::vector<SyntacticTypePtr> functions) : functions_ {std::move(functions)} {}
 
   [[nodiscard]] TypeKind kind() const override { return TypeKind::OVERLOAD_SET; }
-  [[nodiscard]] const std::vector<TypePtr>& functions() const { return functions_; }
+  [[nodiscard]] const std::vector<SyntacticTypePtr>& functions() const { return functions_; }
+};
+
+// Semantic (analyzer) types --------------------------------------------------
+
+struct TypeId {
+  uint32_t value {};
+
+  static constexpr uint32_t invalid = std::numeric_limits<uint32_t>::max();
+
+  constexpr TypeId() : value {invalid} {}
+  constexpr explicit TypeId(uint32_t value) : value {value} {}
+
+  constexpr bool operator==(const TypeId& other) const { return value == other.value; }
+  constexpr bool operator!=(const TypeId& other) const { return value != other.value; }
+  constexpr explicit operator bool() const { return value != invalid; }
+};
+
+struct Named {
+  TypeId def {};
+};
+
+struct TypeParam {
+  int index {};
+};
+
+struct Optional {
+  TypeId inner;
+};
+
+struct Function {
+  std::vector<TypeId> params;
+  TypeId ret;
+};
+
+struct Applied {
+  TypeId base;
+  std::vector<TypeId> args;
+};
+
+using SemanticType = std::variant<Named, TypeParam, Optional, Function, Applied>;
+
+class TypeArena {
+  std::vector<SemanticType> types_ {};
+
+  public:
+  template <typename T>
+  TypeId add(T&& t) {
+    types_.emplace_back(std::forward<T>(t));
+    return TypeId {static_cast<uint32_t>(types_.size() - 1)};
+  }
+
+  [[nodiscard]] const SemanticType& at(TypeId id) const {
+    return types_[id.value];
+  }
 };

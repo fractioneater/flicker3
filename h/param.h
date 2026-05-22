@@ -16,6 +16,6 @@ struct Param {
   };
 
   Token* identifier {};
-  TypePtr type {};
+  SyntacticTypePtr type {};
   Modifier mod {NONE};
 };

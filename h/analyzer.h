@@ -13,20 +13,16 @@
 
 struct ObjectSymbol {
   bool is_mutable {false};
-  TypePtr declared_type {};
-};
-
-struct TypeSymbol {
-  TypePtr type {};
+  TypeId declared_type {};
 };
 
 struct ScopeFrame {
   std::unordered_map<std::string, ObjectSymbol> objects {};
-  std::unordered_map<std::string, TypeSymbol> types {};
+  std::unordered_map<std::string, TypeId> types {};
 };
 
 struct FunctionFrame {
-  TypePtr return_type {};
+  TypeId return_type {};
 };
 
 struct LoopFrame {
@@ -47,6 +43,8 @@ struct AnalyzerException : std::exception {
 class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   // Errors/warnings/notes.
   std::vector<Diagnostic> diagnostics_ {};
+  // Type storage.
+  TypeArena types_ {};
 
   // CONTEXT --------------------------------------------------
   // Scopes for symbol tables.
@@ -109,7 +107,13 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
    * @param expr Expression to determine the type of
    * @return Type
    */
-  TypePtr infer_type(const ExprNode& expr);
+  TypeId infer_type(const ExprNode& expr);
+
+  TypeId resolve_syntactic_type(SyntacticTypePtr type);
+
+  TypeId create_type(SemanticType&& type) {
+    return types_.add(std::move(type));
+  }
 
   // Functions that look nicer when you write them like this:
   void begin_scope() {
@@ -135,14 +139,14 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     }
   }
 
-  void add_object(std::string&& name, ObjectSymbol&& symbol) {
-    scopes_.back().objects.emplace(std::move(name), std::move(symbol));
+  void add_object(std::string&& name, ObjectSymbol symbol) {
+    scopes_.back().objects.emplace(std::move(name), symbol);
     check_duplicate_name(false, name);
   }
 
-  void add_object(std::string_view name, ObjectSymbol&& symbol) {
+  void add_object(std::string_view name, ObjectSymbol symbol) {
     auto str {std::string(name)};
-    scopes_.back().objects.emplace(str, std::move(symbol));
+    scopes_.back().objects.emplace(str, symbol);
     check_duplicate_name(false, str);
   }
 
@@ -151,9 +155,9 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
    * @param token Identifier token for symbol name and error positioning
    * @param symbol Symbol to add to the object table
    */
-  void add_object_safe(const Token* const token, ObjectSymbol&& symbol) noexcept {
+  void add_object_safe(const Token* const token, ObjectSymbol symbol) noexcept {
     try {
-      add_object(token->src_string, std::move(symbol));
+      add_object(token->src_string, symbol);
     } catch (AnalyzerException& e) {
       if (e.kind == ExceptionKind::REDECLARED_NAME)
         diagnostics_.emplace_back("Name has already been declared in this scope", token, Diagnostic::ERROR);
@@ -162,25 +166,25 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     }
   }
 
-  void add_type(std::string&& name, TypeSymbol&& symbol) {
-    scopes_.back().types.emplace(std::move(name), std::move(symbol));
+  void add_type(std::string&& name, TypeId t) {
+    scopes_.back().types.emplace(std::move(name), t);
     check_duplicate_name(true, name);
   }
 
-  void add_type(std::string_view name, TypeSymbol&& symbol) {
+  void add_type(std::string_view name, TypeId t) {
     auto str {std::string(name)};
-    scopes_.back().types.emplace(str, std::move(symbol));
+    scopes_.back().types.emplace(str, t);
     check_duplicate_name(true, str);
   }
 
   /**
    * Add a type to the symbol table and report duplicate names.
    * @param token Identifier token for symbol name and error positioning
-   * @param symbol Symbol to add to the type table
+   * @param t TypeId to add to the scope's type table
    */
-  void add_type_safe(const Token* const token, TypeSymbol&& symbol) noexcept {
+  void add_type_safe(const Token* const token, TypeId t) noexcept {
     try {
-      add_type(token->src_string, std::move(symbol));
+      add_type(token->src_string, t);
     } catch (AnalyzerException& e) {
       if (e.kind == ExceptionKind::REDECLARED_NAME)
         diagnostics_.emplace_back("Type name has already been declared in this scope", token, Diagnostic::ERROR);

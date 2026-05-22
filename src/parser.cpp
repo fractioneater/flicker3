@@ -43,7 +43,7 @@ StmtNode Parser::declaration_in_namespace() {
 StmtNode Parser::val_declaration() {
   const Token* identifier {expect(TOKEN_IDENTIFIER, "Expecting a variable name after 'val'")};
 
-  const TypePtr type {match(TOKEN_COLON) ? broad_type() : nullptr};
+  const SyntacticTypePtr type {match(TOKEN_COLON) ? broad_type() : nullptr};
 
   Diagnostic context {"You probably don't want an immutable variable just to hold 'nil'", Diagnostic::NOTE};
   if (type && type->kind() != TypeKind::OPTIONAL)
@@ -54,7 +54,7 @@ StmtNode Parser::val_declaration() {
 
 StmtNode Parser::var_declaration() {
   const Token* identifier {expect(TOKEN_IDENTIFIER, "Expecting a variable name after 'var'")};
-  TypePtr type {};
+  SyntacticTypePtr type {};
   ExprNode initializer {std::make_shared<Expressions::Nil>()};
 
   if (match(TOKEN_COLON)) {
@@ -233,7 +233,7 @@ StmtNode Parser::method() {
 
 // Type parsing (for declarations) --------------------------------------------------
 
-TypePtr Parser::broad_type() {
+SyntacticTypePtr Parser::broad_type() {
   // Check for function type first.
   if (match(TOKEN_LEFT_PAREN)) return function_type();
 
@@ -245,9 +245,9 @@ TypePtr Parser::broad_type() {
   return standard_type("either a type name or '(' for a function type", true);
 }
 
-TypePtr Parser::function_type() {
+SyntacticTypePtr Parser::function_type() {
   std::vector param_types {
-    parse_list<TypePtr>(TOKEN_RIGHT_PAREN, [this] { return standard_type("a parameter type", true); })
+    parse_list<SyntacticTypePtr>(TOKEN_RIGHT_PAREN, [this] { return standard_type("a parameter type", true); })
   };
   expect(TOKEN_RIGHT_PAREN, "Expecting ')' after parameter list in function type");
 
@@ -258,7 +258,7 @@ TypePtr Parser::function_type() {
   return std::make_shared<FunctionType>(std::move(param_types), std::make_shared<NamedType>("Unit"));
 }
 
-TypePtr Parser::standard_type(const std::string& thing_to_look_for, bool allow_generics) {
+SyntacticTypePtr Parser::standard_type(const std::string& thing_to_look_for, bool allow_generics) {
   if (match(TOKEN_LEFT_PAREN)) {
     report_error(
       {
@@ -272,13 +272,13 @@ TypePtr Parser::standard_type(const std::string& thing_to_look_for, bool allow_g
 
   // Hacky, but I think it's okay... ish.
   const std::string name {expect(TOKEN_IDENTIFIER, "Expecting " + thing_to_look_for)->src_string};
-  TypePtr type {std::make_shared<NamedType>(name)};
+  SyntacticTypePtr type {std::make_shared<NamedType>(name)};
 
   const bool is_optional {match(TOKEN_QUEST)};
 
   if (match_generic()) {
     if (allow_generics) {
-      std::vector<TypePtr> args {};
+      std::vector<SyntacticTypePtr> args {};
       do {
         args.emplace_back(standard_type("a type parameter (a type name)", false));
       } while (check(TOKEN_IDENTIFIER));

@@ -39,7 +39,7 @@ void DotTreeWalker::walk(const StmtNode& node, int parent_id) {
 }
 
 // Types aren't AST nodes, but they behave similarly. Instead of using a visitor pattern, they're just handled with a switch.
-void DotTreeWalker::walk(const TypePtr& type, int parent_id) {
+void DotTreeWalker::walk(const SyntacticTypePtr& type, int parent_id) {
   const int my_id = id_counter_++;
 
   if (!type) {

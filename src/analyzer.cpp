@@ -28,17 +28,19 @@ void Analyzer::visit_expression_stmt(const Statements::Expression& stmt) {
 void Analyzer::visit_variable_stmt(const Statements::Variable& stmt) {
   if (stmt.initializer)
     stmt.initializer->VISIT;
-  TypePtr type = stmt.type ? stmt.type : infer_type(stmt.initializer);
+  const TypeId type = stmt.type ? resolve_syntactic_type(stmt.type) : infer_type(stmt.initializer);
 
-  add_object_safe(stmt.identifier, {stmt.is_mutable, stmt.type});
+  add_object_safe(stmt.identifier, {stmt.is_mutable, type});
 }
 
 void Analyzer::visit_function_stmt(const Statements::Function& stmt) {
   // Step 1: Define type params
   begin_scope();
-  for (const auto& param : stmt.type_params) {
-    // TODO: I despise this. NamedTypes are not okay. They store the one thing used to identify them, which is stupid.
-    add_type_safe(param, {std::make_unique<NamedType>(std::string(param->src_string))});
+  for (auto param_iter {std::begin(stmt.type_params)}; param_iter != std::end(stmt.type_params); ++param_iter) {
+    add_type_safe(
+      *param_iter,
+      create_type(TypeParam {static_cast<int>(param_iter - std::begin(stmt.type_params))})
+    );
   }
   // Step 2: Store return type as state
   // TODO.
@@ -145,7 +147,12 @@ std::optional<int> Analyzer::loop_id_with_label(const Token* match_label) {
   return std::nullopt;
 }
 
-TypePtr Analyzer::infer_type(const ExprNode& expr) {
+TypeId Analyzer::infer_type(const ExprNode& expr) {
   // TODO. This is going to be tricky.
   throw AnalyzerException {ExceptionKind::INDETERMINABLE_TYPE};
 }
+
+TypeId Analyzer::resolve_syntactic_type(SyntacticTypePtr type) {
+  // TODO: Turn from parser type into analyzer type.
+  return TypeId {}; // Invalid (temporary).
+};

@@ -451,7 +451,7 @@ class Statements::Expression : public Stmt {
 
 class Statements::Variable : public Stmt {
   public:
-  Variable(bool is_mutable, const Token* identifier, TypePtr type, ExprNode initializer) : is_mutable {is_mutable}, identifier {identifier}, type {std::move(type)}, initializer {std::move(initializer)} {}
+  Variable(bool is_mutable, const Token* identifier, SyntacticTypePtr type, ExprNode initializer) : is_mutable {is_mutable}, identifier {identifier}, type {std::move(type)}, initializer {std::move(initializer)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_variable_stmt_any(*this);
@@ -463,13 +463,13 @@ class Statements::Variable : public Stmt {
 
   const bool is_mutable {};
   const Token* identifier {};
-  const TypePtr type {};
+  const SyntacticTypePtr type {};
   const ExprNode initializer {};
 };
 
 class Statements::Function : public Stmt {
   public:
-  Function(const Token* identifier, std::vector<Token*> type_params, std::vector<Param> params, TypePtr return_type, StmtNode body) : identifier {identifier}, type_params {std::move(type_params)}, params {std::move(params)}, return_type {std::move(return_type)}, body {std::move(body)} {}
+  Function(const Token* identifier, std::vector<Token*> type_params, std::vector<Param> params, SyntacticTypePtr return_type, StmtNode body) : identifier {identifier}, type_params {std::move(type_params)}, params {std::move(params)}, return_type {std::move(return_type)}, body {std::move(body)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_function_stmt_any(*this);
@@ -482,7 +482,7 @@ class Statements::Function : public Stmt {
   const Token* identifier {};
   const std::vector<Token*> type_params {};
   const std::vector<Param> params {};
-  const TypePtr return_type {};
+  const SyntacticTypePtr return_type {};
   const StmtNode body {};
 };
 
@@ -504,7 +504,7 @@ class Statements::Initializer : public Stmt {
 
 class Statements::Method : public Stmt {
   public:
-  Method(const Token* identifier, std::vector<Param> params, TypePtr return_type, StmtNode body) : identifier {identifier}, params {std::move(params)}, return_type {std::move(return_type)}, body {std::move(body)} {}
+  Method(const Token* identifier, std::vector<Param> params, SyntacticTypePtr return_type, StmtNode body) : identifier {identifier}, params {std::move(params)}, return_type {std::move(return_type)}, body {std::move(body)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_method_stmt_any(*this);
@@ -516,7 +516,7 @@ class Statements::Method : public Stmt {
 
   const Token* identifier {};
   const std::vector<Param> params {};
-  const TypePtr return_type {};
+  const SyntacticTypePtr return_type {};
   const StmtNode body {};
 };
 
@@ -574,7 +574,7 @@ class Statements::Import : public Stmt {
 
 class Statements::Typealias : public Stmt {
   public:
-  Typealias(const Token* identifier, TypePtr type) : identifier {identifier}, type {std::move(type)} {}
+  Typealias(const Token* identifier, SyntacticTypePtr type) : identifier {identifier}, type {std::move(type)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_typealias_stmt_any(*this);
@@ -585,7 +585,7 @@ class Statements::Typealias : public Stmt {
   }
 
   const Token* identifier {};
-  const TypePtr type {};
+  const SyntacticTypePtr type {};
 };
 
 class Statements::If : public Stmt {
