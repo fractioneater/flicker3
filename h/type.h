@@ -9,9 +9,12 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
+
+#define CORE_CLASS_COUNT 4
 
 /**
  * Identifies the kind (type-kind is easier to say than type-type) of a resolved type.
@@ -122,37 +125,153 @@ struct TypeId {
 };
 
 struct Named {
-  TypeId def {};
+  TypeId def {}; // TODO: Store method table lookup id, not TypeId (consider whether functions and optionals should have members).
+  bool operator==(const Named& other) const = default;
 };
 
 struct TypeParam {
   int index {};
+  bool operator==(const TypeParam& other) const = default;
 };
 
 struct Optional {
   TypeId inner;
+  bool operator==(const Optional& other) const = default;
 };
 
 struct Function {
   std::vector<TypeId> params;
   TypeId ret;
+  bool operator==(const Function& other) const = default;
 };
 
 struct Applied {
   TypeId base;
   std::vector<TypeId> args;
+  bool operator==(const Applied& other) const = default;
 };
 
 using SemanticType = std::variant<Named, TypeParam, Optional, Function, Applied>;
 
+struct TypeKey {
+  SemanticType type {};
+
+  bool operator==(const TypeKey& other) const {
+    return type == other.type;
+  }
+
+  explicit TypeKey(const SemanticType& t) : type {t} {}
+};
+
+// Hashing functions for SemanticType
+template <>
+struct std::hash<TypeId> {
+  size_t operator()(const TypeId& id) const noexcept {
+    return std::hash<uint32_t> {}(id.value);
+  }
+};
+
+namespace Type_hash {
+  inline void hash_combine(size_t& seed, size_t h) noexcept {
+    seed ^= h + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
+  }
+
+  template <class T>
+  void hash_combine(size_t& seed, const T& v) noexcept {
+    hash_combine(seed, std::hash<T> {}(v));
+  }
+
+  template <class T>
+  size_t hash_vec(const std::vector<T>& v) noexcept {
+    size_t seed = 0;
+    hash_combine(seed, v.size());
+    for (auto& x : v) hash_combine(seed, x);
+    return seed;
+  }
+
+  inline size_t hash_named(const Named& t) noexcept {
+    size_t seed = 0;
+    hash_combine(seed, 1u);
+    hash_combine(seed, t.def);
+    return seed;
+  }
+
+  inline size_t hash_typeparam(const TypeParam& t) noexcept {
+    size_t seed = 0;
+    hash_combine(seed, 2u);
+    hash_combine(seed, t.index);
+    return seed;
+  }
+
+  inline size_t hash_optional(const Optional& t) noexcept {
+    size_t seed = 0;
+    hash_combine(seed, 3u);
+    hash_combine(seed, t.inner);
+    return seed;
+  }
+
+  inline size_t hash_function(const Function& t) noexcept {
+    size_t seed = 0;
+    hash_combine(seed, 4u);
+    hash_combine(seed, hash_vec(t.params));
+    hash_combine(seed, t.ret);
+    return seed;
+  }
+
+  inline size_t hash_applied(const Applied& t) noexcept {
+    size_t seed = 0;
+    hash_combine(seed, 5u);
+    hash_combine(seed, t.base);
+    hash_combine(seed, hash_vec(t.args));
+    return seed;
+  }
+}
+
+template <>
+struct std::hash<TypeKey> {
+  size_t operator()(const TypeKey& key) const {
+    return std::visit(
+      []<typename T>(T&& k) -> size_t {
+        using A = std::decay_t<T>;
+        if constexpr (std::is_same_v<A, Named>) return Type_hash::hash_named(k);
+        else if constexpr (std::is_same_v<A, TypeParam>) return Type_hash::hash_typeparam(k);
+        else if constexpr (std::is_same_v<A, Optional>) return Type_hash::hash_optional(k);
+        else if constexpr (std::is_same_v<A, Function>) return Type_hash::hash_function(k);
+        else if constexpr (std::is_same_v<A, Applied>) return Type_hash::hash_applied(k);
+        else static_assert(false, "TypeKey visitor isn't exhaustive!");
+      },
+      key.type
+    );
+  }
+};
+
+/**
+ * The location where the compiler's (semantic) types are stored. Consists of a vector of type objects, accessible with at(),
+ * and an unordered_map for interning, so type equality can be determined cheaply by ID.
+ *
+ * Because the data type for storage is a vector, references and pointers are not stable (all will be invalidated on resize),
+ * so access is done with a TypeId (AKA uint32_t).
+ */
 class TypeArena {
   std::vector<SemanticType> types_ {};
+  std::unordered_map<TypeKey, TypeId> interned_ {};
 
   public:
-  template <typename T>
-  TypeId add(T&& t) {
-    types_.emplace_back(std::forward<T>(t));
-    return TypeId {static_cast<uint32_t>(types_.size() - 1)};
+  TypeArena() {
+    types_.reserve(CORE_CLASS_COUNT + 1);
+    interned_.reserve(CORE_CLASS_COUNT + 1);
+  }
+
+  TypeId add(SemanticType&& t) {
+    // This makes a copy. I've tried to find a way that allows single ownership (using std::list is one), but I'm not sure if it's worth the fight.
+    const TypeKey key {t};
+    const auto existing = interned_.find(key);
+    if (existing != interned_.end()) return existing->second;
+
+    types_.emplace_back(std::forward<SemanticType>(t));
+    TypeId id {static_cast<uint32_t>(types_.size() - 1)};
+    interned_.emplace(key, id);
+    return id;
   }
 
   [[nodiscard]] const SemanticType& at(TypeId id) const {

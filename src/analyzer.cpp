@@ -39,7 +39,7 @@ void Analyzer::visit_function_stmt(const Statements::Function& stmt) {
   for (auto param_iter {std::begin(stmt.type_params)}; param_iter != std::end(stmt.type_params); ++param_iter) {
     add_type_safe(
       *param_iter,
-      create_type(TypeParam {static_cast<int>(param_iter - std::begin(stmt.type_params))})
+      TypeParam {static_cast<int>(param_iter - std::begin(stmt.type_params))}
     );
   }
   // Step 2: Store return type as state

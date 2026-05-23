@@ -48,7 +48,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
 
   // CONTEXT --------------------------------------------------
   // Scopes for symbol tables.
-  std::vector<ScopeFrame> scopes_ {};
+  std::vector<ScopeFrame> scopes_ {{}}; // Initialize the global (inter-package core library) scope immediately. TODO: Init core
   // Loop contexts (for labels).
   std::vector<LoopFrame> loops_ {};
 
@@ -111,10 +111,6 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
 
   TypeId resolve_syntactic_type(SyntacticTypePtr type);
 
-  TypeId create_type(SemanticType&& type) {
-    return types_.add(std::move(type));
-  }
-
   // Functions that look nicer when you write them like this:
   void begin_scope() {
     scopes_.emplace_back();
@@ -145,9 +141,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   }
 
   void add_object(std::string_view name, ObjectSymbol symbol) {
-    auto str {std::string(name)};
-    scopes_.back().objects.emplace(str, symbol);
-    check_duplicate_name(false, str);
+    add_object(std::string {name}, symbol);
   }
 
   /**
@@ -166,15 +160,13 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     }
   }
 
-  void add_type(std::string&& name, TypeId t) {
-    scopes_.back().types.emplace(std::move(name), t);
+  void add_type(std::string&& name, SemanticType&& t) {
+    scopes_.back().types.emplace(std::move(name), types_.add(std::move(t)));
     check_duplicate_name(true, name);
   }
 
-  void add_type(std::string_view name, TypeId t) {
-    auto str {std::string(name)};
-    scopes_.back().types.emplace(str, t);
-    check_duplicate_name(true, str);
+  void add_type(std::string_view name, SemanticType&& t) {
+    add_type(std::string {name}, std::move(t));
   }
 
   /**
@@ -182,9 +174,9 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
    * @param token Identifier token for symbol name and error positioning
    * @param t TypeId to add to the scope's type table
    */
-  void add_type_safe(const Token* const token, TypeId t) noexcept {
+  void add_type_safe(const Token* const token, SemanticType&& t) noexcept {
     try {
-      add_type(token->src_string, t);
+      add_type(token->src_string, std::move(t));
     } catch (AnalyzerException& e) {
       if (e.kind == ExceptionKind::REDECLARED_NAME)
         diagnostics_.emplace_back("Type name has already been declared in this scope", token, Diagnostic::ERROR);
