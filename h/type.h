@@ -14,28 +14,35 @@
 #include <variant>
 #include <vector>
 
+// There are two types of types: the parser's types, and the analyzer's types. Look for a comment above each category for an explanation of the structure.
+
 #define CORE_CLASS_COUNT 4
 
 /**
- * Identifies the kind (type-kind is easier to say than type-type) of a resolved type.
+ * SYNTACTIC (PARSER) TYPES --------------------------------------------------
  *
- * - Named: A simple type or type alias. Example: String.
- * - Applied: Generic instantiation of a named constructor—like a container. Example: List of String.
- * - Optional: Wrapper to add possibility of nil value. Example: String?.
- * - Function: Callable type. Example: (String, String) -> String.
- * - TypeVar: A type parameter or inference variable. Example: A in `class Thing of A` or `fun do_something for A ().
- * - OverloadSet: A value with multiple callable signatures. Example: (Int) -> Int | (Double) -> Double.
+ * Don't assume that just because the parser doesn't do any type-checking, it doesn't have a complex type interface. It still has to handle the syntax,
+ * and Flicker has a somewhat complex type syntax.
+ *
+ * This structure is taken care of by shared pointers because the parser and its ownership are a little messy. The base SyntacticType class is abstract and
+ * includes basically no methods, instead acting mostly just as a parent for the five actual type classes. Each class stores its "kind" (it's easier to say
+ * type-kind than type-type) as an enumeration.
+ *
+ * The TypeKind enum stores these options:                                     EXAMPLE:
+ *   Named: A simple type or type alias.                                       String
+ *   Applied: Generic instantiation of a named constructor—like a container.  List of String
+ *   Optional: Wrapper to add the possibility of nil value.                    String?
+ *   Function: Callable type.                                                  (String, String) -> String
+ *   OverloadSet: A value with multiple callable signatures.                   (Int) -> Int | (Double) -> Double
  */
+
 enum class TypeKind {
   NAMED,
   APPLIED,
   OPTIONAL,
   FUNCTION,
-  TYPE_VAR,
   OVERLOAD_SET,
 };
-
-// Syntactic (parser) types --------------------------------------------------
 
 class SyntacticType {
   public:
@@ -89,16 +96,6 @@ class FunctionType final : public SyntacticType {
   [[nodiscard]] const SyntacticTypePtr& result() const { return result_; }
 };
 
-class TypeVar final : public SyntacticType {
-  std::string name_ {};
-
-  public:
-  explicit TypeVar(std::string name) : name_ {std::move(name)} {}
-
-  [[nodiscard]] TypeKind kind() const override { return TypeKind::TYPE_VAR; }
-  [[nodiscard]] const std::string& name() const { return name_; }
-};
-
 class OverloadSetType final : public SyntacticType {
   std::vector<SyntacticTypePtr> functions_ {};
 
@@ -109,7 +106,20 @@ class OverloadSetType final : public SyntacticType {
   [[nodiscard]] const std::vector<SyntacticTypePtr>& functions() const { return functions_; }
 };
 
-// Semantic (analyzer) types --------------------------------------------------
+/**
+ * SEMANTIC (ANALYZER) TYPES --------------------------------------------------
+ *
+ * After parsing, the analyzer converts syntactic types into semantic ones to determine the validity of names, members, and such. This system uses interning
+ * to possibly increase performance—each type seen in code is assigned a TypeId (uint32_t wrapper), so equality is just integer comparison.
+ *
+ * Unlike the shared_ptr weirdness of SyntacticType, SemanticType is a variant of Named, TypeParam, Optional, Function, and Applied. Most of these classes are
+ * exactly the same as their syntactic counterparts, but instead of storing a SyntacticTypePtr, they store a TypeId.
+ *
+ * All types are stored in the type arena, which maintains a vector for storage and an unordered_map for interning. Types are accessed via
+ * TypeId (by index in the vector) rather than pointers/references since the vector can reallocate when resized. Interning is done with a quick hash through
+ * TypeKey, which is an owning wrapper around SemanticType. Yes, this does mean the types exist in two places, but the only "real" storage location is the
+ * vector.
+ */
 
 struct TypeId {
   uint32_t value {};
@@ -141,7 +151,7 @@ struct Optional {
 
 struct Function {
   std::vector<TypeId> params;
-  TypeId ret;
+  TypeId return_type;
   bool operator==(const Function& other) const = default;
 };
 
@@ -214,7 +224,7 @@ namespace Type_hash {
     size_t seed = 0;
     hash_combine(seed, 4u);
     hash_combine(seed, hash_vec(t.params));
-    hash_combine(seed, t.ret);
+    hash_combine(seed, t.return_type);
     return seed;
   }
 

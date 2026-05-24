@@ -61,11 +61,6 @@ void DotTreeWalker::walk(const SyntacticTypePtr& type, int parent_id) {
       break;
     case TypeKind::FUNCTION: label = "function (...+) -> ...";
       break;
-    case TypeKind::TYPE_VAR: {
-      const auto type_var = std::dynamic_pointer_cast<TypeVar>(type);
-      label               = type_var ? type_var->name() : "type_var";
-      break;
-    }
     case TypeKind::OVERLOAD_SET: label = "overload set";
       break;
   }
