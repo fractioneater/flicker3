@@ -1,3 +1,5 @@
+using Speach = (Roman, Numeral) -> Toast of Tree
+
 while:raphael true
   print 32
 else
@@ -5,6 +7,7 @@ else
 
 while:jorge a == 3
   while:jorge b == 4
+    var yup: Speach?
     print 3
     break:jorge
     break:raphael

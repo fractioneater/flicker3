@@ -109,7 +109,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
    */
   TypeId infer_type(const ExprNode& expr);
 
-  TypeId resolve_syntactic_type(SyntacticTypePtr type);
+  TypeId resolve_syntactic_type(const SyntacticTypePtr& type);
 
   // Functions that look nicer when you write them like this:
   void begin_scope() {
@@ -160,23 +160,16 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     }
   }
 
-  void add_type(std::string&& name, SemanticType&& t) {
-    scopes_.back().types.emplace(std::move(name), types_.add(std::move(t)));
-    check_duplicate_name(true, name);
-  }
-
-  void add_type(std::string_view name, SemanticType&& t) {
-    add_type(std::string {name}, std::move(t));
-  }
-
   /**
-   * Add a type to the symbol table and report duplicate names.
+   * Add an already-existing type to the symbol table and report duplicate names.
    * @param token Identifier token for symbol name and error positioning
    * @param t TypeId to add to the scope's type table
    */
-  void add_type_safe(const Token* const token, SemanticType&& t) noexcept {
+  void add_type_safe(const Token* const token, TypeId t) noexcept {
+    const std::string name {token->src_string};
     try {
-      add_type(token->src_string, std::move(t));
+      check_duplicate_name(true, name);
+      scopes_.back().types.emplace(name, t);
     } catch (AnalyzerException& e) {
       if (e.kind == ExceptionKind::REDECLARED_NAME)
         diagnostics_.emplace_back("Type name has already been declared in this scope", token, Diagnostic::ERROR);

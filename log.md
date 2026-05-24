@@ -299,7 +299,8 @@ I still haven't gotten to lambda error handling.
 Error handling can be finished later. It's time for the analyzer! It is both a `StmtVisitor` and an `ExprVisitor`, which lets me avoid some of the odd
 patterns (storing an owner) I used in the DOT printer.
 
-As I've already mentioned, it's a visitor, but the most important things about it are its contexts. All the state frames, blocks, etc. that it keeps track of. This will involve all of the following:
+As I've already mentioned, it's a visitor, but the most important things about it are its contexts. All the state frames, blocks, etc. that it keeps track of.
+This will involve all of the following:
 
 - Symbol table for any defined or declared object and its type
 - Symbol table for the types themselves
@@ -308,6 +309,22 @@ As I've already mentioned, it's a visitor, but the most important things about i
 - Non-nil objects within a scope (type promotion)
 
 I'm not willing to dive straight into something incredibly complex, so for now, I've just handled loops.
+
+## May 22 – 24, 2026
+
+One of the biggest things to do in preparation of a type checker is, of course, adding types. The parser uses `TypePtr` (now renamed to `SyntacticTypePtr`), but
+its structuring is a little different from that of the analyzer.
+
+This is a good excuse to play around with `std::variant`, so here's the definition of the analyzer's types:
+
+```c++
+using SemanticType = std::variant<Named, TypeParam, Optional, Function, Applied>;
+```
+
+There's a whole type arena to store everything that's been created and used—but don't confuse this with the scopes' symbol tables. To intern types (and make
+type equality simpler by turning it into integer equality), they're hashed using a seemingly random function that AI said is "good enough." For more information, look at the comments in `type.h`.
+
+Also, in doing this, I've completely gotten rid of two `SyntacticType`s that had no use at all: `OverloadSet` and `TypeVar`.
 
 [learncpp]: https://learncpp.com
 

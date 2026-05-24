@@ -25,7 +25,7 @@
  * and Flicker has a somewhat complex type syntax.
  *
  * This structure is taken care of by shared pointers because the parser and its ownership are a little messy. The base SyntacticType class is abstract and
- * includes basically no methods, instead acting mostly just as a parent for the five actual type classes. Each class stores its "kind" (it's easier to say
+ * includes basically no methods, instead acting mostly just as a parent for the actual type classes. Each class stores its "kind" (it's easier to say
  * type-kind than type-type) as an enumeration.
  *
  * The TypeKind enum stores these options:                                     EXAMPLE:
@@ -33,7 +33,6 @@
  *   Applied: Generic instantiation of a named constructor—like a container.  List of String
  *   Optional: Wrapper to add the possibility of nil value.                    String?
  *   Function: Callable type.                                                  (String, String) -> String
- *   OverloadSet: A value with multiple callable signatures.                   (Int) -> Int | (Double) -> Double
  */
 
 enum class TypeKind {
@@ -41,7 +40,6 @@ enum class TypeKind {
   APPLIED,
   OPTIONAL,
   FUNCTION,
-  OVERLOAD_SET,
 };
 
 class SyntacticType {
@@ -52,58 +50,34 @@ class SyntacticType {
 
 using SyntacticTypePtr = std::shared_ptr<SyntacticType>;
 
-class NamedType final : public SyntacticType {
-  std::string name_ {};
+struct NamedType final : SyntacticType {
+  std::string name {};
 
-  public:
-  explicit NamedType(std::string name) : name_ {std::move(name)} {}
-
+  explicit NamedType(std::string name) : name {std::move(name)} {}
   [[nodiscard]] TypeKind kind() const override { return TypeKind::NAMED; }
-  [[nodiscard]] const std::string& name() const { return name_; }
 };
 
-class AppliedType final : public SyntacticType {
-  SyntacticTypePtr constructor_ {};
-  std::vector<SyntacticTypePtr> args_ {};
+struct AppliedType final : SyntacticType {
+  SyntacticTypePtr constructor {};
+  std::vector<SyntacticTypePtr> args {};
 
-  public:
-  AppliedType(SyntacticTypePtr constructor, std::vector<SyntacticTypePtr> args) : constructor_ {std::move(constructor)}, args_ {std::move(args)} {}
-
+  AppliedType(SyntacticTypePtr constructor, std::vector<SyntacticTypePtr> args) : constructor {std::move(constructor)}, args {std::move(args)} {}
   [[nodiscard]] TypeKind kind() const override { return TypeKind::APPLIED; }
-  [[nodiscard]] const SyntacticTypePtr& constructor() const { return constructor_; }
-  [[nodiscard]] const std::vector<SyntacticTypePtr>& args() const { return args_; }
 };
 
-class OptionalType final : public SyntacticType {
-  SyntacticTypePtr inner_ {};
+struct OptionalType final : SyntacticType {
+  SyntacticTypePtr inner {};
 
-  public:
-  explicit OptionalType(SyntacticTypePtr inner) : inner_ {std::move(inner)} {}
-
+  explicit OptionalType(SyntacticTypePtr inner) : inner {std::move(inner)} {}
   [[nodiscard]] TypeKind kind() const override { return TypeKind::OPTIONAL; }
-  [[nodiscard]] const SyntacticTypePtr& inner() const { return inner_; }
 };
 
-class FunctionType final : public SyntacticType {
-  std::vector<SyntacticTypePtr> params_ {};
-  SyntacticTypePtr result_ {};
+struct FunctionType final : SyntacticType {
+  std::vector<SyntacticTypePtr> params {};
+  SyntacticTypePtr result {};
 
-  public:
-  FunctionType(std::vector<SyntacticTypePtr> params, SyntacticTypePtr result) : params_ {std::move(params)}, result_ {std::move(result)} {}
-
+  FunctionType(std::vector<SyntacticTypePtr> params, SyntacticTypePtr result) : params {std::move(params)}, result {std::move(result)} {}
   [[nodiscard]] TypeKind kind() const override { return TypeKind::FUNCTION; }
-  [[nodiscard]] const std::vector<SyntacticTypePtr>& params() const { return params_; }
-  [[nodiscard]] const SyntacticTypePtr& result() const { return result_; }
-};
-
-class OverloadSetType final : public SyntacticType {
-  std::vector<SyntacticTypePtr> functions_ {};
-
-  public:
-  explicit OverloadSetType(std::vector<SyntacticTypePtr> functions) : functions_ {std::move(functions)} {}
-
-  [[nodiscard]] TypeKind kind() const override { return TypeKind::OVERLOAD_SET; }
-  [[nodiscard]] const std::vector<SyntacticTypePtr>& functions() const { return functions_; }
 };
 
 /**
