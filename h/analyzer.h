@@ -21,15 +21,25 @@ struct ScopeFrame {
   std::unordered_map<std::string, TypeId> types {};
 };
 
-struct FunctionFrame {
-  TypeId return_type {};
-};
-
 struct LoopFrame {
-  bool labeled;
-  std::string_view label;
+  bool labeled {};
+  std::string_view label {};
 
   explicit LoopFrame(const Token* token) : labeled {token != nullptr}, label {token ? token->src_string : ""} {}
+};
+
+struct FunctionFrame {
+  bool returns {};
+  TypeId return_type {};
+
+  explicit FunctionFrame(TypeId id) : returns {id}, return_type {id} {}
+};
+
+struct ClassFrame {
+  bool has_superclass {};
+  TypeId superclass {};
+
+  explicit ClassFrame(TypeId id) : has_superclass {id}, superclass {id} {}
 };
 
 // Tiny interface for some fun exceptions.
@@ -51,6 +61,10 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   std::vector<ScopeFrame> scopes_ {{}}; // Initialize the global (inter-package core library) scope immediately. TODO: Init core
   // Loop contexts (for labels).
   std::vector<LoopFrame> loops_ {};
+  // Function contexts (for return types).
+  std::vector<FunctionFrame> functions_ {};
+  // Class contexts (for superclass).
+  std::vector<ClassFrame> classes_ {};
 
   void visit_block_stmt(const Statements::Block& stmt) override;
   void visit_expression_stmt(const Statements::Expression& stmt) override;
@@ -107,7 +121,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
    * @param expr Expression to determine the type of
    * @return Type
    */
-  TypeId infer_type(const ExprNode& expr);
+  TypeId find_expr_type(const ExprNode& expr);
 
   TypeId resolve_syntactic_type(const SyntacticTypePtr& type);
 
@@ -176,6 +190,13 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
       else
         diagnostics_.emplace_back("Type name shadows a declaration from another scope", token, Diagnostic::WARNING);
     }
+  }
+
+  TypeId find_type(const std::string& name) {
+    for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope)
+      if (scope->types.contains(name))
+        return scope->types.at(name);
+    return {};
   }
 
   public:

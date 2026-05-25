@@ -109,7 +109,7 @@ class Parser {
    */
   bool match_after_newlines(TokenType type) {
     // Taking advantage of infinite lookahead here.
-    const Token* token = current_;
+    const Token* token {current_};
     while (token->type == TOKEN_LINE || token->type == TOKEN_IGNORED_DEDENT) ++token;
     if (token->type != type) return false;
 
@@ -151,7 +151,7 @@ class Parser {
   Token* expect(TokenType type, std::string_view message, Token* error_token = nullptr) {
     error_token = (error_token == nullptr) ? current_ : error_token;
     if (!match(type))
-      report_error({std::string(message), error_token, Diagnostic::ERROR});
+      report_error({std::string {message}, error_token, Diagnostic::ERROR});
     return previous_;
   }
 
@@ -162,7 +162,7 @@ class Parser {
    */
   void expect_line(std::string_view message, Token* error_token = nullptr) {
     error_token = (error_token == nullptr) ? current_ : error_token;
-    if (!match_line()) report_error({std::string(message), error_token, Diagnostic::ERROR});
+    if (!match_line()) report_error({std::string {message}, error_token, Diagnostic::ERROR});
   }
 
   /**
@@ -176,7 +176,7 @@ class Parser {
   Token* expect(TokenType type, std::string_view message, Diagnostic& context, Token* error_token = nullptr) {
     error_token = (error_token == nullptr) ? current_ : error_token;
     if (!match(type))
-      report_error({std::string(message), context, error_token, Diagnostic::ERROR});
+      report_error({std::string {message}, context, error_token, Diagnostic::ERROR});
     return previous_;
   }
 

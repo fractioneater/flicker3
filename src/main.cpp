@@ -28,11 +28,11 @@ std::string read_entire_file(const char* path) {
   }
 
   in.seekg(0, std::ios::end);
-  const std::streampos end_pos = in.tellg();
+  const std::streampos end_pos {in.tellg()};
 
   if (end_pos >= 0) {
     std::string contents {};
-    const auto size = static_cast<std::streamsize>(end_pos);
+    const auto size {static_cast<std::streamsize>(end_pos)};
     if (size == static_cast<std::streamsize>(-1)) {
       std::cerr << "File '" << path << "' is too large\n";
       throw std::system_error(74, std::iostream_category());
@@ -68,7 +68,7 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
       continue;
     }
 
-    const auto [line, col] = lexer.offset_to_line_col(token.start_offset);
+    const auto [line, col] {lexer.offset_to_line_col(token.start_offset)};
     if (token.type == TOKEN_INDENT) {
       std::cout << "Indent\n";
     } else if (token.type == TOKEN_DEDENT) {
@@ -94,7 +94,7 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
     return INTERPRET_COMPILE_ERROR;
   }
 
-  const auto program = parser.parse();
+  const auto program {parser.parse()};
 
   for (const auto& err : parser.get_diagnostics())
     err.print(&lexer, module);
@@ -140,7 +140,7 @@ InterpretResult interpret(const std::string& source, std::string_view module) {
 }
 
 InterpretResult interpret_and_print(const std::string& source, std::string_view module) {
-  const InterpretResult result = interpret(source, module);
+  const InterpretResult result {interpret(source, module)};
 
   if (result == INTERPRET_OK) {
     #if PRINT_COLORS

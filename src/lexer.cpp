@@ -84,7 +84,7 @@ std::optional<Token> Lexer::block_comment() {
   const size_t start_offset {offset_ - 1};
   // Keep consuming until the closing comment or EOF.
   char prev {};
-  for (int nest_depth = 1; nest_depth > 0; prev = advance()) {
+  for (int nest_depth {1}; nest_depth > 0; prev = advance()) {
     if (at_eof()) {
       diagnostics_.emplace_back("Block comment missing closing '-#'", start_offset, Diagnostic::ERROR);
       return std::nullopt;
@@ -143,7 +143,7 @@ std::optional<Token> Lexer::line_comment() {
   }
 
   advance(); // The closing backtick.
-  auto token = make_token(TOKEN_IDENTIFIER);
+  auto token {make_token(TOKEN_IDENTIFIER)};
   // Only the stuff within backticks is needed.
   token.start_offset++;
   token.length -= 2;
@@ -157,14 +157,14 @@ std::optional<Token> Lexer::line_comment() {
 }
 
 [[nodiscard]] std::uint32_t Lexer::read_hex(int length) {
-  std::uint32_t value = 0;
-  for (int i = 0; i < length; ++i) {
+  std::uint32_t value {0};
+  for (int i {0}; i < length; ++i) {
     if (at_eof()) {
       diagnostics_.emplace_back(std::format("Escape sequence cut short by EOF (should be {} digits)offset_, ", length), Diagnostic::ERROR);
       return 0;
     }
 
-    const int digit = Helpers::hex_value(peek());
+    const int digit {Helpers::hex_value(peek())};
     if (digit == -1) {
       diagnostics_.emplace_back(std::format("Invalid hex character; sequence should be {} digitsoffset_, ", length), Diagnostic::ERROR);
       return 0;
@@ -364,8 +364,10 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
 }
 
 [[nodiscard]] Token Lexer::hex_number() {
-  const auto is_hex_digit = [](char c) {
-    return std::isdigit(static_cast<unsigned char>(c)) != 0 || (c <= 'f' && c >= 'a') || (c <= 'F' && c >= 'A');
+  const auto is_hex_digit {
+    [](char c) {
+      return std::isdigit(static_cast<unsigned char>(c)) != 0 || (c <= 'f' && c >= 'a') || (c <= 'F' && c >= 'A');
+    }
   };
 
   if (!is_hex_digit(peek())) {
@@ -378,14 +380,14 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
     diagnostics_.emplace_back("Character appears to be part of the number, but is actually not", offset_, Diagnostic::WARNING);
   }
 
-  auto raw_hex {std::string(src_.substr(start_offset_, offset_ - start_offset_))};
+  auto raw_hex {std::string {src_.substr(start_offset_, offset_ - start_offset_)}};
   std::erase(raw_hex, '_');
   auto hex {static_cast<double>(std::stoll(raw_hex, nullptr, 16))};
   return make_token(TOKEN_NUMBER, hex);
 }
 
 [[nodiscard]] Token Lexer::binary_number() {
-  const auto is_binary_digit = [](char c) { return c == '0' || c == '1'; };
+  const auto is_binary_digit {[](char c) { return c == '0' || c == '1'; }};
 
   if (!is_binary_digit(peek())) {
     diagnostics_.emplace_back("Expected a binary digit after 0b", offset_, Diagnostic::ERROR);
@@ -397,14 +399,14 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
     diagnostics_.emplace_back("Character appears to be part of the number, but is actually not", offset_, Diagnostic::WARNING);
   }
 
-  auto raw_binary {std::string(src_.substr(start_offset_, offset_ - start_offset_))};
+  auto raw_binary {std::string {src_.substr(start_offset_, offset_ - start_offset_)}};
   std::erase(raw_binary, '_');
   auto binary {static_cast<double>(std::stoll(raw_binary, nullptr, 2))};
   return make_token(TOKEN_NUMBER, binary);
 }
 
 [[nodiscard]] Token Lexer::number() {
-  const auto is_digit = [](char c) { return std::isdigit(static_cast<unsigned char>(c)) != 0; };
+  const auto is_digit {[](char c) { return std::isdigit(static_cast<unsigned char>(c)) != 0; }};
 
   // This, number(), is called after a digit is found, so we can consume the rest of them.
   consume_digit_chunk(is_digit);
@@ -437,7 +439,7 @@ void Lexer::consume_digit_chunk(bool (*is_digit)(char)) {
       diagnostics_.emplace_back("Character appears to be part of the number, but is actually not", offset_, Diagnostic::WARNING);
   }
 
-  auto raw_decimal {std::string(src_.substr(start_offset_, offset_ - start_offset_))};
+  auto raw_decimal {std::string {src_.substr(start_offset_, offset_ - start_offset_)}};
   std::erase(raw_decimal, '_');
   auto decimal {std::stod(raw_decimal)};
   return make_token(TOKEN_NUMBER, decimal);
@@ -651,11 +653,13 @@ std::optional<Token> Lexer::indentation() {
   const auto upper {std::ranges::upper_bound(line_offsets_, offset)};
   const auto line_index {static_cast<int>(std::distance(line_offsets_.begin(), upper)) - 1};
 
-  const size_t line_start = line_offsets_[line_index];
-  const size_t next_start = upper == line_offsets_.end()
-                            ? src_length_
-                            : line_offsets_[line_index + 1] - 1;
+  const size_t line_start {line_offsets_[line_index]};
+  const size_t next_start {
+    upper == line_offsets_.end()
+    ? src_length_
+    : line_offsets_[line_index + 1] - 1
+  };
 
-  const size_t len = next_start - line_start;
+  const size_t len {next_start - line_start};
   return src_view_.substr(line_start, len);
 }

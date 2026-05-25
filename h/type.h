@@ -98,7 +98,7 @@ struct FunctionType final : SyntacticType {
 struct TypeId {
   uint32_t value {};
 
-  static constexpr uint32_t invalid = std::numeric_limits<uint32_t>::max();
+  static constexpr uint32_t invalid {std::numeric_limits<uint32_t>::max()};
 
   constexpr TypeId() : value {invalid} {}
   constexpr explicit TypeId(uint32_t value) : value {value} {}
@@ -109,7 +109,7 @@ struct TypeId {
 };
 
 struct Named {
-  TypeId def {}; // TODO: Store method table lookup id, not TypeId (consider whether functions and optionals should have members).
+  std::string name {}; // Just for hashing, really.
   bool operator==(const Named& other) const = default;
 };
 
@@ -167,35 +167,35 @@ namespace Type_hash {
 
   template <class T>
   size_t hash_vec(const std::vector<T>& v) noexcept {
-    size_t seed = 0;
+    size_t seed {0};
     hash_combine(seed, v.size());
     for (auto& x : v) hash_combine(seed, x);
     return seed;
   }
 
   inline size_t hash_named(const Named& t) noexcept {
-    size_t seed = 0;
+    size_t seed {0};
     hash_combine(seed, 1u);
-    hash_combine(seed, t.def);
+    hash_combine(seed, t.name);
     return seed;
   }
 
   inline size_t hash_typeparam(const TypeParam& t) noexcept {
-    size_t seed = 0;
+    size_t seed {0};
     hash_combine(seed, 2u);
     hash_combine(seed, t.index);
     return seed;
   }
 
   inline size_t hash_optional(const Optional& t) noexcept {
-    size_t seed = 0;
+    size_t seed {0};
     hash_combine(seed, 3u);
     hash_combine(seed, t.inner);
     return seed;
   }
 
   inline size_t hash_function(const Function& t) noexcept {
-    size_t seed = 0;
+    size_t seed {0};
     hash_combine(seed, 4u);
     hash_combine(seed, hash_vec(t.params));
     hash_combine(seed, t.return_type);
@@ -203,7 +203,7 @@ namespace Type_hash {
   }
 
   inline size_t hash_applied(const Applied& t) noexcept {
-    size_t seed = 0;
+    size_t seed {0};
     hash_combine(seed, 5u);
     hash_combine(seed, t.base);
     hash_combine(seed, hash_vec(t.args));
@@ -249,7 +249,7 @@ class TypeArena {
   TypeId add(SemanticType&& t) {
     // This makes a copy. I've tried to find a way that allows single ownership (using std::list is one), but I'm not sure if it's worth the fight.
     const TypeKey key {t};
-    const auto existing = interned_.find(key);
+    const auto existing {interned_.find(key)};
     if (existing != interned_.end()) return existing->second;
 
     types_.emplace_back(std::forward<SemanticType>(t));

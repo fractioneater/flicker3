@@ -1,5 +1,8 @@
 using Speach = (Roman, Numeral) -> Toast of Tree
 
+class Rabbi is Rabbit
+  var g = 32
+
 while:raphael true
   print 32
 else
@@ -16,3 +19,6 @@ while:jorge a == 3
 while:outer b
   while c
     break:outer
+
+fun g(b: String) -> Oak
+  print b

@@ -255,7 +255,7 @@ SyntacticTypePtr Parser::function_type() {
     return std::make_shared<FunctionType>(std::move(param_types), standard_type("a return type", true));
   }
   // Non-returning function.
-  return std::make_shared<FunctionType>(std::move(param_types), std::make_shared<NamedType>("Unit"));
+  return std::make_shared<FunctionType>(std::move(param_types), nullptr);
 }
 
 SyntacticTypePtr Parser::standard_type(const std::string& thing_to_look_for, bool allow_generics) {
@@ -587,32 +587,34 @@ ExprNode Parser::map(const ExprNode& first_item) {
   std::vector<ExprNode> values {};
 
   // A little helper to handle keys.
-  auto validate_key = [&](const ExprNode& key) {
-    // A string is valid, but identifiers are the preferred style for readability.
-    if (const auto str {std::dynamic_pointer_cast<Expressions::String>(key)}) {
-      keys.emplace_back(str->value);
-      diagnostics_.emplace_back("It's recommended to use identifiers instead of strings as keys", previous_, Diagnostic::WARNING);
-      return;
-    }
+  auto validate_key {
+    [&](const ExprNode& key) {
+      // A string is valid, but identifiers are the preferred style for readability.
+      if (const auto str {std::dynamic_pointer_cast<Expressions::String>(key)}) {
+        keys.emplace_back(str->value);
+        diagnostics_.emplace_back("It's recommended to use identifiers instead of strings as keys", previous_, Diagnostic::WARNING);
+        return;
+      }
 
-    // String interpolation for keys is not supported yet.
-    if (std::dynamic_pointer_cast<Expressions::Interpolation>(key)) {
-      report_error({"String interpolation for keys is not yet supported", previous_, Diagnostic::ERROR});
-      keys.emplace_back("");
-      return;
-    }
+      // String interpolation for keys is not supported yet.
+      if (std::dynamic_pointer_cast<Expressions::Interpolation>(key)) {
+        report_error({"String interpolation for keys is not yet supported", previous_, Diagnostic::ERROR});
+        keys.emplace_back("");
+        return;
+      }
 
-    if (const auto var {std::dynamic_pointer_cast<Expressions::Variable>(key)}) {
-      keys.emplace_back(var->identifier->src_string);
-      return;
-    }
+      if (const auto var {std::dynamic_pointer_cast<Expressions::Variable>(key)}) {
+        keys.emplace_back(var->identifier->src_string);
+        return;
+      }
 
-    diagnostics_.emplace_back(
-      "Invalid key type",
-      Diagnostic {"If you're trying to use a reserved word, wrap it in backticks (ex. `class`)", Diagnostic::NOTE},
-      previous_,
-      Diagnostic::ERROR
-    );
+      diagnostics_.emplace_back(
+        "Invalid key type",
+        Diagnostic {"If you're trying to use a reserved word, wrap it in backticks (ex. `class`)", Diagnostic::NOTE},
+        previous_,
+        Diagnostic::ERROR
+      );
+    }
   };
 
   // Step 1: First key (already parsed by collection()) and its value.

@@ -29,7 +29,7 @@ TEST(Comment, FileTest) {
   }
   std::stringstream buffer;
   buffer << file.rdbuf();
-  std::string source = buffer.str();
+  std::string source {buffer.str()};
   Lexer lexer {source};
   Parser parser {lexer};
 
@@ -39,9 +39,9 @@ TEST(Comment, FileTest) {
 }
 
 TEST(Comment, BlockCommentMaxNest) {
-  std::string src = "#-";
-  for (int i = 0; i < MAX_COMMENT_NEST; ++i) src += " #-";
-  for (int i = 0; i <= MAX_COMMENT_NEST; ++i) src += " -#";
+  std::string src {"#-"};
+  for (int i {0}; i < MAX_COMMENT_NEST; ++i) src += " #-";
+  for (int i {0}; i <= MAX_COMMENT_NEST; ++i) src += " -#";
   EXPECT_TRUE(has_error(src));
 }
 
@@ -57,7 +57,7 @@ TEST(Identifier, FileTest) {
   }
   std::stringstream buffer;
   buffer << file.rdbuf();
-  std::string source = buffer.str();
+  std::string source {buffer.str()};
   Lexer lexer {source};
   Parser parser {lexer};
 
@@ -87,7 +87,7 @@ TEST(Number, FileTest) {
   }
   std::stringstream buffer;
   buffer << file.rdbuf();
-  std::string source = buffer.str();
+  std::string source {buffer.str()};
   Lexer lexer {source};
   Parser parser {lexer};
 
@@ -133,7 +133,7 @@ TEST(String, FileTest) {
   }
   std::stringstream buffer;
   buffer << file.rdbuf();
-  std::string source = buffer.str();
+  std::string source {buffer.str()};
   Lexer lexer {source};
   Parser parser {lexer};
 
@@ -165,7 +165,7 @@ TEST(Indentation, FileTest) {
   }
   std::stringstream buffer;
   buffer << file.rdbuf();
-  std::string source = buffer.str();
+  std::string source {buffer.str()};
   Lexer lexer {source};
   Parser parser {lexer};
 

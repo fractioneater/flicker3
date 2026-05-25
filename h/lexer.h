@@ -128,8 +128,8 @@ class Lexer {
    * @return A token with type, offset, and length data
    */
   [[nodiscard]] Token make_token(TokenType type) {
-    prev_type_        = type;
-    const auto length = offset_ - start_offset_;
+    prev_type_ = type;
+    const auto length {offset_ - start_offset_};
     return Token {type, start_offset_, length, src_view_};
   }
 

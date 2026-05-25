@@ -13,7 +13,7 @@
 #include "parser.h"
 
 void DotTreeWalker::walk(const ExprNode& node, int parent_id) {
-  const int my_id = id_counter_++;
+  const int my_id {id_counter_++};
   const std::string label {node->accept(expr_name_visitor_)};
 
   out_ << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=royalblue, fontcolor=royalblue4];\n";
@@ -26,7 +26,7 @@ void DotTreeWalker::walk(const ExprNode& node, int parent_id) {
 }
 
 void DotTreeWalker::walk(const StmtNode& node, int parent_id) {
-  const int my_id = id_counter_++;
+  const int my_id {id_counter_++};
   const std::string label {node->accept(stmt_name_visitor_)};
 
   out_ << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=indianred, fontcolor=maroon];\n";
@@ -40,7 +40,7 @@ void DotTreeWalker::walk(const StmtNode& node, int parent_id) {
 
 // Types aren't AST nodes, but they behave similarly. Instead of using a visitor pattern, they're just handled with a switch.
 void DotTreeWalker::walk(const SyntacticTypePtr& type, int parent_id) {
-  const int my_id = id_counter_++;
+  const int my_id {id_counter_++};
 
   if (!type) {
     out_ << "  n" << my_id << " [label=\"inferred\", shape=box, color=plum4, fontcolor=rebeccapurple];\n";
@@ -51,8 +51,8 @@ void DotTreeWalker::walk(const SyntacticTypePtr& type, int parent_id) {
   std::string label {};
   switch (type->kind()) {
     case TypeKind::NAMED: {
-      const auto named = std::dynamic_pointer_cast<NamedType>(type);
-      label            = named && !named->name.empty() ? named->name : "named";
+      const auto named {std::dynamic_pointer_cast<NamedType>(type)};
+      label = named && !named->name.empty() ? named->name : "named";
       break;
     }
     case TypeKind::APPLIED: label = "applied";
@@ -66,12 +66,12 @@ void DotTreeWalker::walk(const SyntacticTypePtr& type, int parent_id) {
   out_ << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=plum4, fontcolor=rebeccapurple];\n";
   out_ << "  n" << parent_id << " -> n" << my_id << ";\n";
 
-  if (const auto applied = std::dynamic_pointer_cast<AppliedType>(type)) {
+  if (const auto applied {std::dynamic_pointer_cast<AppliedType>(type)}) {
     walk(applied->constructor, my_id);
     for (const auto& arg : applied->args) walk(arg, my_id);
-  } else if (const auto optional = std::dynamic_pointer_cast<OptionalType>(type)) {
+  } else if (const auto optional {std::dynamic_pointer_cast<OptionalType>(type)}) {
     walk(optional->inner, my_id);
-  } else if (const auto fn = std::dynamic_pointer_cast<FunctionType>(type)) {
+  } else if (const auto fn {std::dynamic_pointer_cast<FunctionType>(type)}) {
     for (const auto& param : fn->params) walk(param, my_id);
     walk(fn->result, my_id);
   }

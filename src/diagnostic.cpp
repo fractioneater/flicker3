@@ -63,8 +63,8 @@ void Diagnostic::print(const Lexer* lexer, std::string_view module) const {
   //                      ^
   formatting();
 
-  const auto [line, col] = lexer->offset_to_line_col(offset_);
-  const auto line_str    = lexer->offset_to_line_string(offset_);
+  const auto [line, col] {lexer->offset_to_line_col(offset_)};
+  const auto line_str {lexer->offset_to_line_string(offset_)};
   if (has_position_) {
     std::cout << module << "@" << line << ":" << col << CLEAR_FORMAT << ' ' << message_ << '\n';
     std::cout << std::setw(5) << line << " │ " << line_str << '\n';
