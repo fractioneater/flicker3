@@ -94,9 +94,10 @@ std::optional<StmtNode> Parser::function_declaration() {
   const auto return_type {match(TOKEN_RIGHT_ARROW) ? broad_type() : nullptr};
 
   // Property 5: Body
+  const Token* would_be_the_eq {current_};
   StmtNode body {
     match(TOKEN_EQ)
-    ? std::make_shared<Statements::Return>(parse_expression())
+    ? std::make_shared<Statements::Return>(parse_expression(), would_be_the_eq)
     : block_or_statement()
   };
 
@@ -129,6 +130,8 @@ StmtNode Parser::class_declaration() {
   std::vector<StmtNode> declarations {};
   std::vector<StmtNode> initializers {};
   while (!check(TOKEN_DEDENT)) {
+    if (check(TOKEN_EOF)) return nullptr; // No class body (error case).
+
     // TODO: Access specifiers/things.
     if (match(TOKEN_VAL)) declarations.emplace_back(val_declaration());
     else if (match(TOKEN_VAR)) declarations.emplace_back(var_declaration());
@@ -222,9 +225,10 @@ StmtNode Parser::method() {
 
   const auto return_type {match(TOKEN_RIGHT_ARROW) ? broad_type() : nullptr};
 
+  const Token* would_be_the_eq {current_};
   StmtNode body {
     match(TOKEN_EQ)
-    ? std::make_shared<Statements::Return>(parse_expression())
+    ? std::make_shared<Statements::Return>(parse_expression(), would_be_the_eq)
     : block_or_statement()
   };
 
@@ -411,9 +415,10 @@ StmtNode Parser::continue_statement() {
 }
 
 StmtNode Parser::return_statement() {
+  const Token* where {previous_};
   if (check(TOKEN_LINE) || check(TOKEN_EOF) || check(TOKEN_DEDENT) || check(TOKEN_SEMICOLON))
-    return std::make_shared<Statements::Return>(std::make_shared<Expressions::Nil>());
-  return std::make_shared<Statements::Return>(parse_expression());
+    return std::make_shared<Statements::Return>(std::make_shared<Expressions::Nil>(), where);
+  return std::make_shared<Statements::Return>(parse_expression(), where);
 }
 
 StmtNode Parser::block() {
@@ -672,7 +677,8 @@ ExprNode Parser::lambda() {
     StmtNode body {};
 
     if (match(TOKEN_EQ)) {
-      body = std::make_shared<Statements::Return>(parse_expression());
+      const Token* where {previous_};
+      body = std::make_shared<Statements::Return>(parse_expression(), where);
       match(TOKEN_SEMICOLON);
     } else {
       if (previous_->type == TOKEN_RIGHT_PAREN)
@@ -695,10 +701,11 @@ ExprNode Parser::lambda() {
   // Block lambda.
   std::vector params {param_list()};
 
+  const Token* would_be_the_eq {current_};
   StmtNode body {
     match(TOKEN_EQ)
-    ? std::make_shared<Statements::Return>(parse_expression()) // Could be an expression
-    : block_or_statement()                                     // or a statement.
+    ? std::make_shared<Statements::Return>(parse_expression(), would_be_the_eq) // Could be an expression...
+    : block_or_statement()                                                      // or a statement.
   };
 
   return std::make_shared<Expressions::Lambda>(params, body);

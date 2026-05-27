@@ -108,7 +108,10 @@
 			"fields": [{"type": "Token*", "name": "label"}]
 		}, {
 			"name": "Return",
-			"fields": [{"type": "ExprNode", "name": "value", "move": true}]
+			"fields": [
+				{"type": "ExprNode", "name": "value", "move": true},
+				{"type": "Token*", "name": "where"}
+			]
 		}, {
 			"name": "Pass", "fields": []
 		}

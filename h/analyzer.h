@@ -58,7 +58,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
 
   // CONTEXT --------------------------------------------------
   // Scopes for symbol tables.
-  std::vector<ScopeFrame> scopes_ {{}}; // Initialize the global (inter-package core library) scope immediately. TODO: Init core
+  std::vector<ScopeFrame> scopes_ {};
   // Loop contexts (for labels).
   std::vector<LoopFrame> loops_ {};
   // Function contexts (for return types).

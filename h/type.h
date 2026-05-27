@@ -115,6 +115,7 @@ struct Named {
 
 struct TypeParam {
   int index {};
+  std::string host_name {}; // Just for hashing.
   bool operator==(const TypeParam& other) const = default;
 };
 
@@ -184,6 +185,7 @@ namespace Type_hash {
     size_t seed {0};
     hash_combine(seed, 2u);
     hash_combine(seed, t.index);
+    hash_combine(seed, t.host_name);
     return seed;
   }
 

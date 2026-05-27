@@ -698,7 +698,7 @@ class Statements::Continue : public Stmt {
 
 class Statements::Return : public Stmt {
   public:
-  explicit Return(ExprNode value) : value {std::move(value)} {}
+  Return(ExprNode value, const Token* where) : value {std::move(value)}, where {where} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_return_stmt_any(*this);
@@ -709,6 +709,7 @@ class Statements::Return : public Stmt {
   }
 
   const ExprNode value {};
+  const Token* where {};
 };
 
 class Statements::Pass : public Stmt {

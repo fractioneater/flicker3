@@ -38,7 +38,7 @@ void Analyzer::visit_function_stmt(const Statements::Function& stmt) {
   for (auto param_iter {std::begin(stmt.type_params)}; param_iter != std::end(stmt.type_params); ++param_iter) {
     add_type_safe(
       *param_iter,
-      types_.add(TypeParam {static_cast<int>(param_iter - std::begin(stmt.type_params))})
+      types_.add(TypeParam {static_cast<int>(param_iter - std::begin(stmt.type_params)), std::string {stmt.identifier->src_string}})
     );
   }
   // Step 2: Define regular params.
@@ -71,7 +71,7 @@ void Analyzer::visit_class_stmt(const Statements::Class& stmt) {
   for (auto param_iter {std::begin(stmt.type_params)}; param_iter != std::end(stmt.type_params); ++param_iter) {
     add_type_safe(
       *param_iter,
-      types_.add(TypeParam {static_cast<int>(param_iter - std::begin(stmt.type_params))})
+      types_.add(TypeParam {static_cast<int>(param_iter - std::begin(stmt.type_params)), std::string {stmt.identifier->src_string}})
     );
   }
   // Step 2: Find superclass.
@@ -160,15 +160,15 @@ void Analyzer::break_or_continue(const char* name, const Token* label) {
 void Analyzer::visit_return_stmt(const Statements::Return& stmt) {
   if (stmt.value) stmt.value->VISIT;
   if (functions_.empty()) {
-    diagnostics_.emplace_back("Return statement outside of function", Diagnostic::ERROR); // TODO: Where?
+    diagnostics_.emplace_back("Return statement outside of function", stmt.where, Diagnostic::ERROR);
     return;
   }
   if (stmt.value) {
     if (find_expr_type(stmt.value) != functions_.back().return_type)
-      diagnostics_.emplace_back("Incorrect return value type", Diagnostic::ERROR); // TODO: Where?
+      diagnostics_.emplace_back("Incorrect return value type", stmt.where + 1, Diagnostic::ERROR);
   } else {
     if (functions_.back().returns)
-      diagnostics_.emplace_back("Must return a value", Diagnostic::ERROR); // TODO: Where?
+      diagnostics_.emplace_back("Must return a value", stmt.where, Diagnostic::ERROR);
   }
 }
 

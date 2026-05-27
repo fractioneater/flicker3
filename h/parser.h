@@ -201,7 +201,7 @@ class Parser {
    * Parses an indented block of any item, line-separated.
    * @tparam T Type of items in the result list/block
    * @param indented Whether this block has indents and dedents to begin and end it (as opposed to just EOF)
-   * @param name String for error messages: "expecting indentation to increase inside " + name
+   * @param name String for error messages: "expecting indentation to increase inside {name}"
    * @param parse_item Function to parse a single line
    * @return List of items (statements) for lines
    */
