@@ -204,6 +204,8 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
 
   [[nodiscard]] const std::vector<Diagnostic>& get_diagnostics() const { return diagnostics_; }
 
+  void clear_diagnostics() { diagnostics_.clear(); }
+
   [[nodiscard]] bool encountered_halt() const {
     return std::ranges::any_of(diagnostics_, [](const Diagnostic& d) { return d.is_halting(); });
   }

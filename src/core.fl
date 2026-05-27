@@ -1,0 +1,8 @@
+class Bool
+  fun test() = "..."
+
+class Number
+  fun test() = "..."
+
+class String
+  fun test() = "..."

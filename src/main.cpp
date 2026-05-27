@@ -10,150 +10,9 @@
 #include <fstream>
 #include <iostream>
 
-#include "analyzer.h"
-#include "dot-printer.h"
-#include "lexer.h"
-#include "parser.h"
+#include "module.h"
 
-enum InterpretResult {
-  INTERPRET_OK, INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERROR
-};
-
-std::string read_entire_file(const char* path) {
-  std::ifstream in {path, std::ios::binary};
-
-  if (!in) {
-    std::cerr << "Could not open file '" << path << "'\n";
-    throw std::system_error(74, std::iostream_category()); // Exit code 74: generic i/o failure.
-  }
-
-  in.seekg(0, std::ios::end);
-  const std::streampos end_pos {in.tellg()};
-
-  if (end_pos >= 0) {
-    std::string contents {};
-    const auto size {static_cast<std::streamsize>(end_pos)};
-    if (size == static_cast<std::streamsize>(-1)) {
-      std::cerr << "File '" << path << "' is too large\n";
-      throw std::system_error(74, std::iostream_category());
-    }
-    contents.resize(size);
-
-    in.seekg(0, std::ios::beg);
-    in.read(contents.data(), size);
-    if (!in) {
-      std::cerr << "Could not read file '" << path << "'\n";
-      throw std::system_error(74, std::iostream_category());
-    }
-
-    in.close();
-    return contents;
-  }
-
-  // Fallback in case seek and tell aren't supported.
-  in.clear();
-  in.seekg(0, std::ios::beg);
-  return std::string {std::istreambuf_iterator(in), std::istreambuf_iterator<char>()};
-}
-
-InterpretResult interpret(const std::string& source, std::string_view module) {
-  Lexer lexer {source};
-  Parser parser {lexer}; // Lexer is run when parser is initialized.
-  Analyzer analyzer {};
-
-  #if DEBUG_PRINT_TOKENS
-  for (const auto& token : parser.get_tokens()) {
-    if (token.type == TOKEN_EOF) {
-      std::cout << "EOF: col " << lexer.offset_to_line_col(token.start_offset).second << "\n";
-      continue;
-    }
-
-    const auto [line, col] {lexer.offset_to_line_col(token.start_offset)};
-    if (token.type == TOKEN_INDENT) {
-      std::cout << "Indent\n";
-    } else if (token.type == TOKEN_DEDENT) {
-      std::cout << "Dedent\n";
-    } else if (token.type == TOKEN_LINE) {
-      std::cout << "Newline\n";
-    } else { // Other:
-      std::cout << "Token '" << token.src_string << "': type " << token.type << ", " << line << ":" << col << ", length " << token.length << "\n";
-    }
-  }
-  #endif
-
-  for (const auto& err : lexer.get_diagnostics())
-    err.print(&lexer, module);
-
-  if (lexer.encountered_halt()) {
-    #if PRINT_COLORS
-    std::cout << "Compiling halted at Lexer\n\033[4m" << ERROR_COLOR << "Lexer" << DARK_GRAY_COLOR <<
-      " -> Parser -> Analyzer -> Bytecode Generator -> Virtual Machine" << CLEAR_FORMAT << '\n';
-    #else
-    std::cout << "Compiling halted at Lexer\n";
-    #endif
-    return INTERPRET_COMPILE_ERROR;
-  }
-
-  const auto program {parser.parse()};
-
-  for (const auto& err : parser.get_diagnostics())
-    err.print(&lexer, module);
-
-  if (parser.encountered_halt()) {
-    #if PRINT_COLORS
-    std::cout << "Compiling halted at Parser\n\033[4m" << RESULT_COLOR << "Lexer -> " << ERROR_COLOR << "Parser" << DARK_GRAY_COLOR <<
-      " -> Analyzer -> Bytecode Generator -> Virtual Machine" << CLEAR_FORMAT << '\n';
-    #else
-    std::cout << "Compiling halted at Parser\n";
-    #endif
-    return INTERPRET_COMPILE_ERROR;
-  }
-
-  #if DEBUG_PRINT_DOT
-  parser.output_dot();
-  #endif
-
-  program->accept(analyzer);
-
-  for (const auto& err : analyzer.get_diagnostics())
-    err.print(&lexer, module);
-
-  if (analyzer.encountered_halt()) {
-    #if PRINT_COLORS
-    std::cout << "Compiling halted at Analyzer\n\033[4m" << RESULT_COLOR << "Lexer -> Parser -> " << ERROR_COLOR << "Analyzer" << DARK_GRAY_COLOR <<
-      " -> Bytecode Generator -> Virtual Machine" << CLEAR_FORMAT << '\n';
-    #else
-    std::cout << "Compiling halted at Analyzer"
-    #endif
-    return INTERPRET_COMPILE_ERROR;
-  }
-
-  // Next step: Turn the tree into bytecode. It'd probably be good to return something from the analyzer that is a better representation than the AST.
-
-  #if DEBUG_PRINT_CODE
-  #endif
-
-  #if DEBUG_TRACE_EXECUTION
-  #endif
-
-  return INTERPRET_OK;
-}
-
-InterpretResult interpret_and_print(const std::string& source, std::string_view module) {
-  const InterpretResult result {interpret(source, module)};
-
-  if (result == INTERPRET_OK) {
-    #if PRINT_COLORS
-    std::cout << RESULT_COLOR << "= > " << CLEAR_FORMAT << '\n';
-    #else
-    std::cout << "= > \n";
-    #endif
-  }
-
-  return result;
-}
-
-void repl() {
+void repl(ModuleLoader& ml) {
   constexpr std::string_view prompt {"~ > "};
   std::string line {};
 
@@ -163,34 +22,37 @@ void repl() {
   #  define PROMPT prompt
   #endif
 
+  ml.load_repl();
   // Not the cleanest syntax, but this comma expression works to print the "~ >" prompt and then get input.
   while (std::cout << PROMPT, std::getline(std::cin >> std::ws, line)) {
-    interpret_and_print(line, "input");
+    ml.send_repl_line(line);
   }
 
-  // Clear the prompt characters from the last line by printing \b as many times as necessary.
-  std::cout << std::string(std::ssize(prompt), '\b');
+  // Clear the prompt characters from the last line with a quick ANSI escape.
+  std::cout << "\033[2K\033[1G";
 }
 
-void run_file(const char* path) {
+void run_file(ModuleLoader& ml, const char* path) {
   // Module name
   const std::filesystem::path p {path};
   const std::string module_name {p.stem().string()};
-  // Source
-  const std::string source {read_entire_file(path)};
-  // Blastoff!
-  const InterpretResult result {interpret(source, module_name)};
+  // And here we go!
+  ml.load_by_path(module_name, path);
 
-  if (result == INTERPRET_COMPILE_ERROR) throw std::system_error(65, std::generic_category()); // Exit code 65: data format error (compile error).
-  if (result == INTERPRET_RUNTIME_ERROR) throw std::system_error(70, std::generic_category()); // Exit code 70: internal software error (runtime error).
+  // if (result == INTERPRET_COMPILE_ERROR) throw std::system_error(65, std::generic_category()); // Exit code 65: data format error (compile error).
+  // if (result == INTERPRET_RUNTIME_ERROR) throw std::system_error(70, std::generic_category()); // Exit code 70: internal software error (runtime error).
 }
 
 int main(int argc, const char* argv[]) {
+  ModuleLoader ml {};
+
   if (argc == 1) {
-    repl();
+    // One arg (just 'flicker').
+    repl(ml);
   } else if (argc == 2) {
+    // Two args, and we'll assume it's 'flicker <path>'.
     try {
-      run_file(argv[1]);
+      run_file(ml, argv[1]);
     } catch (const std::system_error& err) {
       return err.code().value();
     }

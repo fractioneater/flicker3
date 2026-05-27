@@ -8,20 +8,20 @@
 
 // DEBUG FLAGS ---------------------------------------------------------------------------
 
-// For the three following flags: 0 to disable, 1 to print user code, 2 to print everything (includes core module)
+// For the following three flags: 0 to disable, 1 to print user code, 2 to print everything (including core module)
 // Don't compile; just print the tokens straight from the lexer.
 #define DEBUG_PRINT_TOKENS 0
 // Print bytecode instructions immediately after compiling.
-#define DEBUG_PRINT_CODE 0
+#define DEBUG_PRINT_CODE 2
 // Print bytecode instructions as they run.
-#define DEBUG_TRACE_EXECUTION 0
+#define DEBUG_TRACE_EXECUTION 2
 
 // Run the GC whenever the VM or compiler messes with memory.
 #define DEBUG_STRESS_GC 0
 // Log memory management and garbage collector runs.
 #define DEBUG_LOG_GC 0
 
-// Print the parse tree in DOT format for GraphViz.
+// Print the parse tree in DOT format for GraphViz. Uses the same 0/1/2 system as above.
 #define DEBUG_PRINT_DOT 1
 #define DEBUG_DOT_FILENAME "/home/fractioneater/stuff/git/flicker-3/tree.dot"
 

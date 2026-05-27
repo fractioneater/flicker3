@@ -13,6 +13,7 @@ add_library(flicker_lib
 	src/diagnostic.cpp
 	src/dot-printer.cpp
 	src/lexer.cpp
+	src/module.cpp
 	src/parser.cpp
 	src/vm.cpp
 )
