@@ -9,22 +9,34 @@
 #include <iostream>
 #include <memory>
 #include <string>
-#include <unordered_set>
+#include <unordered_map>
 
 #include "analyzer.h"
 #include "core.fl.h"
 #include "lexer.h"
 #include "parser.h"
 
+enum ModuleStatus { MODULE_COMPILED, MODULE_COMPILE_ERROR, MODULE_RUNTIME_ERROR };
+
 struct Module {
-  Analyzer analyzer {};
+  ModuleStatus status {};
+
+  std::unique_ptr<Lexer> lexer {};
+  std::unique_ptr<Parser> parser {};
+  Analyzer analyzer {}; // Why isn't it a unique_ptr? Because there can only be one, and it's safe to initialize immediately.
+
+  virtual bool run() = 0;
+
+  virtual ~Module() = default;
+
+  protected:
+  bool compile(std::string_view module_name, std::string src, int debug_level = 1);
 };
 
 struct StandardModule : Module {
   std::string name {};
 
-  Lexer lexer;
-  Parser parser;
+  bool run() override;
 
   StandardModule(const std::string& name, std::string src);
 };
@@ -38,8 +50,7 @@ struct StandardModule : Module {
 struct CoreModule : Module {
   static constexpr std::string_view core_name {"core"};
 
-  Lexer lexer;
-  Parser parser;
+  bool run() override;
 
   CoreModule();
 };
@@ -51,18 +62,24 @@ struct ReplModule : Module {
   static constexpr std::string_view repl_name {"input"};
 
   bool run_line(const std::string& line);
+
+  private:
+  bool run() override;
 };
 
 class ModuleLoader {
   std::unique_ptr<CoreModule> core_ {nullptr};
   std::unique_ptr<ReplModule> repl_ {nullptr};
-  std::unordered_set<std::string> loaded_ {};
+  std::unordered_map<std::string, StandardModule> loaded_ {};
 
   void load_core();
 
   public:
-  void load_by_path(const std::string& name, const std::string& path);
+  std::pair<std::unordered_map<std::string, StandardModule>::iterator, bool> load_by_path(const std::string& name, const std::string& path);
 
-  void load_repl();
+  /**
+   * Get REPL input until ctrl+D.
+   */
+  void run_repl();
   void send_repl_line(const std::string& line) const;
 };

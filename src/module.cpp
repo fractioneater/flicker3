@@ -102,31 +102,63 @@ bool print_errors(const T& component, const Lexer& lexer, std::string_view modul
   return false;
 }
 
-// Standard modules --------------------------------------------------
+// Module base --------------------------------------------------
 
-void ModuleLoader::load_by_path(const std::string& name, const std::string& path) {
-  if (core_ == nullptr) load_core();
-  StandardModule main {name, read_entire_file(path)};
-}
+bool Module::compile(std::string_view module_name, std::string src, int debug_level) {
+  status = MODULE_COMPILE_ERROR;
 
-StandardModule::StandardModule(const std::string& name, std::string src) : name {name}, lexer {std::move(src)}, parser {lexer} {
-  if (print_errors(lexer, lexer, name, CompileStage::LEXER)) return;
+  // Initialize lexer and parser, which runs the lexer.
+  lexer  = std::make_unique<Lexer>(std::move(src));
+  parser = std::make_unique<Parser>(*lexer);
+
+  // LEXER ERRORS, because lexing has already happened.
+  if (print_errors(*lexer, *lexer, module_name, CompileStage::LEXER)) return false;
 
   #if DEBUG_PRINT_TOKENS
-  debug_print_tokens(parser.get_tokens(), lexer);
+  if (DEBUG_PRINT_TOKENS >= debug_level)
+    debug_print_tokens(parser->get_tokens(), *lexer);
   #endif
 
-  const auto program {parser.parse()};
+  // PARSING
+  const auto program {parser->parse()};
 
-  if (print_errors(parser, lexer, name, CompileStage::PARSER)) return;
+  if (print_errors(*parser, *lexer, module_name, CompileStage::PARSER)) return false;
 
-  #if DEBUG_PRINT_DOT
-  parser.output_dot();
+  #if DEBUG_PRINT_DOT == 1
+  if (DEBUG_PRINT_DOT >= debug_level) {
+    parser->output_dot();
+    if (debug_level == 2) {
+      std::cout << "Waiting for you to read the parse tree DOT file... ";
+      std::string _ {};
+      std::getline(std::cin >> std::ws, _);
+    }
+  }
   #endif
 
+  // ANALYSIS
   program->accept(analyzer);
 
-  if (print_errors(analyzer, lexer, name, CompileStage::ANALYZER)) return;
+  if (print_errors(analyzer, *lexer, module_name, CompileStage::ANALYZER)) return false;
+
+  status = MODULE_COMPILED;
+  return true;
+}
+
+// Standard modules --------------------------------------------------
+
+std::pair<std::unordered_map<std::string, StandardModule>::iterator, bool> ModuleLoader::load_by_path(const std::string& name, const std::string& path) {
+  if (core_ == nullptr) load_core();
+  // If the module is already loaded, try_emplace shouldn't overwrite it.
+  return loaded_.try_emplace(name, name, read_entire_file(path));
+}
+
+StandardModule::StandardModule(const std::string& name, std::string src) {
+  compile(name, std::move(src));
+}
+
+bool StandardModule::run() {
+  if (status != MODULE_COMPILED) return false;
+  return true;
 }
 
 // Core module --------------------------------------------------
@@ -137,34 +169,42 @@ void ModuleLoader::load_core() {
   // TODO: initialize natives.
 }
 
-CoreModule::CoreModule() : lexer {std::string {Core::src}}, parser {lexer} {
-  if (print_errors(lexer, lexer, core_name, CompileStage::LEXER)) return;
+CoreModule::CoreModule() {
+  compile(core_name, std::string {Core::src}, 2);
+  if (status != MODULE_COMPILED) {
+    std::cerr << "This is a core library compilation error---it's not your fault. Submit an issue on Codeberg or communicate this to me however possible.\n";
+    // Exit code 70: internal software error (core library error, my fault).
+    throw std::system_error(70, std::generic_category());
+  }
+}
 
-  #if DEBUG_PRINT_TOKENS == 2
-  debug_print_tokens(parser.get_tokens(), lexer);
-  #endif
-
-  const auto program {parser.parse()};
-
-  if (print_errors(parser, lexer, core_name, CompileStage::PARSER)) return;
-
-  #if DEBUG_PRINT_DOT == 2
-  parser.output_dot();
-  std::cout << "Waiting for you to read the core library DOT tree... ";
-  std::string _ {};
-  std::getline(std::cin >> std::ws, _);
-  #endif
-
-  program->accept(analyzer);
-
-  if (print_errors(analyzer, lexer, core_name, CompileStage::ANALYZER)) return;
+bool CoreModule::run() {
+  if (status != MODULE_COMPILED) return false;
+  return true;
 }
 
 // REPL module --------------------------------------------------
 
-void ModuleLoader::load_repl() {
+void ModuleLoader::run_repl() {
   if (core_ == nullptr) load_core();
-  repl_ = std::make_unique<ReplModule>();
+  if (repl_ == nullptr) repl_ = std::make_unique<ReplModule>();
+
+  constexpr std::string_view prompt {"~ > "};
+  std::string line {};
+
+  #if PRINT_COLORS
+  #  define PROMPT PROMPT_COLOR << prompt << CLEAR_FORMAT
+  #else
+  #  define PROMPT prompt
+  #endif
+
+  // Not the cleanest syntax, but this comma expression works to print the "~ >" prompt and then get input.
+  while (std::cout << PROMPT, std::getline(std::cin >> std::ws, line)) {
+    send_repl_line(line);
+  }
+
+  // Clear the prompt characters from the last line with a quick ANSI escape.
+  std::cout << "\033[2K\033[1G";
 }
 
 void ModuleLoader::send_repl_line(const std::string& line) const {
@@ -180,27 +220,12 @@ void ModuleLoader::send_repl_line(const std::string& line) const {
 bool ReplModule::run_line(const std::string& line) {
   analyzer.clear_diagnostics();
 
-  // Unlike other modules, the REPL creates a temporary lexer and parser for every line. Its analyzer stays, though.
-  Lexer lexer {line};
-  Parser parser {lexer};
+  const bool success {compile(repl_name, line)};
+  if (!success) return false;
 
-  if (print_errors(lexer, lexer, repl_name, CompileStage::LEXER)) return false;
+  return run();
+}
 
-  #if DEBUG_PRINT_TOKENS
-  debug_print_tokens(parser.get_tokens(), lexer);
-  #endif
-
-  const auto program {parser.parse()};
-
-  if (print_errors(parser, lexer, repl_name, CompileStage::PARSER)) return false;
-
-  #if DEBUG_PRINT_DOT
-  parser.output_dot();
-  #endif
-
-  program->accept(analyzer);
-
-  if (print_errors(analyzer, lexer, repl_name, CompileStage::ANALYZER)) return false;
-
+bool ReplModule::run() {
   return true;
 }

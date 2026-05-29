@@ -13,34 +13,24 @@
 #include "module.h"
 
 void repl(ModuleLoader& ml) {
-  constexpr std::string_view prompt {"~ > "};
-  std::string line {};
-
-  #if PRINT_COLORS
-  #  define PROMPT PROMPT_COLOR << prompt << CLEAR_FORMAT
-  #else
-  #  define PROMPT prompt
-  #endif
-
-  ml.load_repl();
-  // Not the cleanest syntax, but this comma expression works to print the "~ >" prompt and then get input.
-  while (std::cout << PROMPT, std::getline(std::cin >> std::ws, line)) {
-    ml.send_repl_line(line);
-  }
-
-  // Clear the prompt characters from the last line with a quick ANSI escape.
-  std::cout << "\033[2K\033[1G";
+  ml.run_repl();
 }
 
 void run_file(ModuleLoader& ml, const char* path) {
   // Module name
   const std::filesystem::path p {path};
   const std::string module_name {p.stem().string()};
-  // And here we go!
-  ml.load_by_path(module_name, path);
 
-  // if (result == INTERPRET_COMPILE_ERROR) throw std::system_error(65, std::generic_category()); // Exit code 65: data format error (compile error).
-  // if (result == INTERPRET_RUNTIME_ERROR) throw std::system_error(70, std::generic_category()); // Exit code 70: internal software error (runtime error).
+  // And here we go!
+  const auto [module, success] {ml.load_by_path(module_name, path)};
+  if (!success)
+    throw std::system_error(70, std::generic_category()); // Exit code 70: internal software error (something weird happened).
+
+  if (module->second.status != MODULE_COMPILED)
+    throw std::system_error(65, std::generic_category()); // Exit code 65: data format error (compile error, not my fault).
+
+  if (!module->second.run())
+    throw std::system_error(70, std::generic_category()); // Exit code 70: internal software error (runtime error, maybe my fault).
 }
 
 int main(int argc, const char* argv[]) {
@@ -48,7 +38,11 @@ int main(int argc, const char* argv[]) {
 
   if (argc == 1) {
     // One arg (just 'flicker').
-    repl(ml);
+    try {
+      repl(ml);
+    } catch (const std::system_error& err) {
+      return err.code().value();
+    }
   } else if (argc == 2) {
     // Two args, and we'll assume it's 'flicker <path>'.
     try {
