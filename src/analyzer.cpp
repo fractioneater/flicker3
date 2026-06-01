@@ -179,6 +179,7 @@ void Analyzer::visit_pass_stmt(const Statements::Pass& stmt) {} // Nothing to ch
 void Analyzer::visit_binary_expr(const Expressions::Binary& expr) {}                    // NOT IMPLEMENTED
 void Analyzer::visit_comparison_expr(const Expressions::Comparison& expr) {}            // NOT IMPLEMENTED
 void Analyzer::visit_if_expr(const Expressions::If& expr) {}                            // NOT IMPLEMENTED
+void Analyzer::visit_assignment_expr(const Expressions::Assignment& expr) {}            // NOT IMPLEMENTED
 void Analyzer::visit_call_expr(const Expressions::Call& expr) {}                        // NOT IMPLEMENTED
 void Analyzer::visit_subscript_expr(const Expressions::Subscript& expr) {}              // NOT IMPLEMENTED
 void Analyzer::visit_member_expr(const Expressions::Member& expr) {}                    // NOT IMPLEMENTED

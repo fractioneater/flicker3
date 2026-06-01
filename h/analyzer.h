@@ -88,6 +88,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   void visit_binary_expr(const Expressions::Binary& expr) override;
   void visit_comparison_expr(const Expressions::Comparison& expr) override;
   void visit_if_expr(const Expressions::If& expr) override;
+  void visit_assignment_expr(const Expressions::Assignment& expr) override;
   void visit_call_expr(const Expressions::Call& expr) override;
   void visit_subscript_expr(const Expressions::Subscript& expr) override;
   void visit_member_expr(const Expressions::Member& expr) override;

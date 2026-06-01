@@ -158,6 +158,12 @@ class DotTreeWalker {
       owner_.walk(expr.else_expr, parent_id);
     }
 
+    void visit_assignment_expr(const Expressions::Assignment& expr) override {
+      const int parent_id {owner_.current_parent_id_};
+      owner_.walk(expr.target, parent_id);
+      owner_.walk(expr.value, parent_id);
+    }
+
     void visit_call_expr(const Expressions::Call& expr) override {
       const int parent_id {owner_.current_parent_id_};
       owner_.walk(expr.object, parent_id);
@@ -431,6 +437,8 @@ class DotTreeWalker {
     }
 
     std::string visit_if_expr(const Expressions::If& expr) override { return "... if ... else ..."; }
+
+    std::string visit_assignment_expr(const Expressions::Assignment& expr) override { return "... = ..."; }
 
     std::string visit_call_expr(const Expressions::Call& expr) override { return "...(...*)"; }
 

@@ -298,6 +298,7 @@ class Parser {
   ExprNode binary_is(const ExprNode& left);
   ExprNode comparison(const ExprNode& left);
   ExprNode if_expr(const ExprNode& left);
+  ExprNode assignment(const ExprNode& left);
   // Postfix (treated as InfixFn)
   ExprNode postfix_inc_dec(const ExprNode& expr);
   ExprNode call(const ExprNode& expr);
@@ -393,7 +394,7 @@ class Parser {
     /* TOKEN_AMPERSAND_EQ  */ UNUSED,
     /* TOKEN_BANG          */ PREFIX_RULE(unary, "!"),
     /* TOKEN_BANG_EQ       */ INFIX_RULE(comparison, "!=", COMPARISON),
-    /* TOKEN_EQ            */ UNUSED,
+    /* TOKEN_EQ            */ INFIX_RULE(assignment, "=", ASSIGNMENT),
     /* TOKEN_EQ_EQ         */ INFIX_RULE(comparison, "==", COMPARISON),
     /* TOKEN_IDENTIFIER    */ PREFIX_RULE(variable, ""),
     /* TOKEN_STRING        */ PREFIX_RULE(literal, ""),

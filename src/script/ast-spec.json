@@ -136,6 +136,11 @@
 				{"type": "ExprNode", "name": "else_expr", "move": true}
 			]
 		}, {
+			"name": "Assignment", "fields": [
+				{"type": "ExprNode", "name": "target", "move": true},
+				{"type": "ExprNode", "name": "value", "move": true}
+			]
+		}, {
 			"name": "Call", "fields": [
 				{"type": "ExprNode", "name": "object", "move": true},
 				{"type": "std::vector<ExprNode>", "name": "arguments", "move": true}

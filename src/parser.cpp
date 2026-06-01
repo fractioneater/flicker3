@@ -526,6 +526,11 @@ ExprNode Parser::if_expr(const ExprNode& left) {
   return std::make_shared<Expressions::If>(condition, left, parse_expression(prec));
 }
 
+ExprNode Parser::assignment(const ExprNode& left) {
+  constexpr Precedence prec {static_cast<int>(Precedence::ASSIGNMENT) + 1};
+  return std::make_shared<Expressions::Assignment>(left, parse_expression(prec));
+}
+
 ExprNode Parser::postfix_inc_dec(const ExprNode& expr) {
   diagnostics_.emplace_back(
     "Postfix increment and decrement operators behave as their prefix equivalent; prefer the prefix version", previous_, Diagnostic::WARNING

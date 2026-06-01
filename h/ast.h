@@ -40,6 +40,7 @@ namespace Expressions {
   class Binary;
   class Comparison;
   class If;
+  class Assignment;
   class Call;
   class Subscript;
   class Member;
@@ -92,6 +93,7 @@ class ExprVisitorVoid {
   virtual void visit_binary_expr(const Expressions::Binary& expr) = 0;
   virtual void visit_comparison_expr(const Expressions::Comparison& expr) = 0;
   virtual void visit_if_expr(const Expressions::If& expr) = 0;
+  virtual void visit_assignment_expr(const Expressions::Assignment& expr) = 0;
   virtual void visit_call_expr(const Expressions::Call& expr) = 0;
   virtual void visit_subscript_expr(const Expressions::Subscript& expr) = 0;
   virtual void visit_member_expr(const Expressions::Member& expr) = 0;
@@ -146,6 +148,7 @@ class ExprVisitorAny {
   virtual std::any visit_binary_expr_any(const Expressions::Binary& expr) = 0;
   virtual std::any visit_comparison_expr_any(const Expressions::Comparison& expr) = 0;
   virtual std::any visit_if_expr_any(const Expressions::If& expr) = 0;
+  virtual std::any visit_assignment_expr_any(const Expressions::Assignment& expr) = 0;
   virtual std::any visit_call_expr_any(const Expressions::Call& expr) = 0;
   virtual std::any visit_subscript_expr_any(const Expressions::Subscript& expr) = 0;
   virtual std::any visit_member_expr_any(const Expressions::Member& expr) = 0;
@@ -274,6 +277,7 @@ class ExprVisitor : public ExprVisitorAny {
   virtual R visit_binary_expr(const Expressions::Binary& expr) = 0;
   virtual R visit_comparison_expr(const Expressions::Comparison& expr) = 0;
   virtual R visit_if_expr(const Expressions::If& expr) = 0;
+  virtual R visit_assignment_expr(const Expressions::Assignment& expr) = 0;
   virtual R visit_call_expr(const Expressions::Call& expr) = 0;
   virtual R visit_subscript_expr(const Expressions::Subscript& expr) = 0;
   virtual R visit_member_expr(const Expressions::Member& expr) = 0;
@@ -305,6 +309,10 @@ class ExprVisitor : public ExprVisitorAny {
 
   std::any visit_if_expr_any(const Expressions::If& expr) final {
     return visit_if_expr(expr);
+  }
+
+  std::any visit_assignment_expr_any(const Expressions::Assignment& expr) final {
+    return visit_assignment_expr(expr);
   }
 
   std::any visit_call_expr_any(const Expressions::Call& expr) final {
@@ -775,6 +783,22 @@ class Expressions::If : public Expr {
   const ExprNode condition {};
   const ExprNode then {};
   const ExprNode else_expr {};
+};
+
+class Expressions::Assignment : public Expr {
+  public:
+  Assignment(ExprNode target, ExprNode value) : target {std::move(target)}, value {std::move(value)} {}
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_assignment_expr_any(*this);
+  }
+
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_assignment_expr(*this);
+  }
+
+  const ExprNode target {};
+  const ExprNode value {};
 };
 
 class Expressions::Call : public Expr {
