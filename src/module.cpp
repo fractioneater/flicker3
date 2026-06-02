@@ -52,6 +52,10 @@ std::string read_entire_file(const std::string& path) {
   return std::string {std::istreambuf_iterator(in), std::istreambuf_iterator<char>()};
 }
 
+bool ModuleLoader::ensure_loaded(std::string_view current_module, std::string& new_path) {
+  return load_by_path(new_path).second;
+}
+
 void debug_print_tokens(const std::vector<Token>& tokens, const Lexer& lexer) {
   for (const auto& token : tokens) {
     if (token.type == TOKEN_EOF) {
@@ -146,13 +150,24 @@ bool Module::compile(std::string_view module_name, std::string src, int debug_le
 
 // Standard modules --------------------------------------------------
 
-std::pair<std::unordered_map<std::string, StandardModule>::iterator, bool> ModuleLoader::load_by_path(const std::string& name, const std::string& path) {
+/**
+ * Load a module by a filepath.
+ * @param path File path to load.
+ * @return Same as try_emplace—a pair, the first of which is an iterator to the possibly loaded module, and the second of which is a bool of whether the
+ *         module was loaded.
+ */
+std::pair<std::unordered_map<std::string, StandardModule>::iterator, bool> ModuleLoader::load_by_path(const std::string& path) {
+  // Module name
+  const std::filesystem::path p {path};
+  const std::string name {p.stem().string()};
+
   if (core_ == nullptr) load_core();
   // If the module is already loaded, try_emplace shouldn't overwrite it.
-  return loaded_.try_emplace(name, name, read_entire_file(path));
+  // The first param is the map key, the next few are for StandardModule constructor.
+  return loaded_.try_emplace(name, *this, name, read_entire_file(path));
 }
 
-StandardModule::StandardModule(const std::string& name, std::string src) {
+StandardModule::StandardModule(AnalyzerHost& host, const std::string& name, std::string src) : Module {host} {
   compile(name, std::move(src));
 }
 
@@ -165,17 +180,25 @@ bool StandardModule::run() {
 
 void ModuleLoader::load_core() {
   if (core_ != nullptr) return;
-  core_ = std::make_unique<CoreModule>();
+  core_ = std::make_unique<CoreModule>(*this);
   // TODO: initialize natives.
 }
 
-CoreModule::CoreModule() {
+CoreModule::CoreModule(AnalyzerHost& host) : Module {host} {
   compile(core_name, std::string {Core::src}, 2);
   if (status != MODULE_COMPILED) {
     std::cerr << "This is a core library compilation error---it's not your fault. Submit an issue on Codeberg or communicate this to me however possible.\n";
     // Exit code 70: internal software error (core library error, my fault).
     throw std::system_error(70, std::generic_category());
   }
+
+  types.bool_t   = analyzer.find_type("Bool");
+  types.number_t = analyzer.find_type("Number");
+  types.string_t = analyzer.find_type("String");
+  types.char_t   = analyzer.find_type("Char");
+  types.nil_t    = analyzer.find_type("Nil");
+  types.list_t   = analyzer.find_type("List");
+  types.map_t    = analyzer.find_type("Map");
 }
 
 bool CoreModule::run() {
@@ -187,7 +210,7 @@ bool CoreModule::run() {
 
 void ModuleLoader::run_repl() {
   if (core_ == nullptr) load_core();
-  if (repl_ == nullptr) repl_ = std::make_unique<ReplModule>();
+  if (repl_ == nullptr) repl_ = std::make_unique<ReplModule>(*this);
 
   constexpr std::string_view prompt {"~ > "};
   std::string line {};

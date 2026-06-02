@@ -17,12 +17,7 @@ void repl(ModuleLoader& ml) {
 }
 
 void run_file(ModuleLoader& ml, const char* path) {
-  // Module name
-  const std::filesystem::path p {path};
-  const std::string module_name {p.stem().string()};
-
-  // And here we go!
-  const auto [module, success] {ml.load_by_path(module_name, path)};
+  const auto [module, success] {ml.load_by_path(path)};
   if (!success)
     throw std::system_error(70, std::generic_category()); // Exit code 70: internal software error (something weird happened).
 

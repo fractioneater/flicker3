@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "analyzer-host.h"
 #include "ast.h"
 
 struct ObjectSymbol {
@@ -51,6 +52,9 @@ struct AnalyzerException : std::exception {
 };
 
 class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
+  // Interface to connect the Analyzer to the ModuleLoader that created it.
+  AnalyzerHost& host_;
+
   // Errors/warnings/notes.
   std::vector<Diagnostic> diagnostics_ {};
   // Type storage.
@@ -193,19 +197,19 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     }
   }
 
+  public:
+  explicit Analyzer(AnalyzerHost& host) : host_ {host} {}
+
+  [[nodiscard]] const std::vector<Diagnostic>& get_diagnostics() const { return diagnostics_; }
+
+  void clear_diagnostics() { diagnostics_.clear(); }
+
   TypeId find_type(const std::string& name) {
     for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope)
       if (scope->types.contains(name))
         return scope->types.at(name);
     return {};
   }
-
-  public:
-  Analyzer() = default;
-
-  [[nodiscard]] const std::vector<Diagnostic>& get_diagnostics() const { return diagnostics_; }
-
-  void clear_diagnostics() { diagnostics_.clear(); }
 
   [[nodiscard]] bool encountered_halt() const {
     return std::ranges::any_of(diagnostics_, [](const Diagnostic& d) { return d.is_halting(); });

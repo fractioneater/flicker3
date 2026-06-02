@@ -527,8 +527,8 @@ ExprNode Parser::if_expr(const ExprNode& left) {
 }
 
 ExprNode Parser::assignment(const ExprNode& left) {
-  constexpr Precedence prec {static_cast<int>(Precedence::ASSIGNMENT) + 1};
-  return std::make_shared<Expressions::Assignment>(left, parse_expression(prec));
+  // Instead of using prec + 1, we just use ASSIGNMENT for right-associativity.
+  return std::make_shared<Expressions::Assignment>(left, parse_expression(Precedence::ASSIGNMENT));
 }
 
 ExprNode Parser::postfix_inc_dec(const ExprNode& expr) {

@@ -1,6 +1,18 @@
 class Bool
   fun test() = "..."
 
+class Char
+  fun test() = "..."
+
+class List of A
+  fun test() = "..."
+
+class Map of A
+  fun test() = "..."
+
+class Nil
+  fun test() = "..."
+
 class Number
   fun test() = "..."
 

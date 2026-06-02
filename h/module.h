@@ -11,6 +11,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "analyzer-host.h"
 #include "analyzer.h"
 #include "core.fl.h"
 #include "lexer.h"
@@ -23,9 +24,11 @@ struct Module {
 
   std::unique_ptr<Lexer> lexer {};
   std::unique_ptr<Parser> parser {};
-  Analyzer analyzer {}; // Why isn't it a unique_ptr? Because there can only be one, and it's safe to initialize immediately.
+  Analyzer analyzer; // Why isn't it a unique_ptr? Because there can only be one, and it's safe to initialize immediately.
 
   virtual bool run() = 0;
+
+  explicit Module(AnalyzerHost& host) : analyzer {host} {}
 
   virtual ~Module() = default;
 
@@ -38,7 +41,7 @@ struct StandardModule : Module {
 
   bool run() override;
 
-  StandardModule(const std::string& name, std::string src);
+  StandardModule(AnalyzerHost& host, const std::string& name, std::string src);
 };
 
 /**
@@ -46,13 +49,16 @@ struct StandardModule : Module {
  * - There's only one of it.
  * - Debug outputs (PRINT_TOKENS, OUTPUT_DOT, PRINT_CODE, TRACE_EXECUTION) will only happen when the flag in common.h is set to 2.
  * - OUTPUT_DOT waits until the user presses Enter in case they want to read the DOT tree before it's overwritten by another module's output.
+ * - It remembers its types for other modules to use.
  */
 struct CoreModule : Module {
   static constexpr std::string_view core_name {"core"};
 
+  CoreTypes types {};
+
   bool run() override;
 
-  CoreModule();
+  explicit CoreModule(AnalyzerHost& host);
 };
 
 /**
@@ -63,11 +69,13 @@ struct ReplModule : Module {
 
   bool run_line(const std::string& line);
 
+  explicit ReplModule(AnalyzerHost& host) : Module {host} {}
+
   private:
   bool run() override;
 };
 
-class ModuleLoader {
+class ModuleLoader : public AnalyzerHost {
   std::unique_ptr<CoreModule> core_ {nullptr};
   std::unique_ptr<ReplModule> repl_ {nullptr};
   std::unordered_map<std::string, StandardModule> loaded_ {};
@@ -75,7 +83,13 @@ class ModuleLoader {
   void load_core();
 
   public:
-  std::pair<std::unordered_map<std::string, StandardModule>::iterator, bool> load_by_path(const std::string& name, const std::string& path);
+  // AnalyzerHost interface methods
+  bool ensure_loaded(std::string_view current_module, std::string& new_path) override;
+  [[nodiscard]] const CoreTypes& core_types() const override { return core_->types; }
+
+  std::pair<std::unordered_map<std::string, StandardModule>::iterator, bool> load_by_path(const std::string& path);
+
+  // TODO: Some way to transfer symbol tables between modules.
 
   /**
    * Get REPL input until ctrl+D.
