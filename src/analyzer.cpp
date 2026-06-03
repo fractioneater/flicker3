@@ -13,11 +13,16 @@
 
 // Statements --------------------------------------------------
 
+void Analyzer::visit_program_stmt(const Statements::Program& stmt) {
+  // Scope is already created!
+  // TODO: Scan declarations to allow recursion.
+  for (const auto& s : stmt.items) s->VISIT;
+}
+
 void Analyzer::visit_block_stmt(const Statements::Block& stmt) {
   begin_scope();
   // TODO: Scan declarations to allow recursion.
   for (const auto& s : stmt.statements) s->VISIT;
-
   end_scope();
 }
 
@@ -38,7 +43,7 @@ void Analyzer::visit_function_stmt(const Statements::Function& stmt) {
   for (auto param_iter {std::begin(stmt.type_params)}; param_iter != std::end(stmt.type_params); ++param_iter) {
     add_type_safe(
       *param_iter,
-      types_.add(TypeParam {static_cast<int>(param_iter - std::begin(stmt.type_params)), std::string {stmt.identifier->src_string}})
+      host_.type_arena().add(TypeParam {static_cast<int>(param_iter - std::begin(stmt.type_params)), std::string {stmt.identifier->src_string}})
     );
   }
   // Step 2: Define regular params.
@@ -58,8 +63,8 @@ void Analyzer::visit_function_stmt(const Statements::Function& stmt) {
   functions_.pop_back();
   end_scope();
   // Step 6: Define name with its signature.
-  const Function signature {param_types, return_type};              // TODO: Unit type???
-  add_object_safe(stmt.identifier, {false, types_.add(signature)}); // TODO: Overloading?
+  const Function signature {param_types, return_type};                          // TODO: Unit type???
+  add_object_safe(stmt.identifier, {false, host_.type_arena().add(signature)}); // TODO: Overloading?
 }
 
 void Analyzer::visit_initializer_stmt(const Statements::Initializer& stmt) {} // NOT IMPLEMENTED
@@ -71,7 +76,7 @@ void Analyzer::visit_class_stmt(const Statements::Class& stmt) {
   for (auto param_iter {std::begin(stmt.type_params)}; param_iter != std::end(stmt.type_params); ++param_iter) {
     add_type_safe(
       *param_iter,
-      types_.add(TypeParam {static_cast<int>(param_iter - std::begin(stmt.type_params)), std::string {stmt.identifier->src_string}})
+      host_.type_arena().add(TypeParam {static_cast<int>(param_iter - std::begin(stmt.type_params)), std::string {stmt.identifier->src_string}})
     );
   }
   // Step 2: Find superclass.
@@ -95,19 +100,34 @@ void Analyzer::visit_class_stmt(const Statements::Class& stmt) {
   classes_.pop_back();
   end_scope();
   // Step _: Define class
-  const TypeId t {types_.add(Named {std::string {stmt.identifier->src_string}})};
+  const TypeId t {host_.type_arena().add(Named {std::string {stmt.identifier->src_string}})};
   add_type_safe(stmt.identifier, t);
 }
 
 void Analyzer::visit_namespace_stmt(const Statements::Namespace& stmt) {} // NOT IMPLEMENTED
 
 void Analyzer::visit_import_stmt(const Statements::Import& stmt) {
-  const bool success {host_.ensure_loaded(stmt.path)};
-  if (!success) {
+  std::unordered_map<std::string, ObjectSymbol> object_exports {};
+  std::unordered_map<std::string, TypeId> type_exports {};
+  try {
+    const auto& [objects, types] {host_.exports(stmt.path)};
+    object_exports = objects;
+    type_exports   = types;
+  } catch (std::runtime_error& e) {
     diagnostics_.emplace_back(std::format("Couldn't load path \"{}\"", stmt.path), Diagnostic::ERROR); // TODO: Where?
     return;
   }
-  // TODO: Transfer variables.
+
+  for (const Token* identifier : stmt.imports) {
+    const auto name {static_cast<std::string>(identifier->src_string)};
+    const auto o {object_exports.find(name)};
+    const auto t {type_exports.find(name)};
+
+    if (o != std::end(object_exports)) {} // TODO: Transfer variables.
+    if (t != std::end(type_exports)) {}
+
+    // TODO MAYBE: Prevent re-exports by adding a flag somewhere to symbols.
+  }
 }
 
 void Analyzer::visit_typealias_stmt(const Statements::Typealias& stmt) {
@@ -237,17 +257,17 @@ TypeId Analyzer::resolve_syntactic_type(const SyntacticTypePtr& type) {
       const auto applied {std::dynamic_pointer_cast<AppliedType>(type)};
       std::vector<TypeId> args {};
       for (const auto& arg : applied->args) args.emplace_back(resolve_syntactic_type(arg));
-      return types_.add(Applied {resolve_syntactic_type(applied->constructor), args});
+      return host_.type_arena().add(Applied {resolve_syntactic_type(applied->constructor), args});
     }
     case TypeKind::OPTIONAL: {
       const auto optional {std::dynamic_pointer_cast<OptionalType>(type)};
-      return types_.add(Optional {resolve_syntactic_type(optional->inner)});
+      return host_.type_arena().add(Optional {resolve_syntactic_type(optional->inner)});
     }
     case TypeKind::FUNCTION: {
       const auto function {std::dynamic_pointer_cast<FunctionType>(type)};
       std::vector<TypeId> params {};
       for (const auto& param : function->params) params.emplace_back(resolve_syntactic_type(param));
-      return types_.add(Function {params, resolve_syntactic_type(function->result)});
+      return host_.type_arena().add(Function {params, resolve_syntactic_type(function->result)});
     }
     default:
       std::cerr << "Unhandled type kind" << std::endl;

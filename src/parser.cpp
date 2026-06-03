@@ -845,7 +845,7 @@ StmtNode Parser::parse() {
     return nullptr;
   }
 
-  program_ = std::make_shared<Statements::Block>(parse_block<StmtNode>(false, "top-level program", [this] { return declaration_or_statement(); }));
+  program_ = std::make_shared<Statements::Program>(parse_block<StmtNode>(false, "top-level program", [this] { return declaration_or_statement(); }));
   return program_;
 }
 
@@ -856,7 +856,7 @@ void Parser::output_dot() const {
   }
 
   if (std::ofstream out {DEBUG_DOT_FILENAME}) {
-    out << to_dot(std::dynamic_pointer_cast<Statements::Block>(program_)->statements) << '\n';
+    out << to_dot(std::dynamic_pointer_cast<Statements::Program>(program_)->items) << '\n';
     out.close();
     #if PRINT_COLORS
     std::cout << DARK_GRAY_COLOR << "Parse tree exported to " << DEBUG_DOT_FILENAME << CLEAR_FORMAT << '\n';

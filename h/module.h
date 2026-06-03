@@ -39,6 +39,8 @@ struct Module {
 struct StandardModule : Module {
   std::string name {};
 
+  ModuleExports exports {};
+
   bool run() override;
 
   StandardModule(AnalyzerHost& host, const std::string& name, std::string src);
@@ -80,12 +82,15 @@ class ModuleLoader : public AnalyzerHost {
   std::unique_ptr<ReplModule> repl_ {nullptr};
   std::unordered_map<std::string, StandardModule> loaded_ {};
 
+  TypeArena types_ {};
+
   void load_core();
 
   public:
   // AnalyzerHost interface methods
-  bool ensure_loaded(const std::string& new_path) override;
+  [[nodiscard]] const ModuleExports& exports(const std::string& path) override;
   [[nodiscard]] const CoreTypes& core_types() const override { return core_->types; }
+  TypeArena& type_arena() override { return types_; }
 
   std::pair<std::unordered_map<std::string, StandardModule>::iterator, bool> load_by_path(const std::string& path);
 

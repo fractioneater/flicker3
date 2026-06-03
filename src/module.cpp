@@ -52,8 +52,10 @@ std::string read_entire_file(const std::string& path) {
   return std::string {std::istreambuf_iterator(in), std::istreambuf_iterator<char>()};
 }
 
-bool ModuleLoader::ensure_loaded(const std::string& new_path) {
-  return load_by_path(new_path).first != loaded_.end();
+const ModuleExports& ModuleLoader::exports(const std::string& path) {
+  const auto module {load_by_path(path).first};
+  if (module == loaded_.end()) throw std::runtime_error("Module not found");
+  return module->second.exports;
 }
 
 void debug_print_tokens(const std::vector<Token>& tokens, const Lexer& lexer) {
@@ -166,14 +168,19 @@ std::pair<std::unordered_map<std::string, StandardModule>::iterator, bool> Modul
   // The first param is the map key, the next few are for StandardModule constructor.
   const auto result {loaded_.try_emplace(name, *this, name, read_entire_file(path))};
 
-  // If the module was just loaded, copy the core TypeArena into its arena.
-  if (result.second) result.first->second.analyzer.inherit_types(core_->analyzer);
+  // If the module was just loaded, copy the core type symbols into it.
+  if (result.second) {} // TODO: Transfer symbol table for core types.
 
   return result;
 }
 
 StandardModule::StandardModule(AnalyzerHost& host, const std::string& name, std::string src) : Module {host} {
   compile(name, std::move(src));
+  const auto& [objects, types] {analyzer.global_scope()};
+  for (const auto& [object_name, symbol] : objects)
+    exports.objects.try_emplace(object_name, symbol);
+  for (const auto& [type_name, id] : types)
+    exports.types.try_emplace(type_name, id);
 }
 
 bool StandardModule::run() {
@@ -217,7 +224,7 @@ void ModuleLoader::run_repl() {
   if (core_ == nullptr) load_core();
   if (repl_ == nullptr) {
     repl_ = std::make_unique<ReplModule>(*this);
-    repl_->analyzer.inherit_types(core_->analyzer);
+    // TODO: Transfer symbol table for core types.
   }
 
   constexpr std::string_view prompt {"~ > "};

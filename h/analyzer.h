@@ -12,11 +12,6 @@
 #include "analyzer-host.h"
 #include "ast.h"
 
-struct ObjectSymbol {
-  bool is_mutable {false};
-  TypeId declared_type {};
-};
-
 struct ScopeFrame {
   std::unordered_map<std::string, ObjectSymbol> objects {};
   std::unordered_map<std::string, TypeId> types {};
@@ -57,12 +52,10 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
 
   // Errors/warnings/notes.
   std::vector<Diagnostic> diagnostics_ {};
-  // Type storage.
-  TypeArena types_ {};
 
   // CONTEXT --------------------------------------------------
-  // Scopes for symbol tables.
-  std::vector<ScopeFrame> scopes_ {};
+  // Scopes for symbol tables. Workaround to avoid 2 global scopes: program block node is parsed as its statements.
+  std::vector<ScopeFrame> scopes_ {{}};
   // Loop contexts (for labels).
   std::vector<LoopFrame> loops_ {};
   // Function contexts (for return types).
@@ -70,6 +63,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   // Class contexts (for superclass).
   std::vector<ClassFrame> classes_ {};
 
+  void visit_program_stmt(const Statements::Program& stmt) override;
   void visit_block_stmt(const Statements::Block& stmt) override;
   void visit_expression_stmt(const Statements::Expression& stmt) override;
   void visit_variable_stmt(const Statements::Variable& stmt) override;
@@ -204,10 +198,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
 
   void clear_diagnostics() { diagnostics_.clear(); }
 
-  void inherit_types(const Analyzer& other) {
-    if (!types_.empty()) throw std::system_error(70, std::generic_category()); // Exit code 70: internal software error.
-    types_ = other.types_;
-  }
+  ScopeFrame& global_scope() { return scopes_.front(); }
 
   TypeId find_type(const std::string& name) {
     for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope)

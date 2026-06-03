@@ -16,6 +16,7 @@
 #include "type.h"
 
 namespace Statements {
+  class Program;
   class Block;
   class Expression;
   class Variable;
@@ -67,6 +68,7 @@ namespace Expressions {
 
 class StmtVisitorVoid {
   public:
+  virtual void visit_program_stmt(const Statements::Program& stmt) = 0;
   virtual void visit_block_stmt(const Statements::Block& stmt) = 0;
   virtual void visit_expression_stmt(const Statements::Expression& stmt) = 0;
   virtual void visit_variable_stmt(const Statements::Variable& stmt) = 0;
@@ -122,6 +124,7 @@ class ExprVisitorVoid {
 
 class StmtVisitorAny {
   public:
+  virtual std::any visit_program_stmt_any(const Statements::Program& stmt) = 0;
   virtual std::any visit_block_stmt_any(const Statements::Block& stmt) = 0;
   virtual std::any visit_expression_stmt_any(const Statements::Expression& stmt) = 0;
   virtual std::any visit_variable_stmt_any(const Statements::Variable& stmt) = 0;
@@ -178,6 +181,7 @@ class ExprVisitorAny {
 template <typename R>
 class StmtVisitor : public StmtVisitorAny {
   public:
+  virtual R visit_program_stmt(const Statements::Program& stmt) = 0;
   virtual R visit_block_stmt(const Statements::Block& stmt) = 0;
   virtual R visit_expression_stmt(const Statements::Expression& stmt) = 0;
   virtual R visit_variable_stmt(const Statements::Variable& stmt) = 0;
@@ -198,6 +202,10 @@ class StmtVisitor : public StmtVisitorAny {
   virtual R visit_pass_stmt(const Statements::Pass& stmt) = 0;
 
   private:
+  std::any visit_program_stmt_any(const Statements::Program& stmt) final {
+    return visit_program_stmt(stmt);
+  }
+
   std::any visit_block_stmt_any(const Statements::Block& stmt) final {
     return visit_block_stmt(stmt);
   }
@@ -429,6 +437,21 @@ using ExprNode      = std::shared_ptr<Expr>;
 using NamedFunction = std::string_view;
 
 // Statements --------------------------------------------------
+class Statements::Program : public Stmt {
+  public:
+  explicit Program(std::vector<StmtNode> items) : items {std::move(items)} {}
+
+  std::any accept(StmtVisitorAny& visitor) override {
+    return visitor.visit_program_stmt_any(*this);
+  }
+
+  void accept(StmtVisitorVoid& visitor) override {
+    visitor.visit_program_stmt(*this);
+  }
+
+  const std::vector<StmtNode> items {};
+};
+
 class Statements::Block : public Stmt {
   public:
   explicit Block(std::vector<StmtNode> statements) : statements {std::move(statements)} {}

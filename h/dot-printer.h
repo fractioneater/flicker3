@@ -22,9 +22,16 @@ class DotTreeWalker {
     public:
     explicit StmtChildrenVisitor(DotTreeWalker& owner) : owner_ {owner} {}
 
+    void visit_program_stmt(const Statements::Program& stmt) override {
+      const int parent_id {owner_.current_parent_id_};
+      for (const auto& item : stmt.items)
+        owner_.walk(item, parent_id);
+    }
+
     void visit_block_stmt(const Statements::Block& stmt) override {
+      const int parent_id {owner_.current_parent_id_};
       for (const auto& inner_stmt : stmt.statements)
-        owner_.walk(inner_stmt, owner_.current_parent_id_);
+        owner_.walk(inner_stmt, parent_id);
     }
 
     void visit_expression_stmt(const Statements::Expression& stmt) override {
@@ -32,8 +39,9 @@ class DotTreeWalker {
     }
 
     void visit_variable_stmt(const Statements::Variable& stmt) override {
-      owner_.walk(stmt.type, owner_.current_parent_id_);
-      owner_.walk(stmt.initializer, owner_.current_parent_id_);
+      const int parent_id {owner_.current_parent_id_};
+      owner_.walk(stmt.type, parent_id);
+      owner_.walk(stmt.initializer, parent_id);
     }
 
     void visit_function_stmt(const Statements::Function& stmt) override {
@@ -237,6 +245,7 @@ class DotTreeWalker {
     public:
     explicit StmtNameVisitor(DotTreeWalker& owner) : owner_ {owner} {}
 
+    std::string visit_program_stmt(const Statements::Program& stmt) override { return "PROGRAM"; }
     std::string visit_block_stmt(const Statements::Block& stmt) override { return "BLOCK"; }
     std::string visit_expression_stmt(const Statements::Expression& stmt) override { return "EXPRESSION"; }
 

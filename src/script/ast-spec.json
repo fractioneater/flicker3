@@ -10,6 +10,9 @@
 	},
 	"statements": [
 		{
+			"name": "Program",
+			"fields": [{"type": "std::vector<StmtNode>", "name": "items", "move": true}]
+		}, {
 			"name": "Block",
 			"fields": [{"type": "std::vector<StmtNode>", "name": "statements", "move": true}]
 		}, {
