@@ -1,0 +1,3 @@
+using "test/bagel.fl" for Driminy
+
+using Mankle = Driminy

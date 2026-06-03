@@ -29,6 +29,7 @@ struct Module {
   virtual bool run() = 0;
 
   explicit Module(AnalyzerHost& host) : analyzer {host} {}
+  explicit Module(AnalyzerHost& host, Analyzer& parent) : analyzer {host, parent} {}
 
   virtual ~Module() = default;
 
@@ -43,7 +44,7 @@ struct StandardModule : Module {
 
   bool run() override;
 
-  StandardModule(AnalyzerHost& host, const std::string& name, std::string src);
+  StandardModule(AnalyzerHost& host, Analyzer& parent, const std::string& name, std::string src);
 };
 
 /**
@@ -71,7 +72,7 @@ struct ReplModule : Module {
 
   bool run_line(const std::string& line);
 
-  explicit ReplModule(AnalyzerHost& host) : Module {host} {}
+  explicit ReplModule(AnalyzerHost& host, Analyzer& parent) : Module {host, parent} {}
 
   private:
   bool run() override;

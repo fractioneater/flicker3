@@ -62,7 +62,8 @@
 		}, {
 			"name": "Import", "fields": [
 				{"type": "std::string", "name": "path", "move": true},
-				{"type": "std::vector<Token*>", "name": "imports", "move": true}
+				{"type": "std::vector<Token*>", "name": "imports", "move": true},
+				{"type": "bool", "name": "import_all"}
 			]
 		}, {
 			"name": "Typealias", "fields": [

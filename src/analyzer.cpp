@@ -114,19 +114,32 @@ void Analyzer::visit_import_stmt(const Statements::Import& stmt) {
     object_exports = objects;
     type_exports   = types;
   } catch (std::runtime_error& e) {
-    diagnostics_.emplace_back(std::format("Couldn't load path \"{}\"", stmt.path), Diagnostic::ERROR); // TODO: Where?
+    diagnostics_.emplace_back(std::format("Failed to load '{}'", stmt.path), Diagnostic::ERROR); // TODO: Where?
     return;
   }
 
-  for (const Token* identifier : stmt.imports) {
-    const auto name {static_cast<std::string>(identifier->src_string)};
-    const auto o {object_exports.find(name)};
-    const auto t {type_exports.find(name)};
+  if (stmt.imports.empty()) {
+    // Import all as a namespace.
+    // TODO.
+  } else if (stmt.import_all) {
+    // Import all by name.
+    // The first (and only) token in stmt.imports is the '.' or '*' character.
+    for (const auto& [name, symbol] : object_exports)
+      import_object_safe(stmt.imports.front(), name, symbol);
+    for (const auto& [name, type] : type_exports)
+      import_type_safe(stmt.imports.front(), name, type);
+  } else {
+    // Use the explicit imports list.
+    for (const Token* identifier : stmt.imports) {
+      const std::string name {identifier->src_string};
+      const auto o {object_exports.find(name)};
+      const auto t {type_exports.find(name)};
 
-    if (o != std::end(object_exports)) {} // TODO: Transfer variables.
-    if (t != std::end(type_exports)) {}
-
-    // TODO MAYBE: Prevent re-exports by adding a flag somewhere to symbols.
+      if (o != std::end(object_exports))
+        import_object_safe(identifier, name, o->second);
+      if (t != std::end(type_exports))
+        import_type_safe(identifier, name, t->second);
+    }
   }
 }
 

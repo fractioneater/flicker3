@@ -172,17 +172,22 @@ StmtNode Parser::using_declaration() {
   if (match(TOKEN_STRING)) {
     const auto path {std::any_cast<std::string>(previous_->value)};
     std::vector<Token*> imports {};
+    bool import_all {false};
+
     if (match(TOKEN_FOR)) {
       if (check(TOKEN_STAR) || check(TOKEN_DOT)) {
         // An "import all" statement can be done three ways, which is a little weird.
-        // You can skip the for clause, or inside it use either a star or use a dot.
+        // A star or a dot will import all variables at the scope's level; leaving out the 'for' clause will import in a namespace (module::item).
         advance();
+        import_all = true;
+        imports.emplace_back(previous_);
       } else {
+        // TODO: Arrow aliases.
         imports = parse_list<Token*>(TOKEN_LINE, [this] { return expect(TOKEN_IDENTIFIER, "Expecting a name for an object to import"); });
       }
     }
 
-    return std::make_shared<Statements::Import>(path, imports);
+    return std::make_shared<Statements::Import>(path, imports, import_all);
   }
 
   // 'using' for type alias.

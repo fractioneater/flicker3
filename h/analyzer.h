@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <format>
 #include <unordered_map>
 #include <vector>
 
@@ -15,6 +16,9 @@
 struct ScopeFrame {
   std::unordered_map<std::string, ObjectSymbol> objects {};
   std::unordered_map<std::string, TypeId> types {};
+
+  std::unordered_map<std::string, ObjectSymbol> import_objects {};
+  std::unordered_map<std::string, TypeId> import_types {};
 };
 
 struct LoopFrame {
@@ -140,7 +144,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
    */
   void check_duplicate_name(bool is_type, const std::string& name) {
     for (auto iter {std::begin(scopes_)}; iter != std::end(scopes_); ++iter) {
-      if (is_type ? iter->types.contains(name) : iter->objects.contains(name)) {
+      if (is_type ? (iter->types.contains(name) || iter->import_types.contains(name)) : (iter->objects.contains(name) || iter->import_objects.contains(name))) {
         if (std::next(iter) == scopes_.end())
           throw AnalyzerException {ExceptionKind::REDECLARED_NAME};
         throw AnalyzerException {ExceptionKind::SHADOWED_NAME};
@@ -148,23 +152,16 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     }
   }
 
-  void add_object(std::string&& name, ObjectSymbol symbol) {
-    scopes_.back().objects.emplace(std::move(name), symbol);
-    check_duplicate_name(false, name);
-  }
-
-  void add_object(std::string_view name, ObjectSymbol symbol) {
-    add_object(std::string {name}, symbol);
-  }
-
   /**
-   * Add an object to the symbol table and report duplicate names.
+   * Adds an object to the symbol table and reports duplicate names.
    * @param token Identifier token for symbol name and error positioning
-   * @param symbol Symbol to add to the object table
+   * @param symbol Symbol to add to the scope's object table
    */
   void add_object_safe(const Token* const token, ObjectSymbol symbol) noexcept {
+    const std::string name {token->src_string};
     try {
-      add_object(token->src_string, symbol);
+      check_duplicate_name(false, name);
+      scopes_.back().objects.emplace(name, symbol);
     } catch (AnalyzerException& e) {
       if (e.kind == ExceptionKind::REDECLARED_NAME)
         diagnostics_.emplace_back("Name has already been declared in this scope", token, Diagnostic::ERROR);
@@ -174,7 +171,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   }
 
   /**
-   * Add an already-existing type to the symbol table and report duplicate names.
+   * Adds an already-existing type to the symbol table and reports duplicate names.
    * @param token Identifier token for symbol name and error positioning
    * @param t TypeId to add to the scope's type table
    */
@@ -191,8 +188,53 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     }
   }
 
+  /**
+   * Adds an object to the scope's import list and reports duplicate names.
+   * @param where Identifier token for error positioning (could be '.' or '*')
+   * @param name String for symbol's name
+   * @param symbol Symbol to add to the scope's object table
+   */
+  void import_object_safe(const Token* where, const std::string& name, ObjectSymbol symbol) {
+    try {
+      check_duplicate_name(false, name);
+      scopes_.back().import_objects.emplace(name, symbol);
+    } catch (AnalyzerException& e) {
+      Diagnostic tip {"Use '->' to create an import alias: using \"...\" for a -> b", Diagnostic::NOTE};
+      if (e.kind == ExceptionKind::REDECLARED_NAME)
+        diagnostics_.emplace_back(std::format("Import '{}' conflicts with a declaration in this scope", name), tip, where, Diagnostic::ERROR);
+      else
+        diagnostics_.emplace_back(std::format("Import '{}' shadows a declaration from another scope", name), tip, where, Diagnostic::WARNING);
+    }
+  }
+
+  /**
+   * Adds a type to the scope's import list and reports duplicate names.
+   * @param where Identifier token for error positioning (could be '.' or '*')
+   * @param name String for the type's name
+   * @param t TypeId to add to the scope's type table
+   */
+  void import_type_safe(const Token* where, const std::string& name, TypeId t) {
+    try {
+      check_duplicate_name(true, name);
+      scopes_.back().import_types.emplace(name, t);
+    } catch (AnalyzerException& e) {
+      Diagnostic tip {"Use '->' to create an import alias: using \"...\" for a -> b", Diagnostic::NOTE};
+      if (e.kind == ExceptionKind::REDECLARED_NAME)
+        diagnostics_.emplace_back(std::format("Import '{}' conflicts with a declaration in this scope", name), tip, where, Diagnostic::ERROR);
+      else
+        diagnostics_.emplace_back(std::format("Import '{}' shadows a declaration from another scope", name), tip, where, Diagnostic::WARNING);
+    }
+  }
+
   public:
   explicit Analyzer(AnalyzerHost& host) : host_ {host} {}
+
+  explicit Analyzer(AnalyzerHost& host, Analyzer& parent) : host_ {host} {
+    const auto& [o , t , io, it] {parent.global_scope()};
+    // Copy all of parent's top-level declarations into this analyzer's imports.
+    scopes_.back().import_objects = o;
+    scopes_.back().import_types   = t;
+  }
 
   [[nodiscard]] const std::vector<Diagnostic>& get_diagnostics() const { return diagnostics_; }
 
@@ -201,9 +243,12 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   ScopeFrame& global_scope() { return scopes_.front(); }
 
   TypeId find_type(const std::string& name) {
-    for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope)
+    for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope) {
       if (scope->types.contains(name))
         return scope->types.at(name);
+      if (scope->import_types.contains(name))
+        return scope->import_types.at(name);
+    }
     return {};
   }
 

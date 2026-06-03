@@ -591,7 +591,7 @@ class Statements::Namespace : public Stmt {
 
 class Statements::Import : public Stmt {
   public:
-  Import(std::string path, std::vector<Token*> imports) : path {std::move(path)}, imports {std::move(imports)} {}
+  Import(std::string path, std::vector<Token*> imports, bool import_all) : path {std::move(path)}, imports {std::move(imports)}, import_all {import_all} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_import_stmt_any(*this);
@@ -603,6 +603,7 @@ class Statements::Import : public Stmt {
 
   const std::string path {};
   const std::vector<Token*> imports {};
+  const bool import_all {};
 };
 
 class Statements::Typealias : public Stmt {

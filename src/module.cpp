@@ -166,20 +166,17 @@ std::pair<std::unordered_map<std::string, StandardModule>::iterator, bool> Modul
   if (core_ == nullptr) load_core();
   // If the module is already loaded, try_emplace shouldn't overwrite it.
   // The first param is the map key, the next few are for StandardModule constructor.
-  const auto result {loaded_.try_emplace(name, *this, name, read_entire_file(path))};
-
-  // If the module was just loaded, copy the core type symbols into it.
-  if (result.second) {} // TODO: Transfer symbol table for core types.
+  const auto result {loaded_.try_emplace(name, *this, core_->analyzer, name, read_entire_file(path))};
 
   return result;
 }
 
-StandardModule::StandardModule(AnalyzerHost& host, const std::string& name, std::string src) : Module {host} {
+StandardModule::StandardModule(AnalyzerHost& host, Analyzer& parent, const std::string& name, std::string src) : Module {host, parent} {
   compile(name, std::move(src));
-  const auto& [objects, types] {analyzer.global_scope()};
-  for (const auto& [object_name, symbol] : objects)
+  const auto& [o, h, io, it] {analyzer.global_scope()};
+  for (const auto& [object_name, symbol] : o)
     exports.objects.try_emplace(object_name, symbol);
-  for (const auto& [type_name, id] : types)
+  for (const auto& [type_name, id] : h)
     exports.types.try_emplace(type_name, id);
 }
 
@@ -223,8 +220,7 @@ bool CoreModule::run() {
 void ModuleLoader::run_repl() {
   if (core_ == nullptr) load_core();
   if (repl_ == nullptr) {
-    repl_ = std::make_unique<ReplModule>(*this);
-    // TODO: Transfer symbol table for core types.
+    repl_ = std::make_unique<ReplModule>(*this, core_->analyzer);
   }
 
   constexpr std::string_view prompt {"~ > "};
