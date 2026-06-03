@@ -418,6 +418,8 @@ class Expr {
     return std::any_cast<R>(accept(static_cast<ExprVisitorAny&>(visitor)));
   }
 
+  mutable TypeId type {};
+
   virtual ~Expr() = default;
 };
 

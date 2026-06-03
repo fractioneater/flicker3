@@ -100,7 +100,15 @@ void Analyzer::visit_class_stmt(const Statements::Class& stmt) {
 }
 
 void Analyzer::visit_namespace_stmt(const Statements::Namespace& stmt) {} // NOT IMPLEMENTED
-void Analyzer::visit_import_stmt(const Statements::Import& stmt) {}       // NOT IMPLEMENTED
+
+void Analyzer::visit_import_stmt(const Statements::Import& stmt) {
+  const bool success {host_.ensure_loaded(stmt.path)};
+  if (!success) {
+    diagnostics_.emplace_back(std::format("Couldn't load path \"{}\"", stmt.path), Diagnostic::ERROR); // TODO: Where?
+    return;
+  }
+  // TODO: Transfer variables.
+}
 
 void Analyzer::visit_typealias_stmt(const Statements::Typealias& stmt) {
   add_type_safe(stmt.identifier, resolve_syntactic_type(stmt.type));
@@ -190,15 +198,15 @@ void Analyzer::visit_lambda_expr(const Expressions::Lambda& expr) {}            
 void Analyzer::visit_grouping_expr(const Expressions::Grouping& expr) {}                // NOT IMPLEMENTED
 void Analyzer::visit_list_expr(const Expressions::List& expr) {}                        // NOT IMPLEMENTED
 void Analyzer::visit_map_expr(const Expressions::Map& expr) {}                          // NOT IMPLEMENTED
-void Analyzer::visit_number_expr(const Expressions::Number& expr) {}                    // NOT IMPLEMENTED
-void Analyzer::visit_boolean_expr(const Expressions::Boolean& expr) {}                  // NOT IMPLEMENTED
-void Analyzer::visit_nil_expr(const Expressions::Nil& expr) {}                          // NOT IMPLEMENTED
-void Analyzer::visit_char_expr(const Expressions::Char& expr) {}                        // NOT IMPLEMENTED
-void Analyzer::visit_string_expr(const Expressions::String& expr) {}                    // NOT IMPLEMENTED
-void Analyzer::visit_variable_expr(const Expressions::Variable& expr) {}                // NOT IMPLEMENTED
-void Analyzer::visit_this_expr(const Expressions::This& expr) {}                        // NOT IMPLEMENTED
-void Analyzer::visit_super_expr(const Expressions::Super& expr) {}                      // NOT IMPLEMENTED
-void Analyzer::visit_print_expr(const Expressions::Print& expr) {}                      // NOT IMPLEMENTED
+void Analyzer::visit_number_expr(const Expressions::Number& expr) { expr.type = host_.core_types().number_t; }
+void Analyzer::visit_boolean_expr(const Expressions::Boolean& expr) { expr.type = host_.core_types().bool_t; }
+void Analyzer::visit_nil_expr(const Expressions::Nil& expr) { expr.type = host_.core_types().nil_t; }
+void Analyzer::visit_char_expr(const Expressions::Char& expr) { expr.type = host_.core_types().char_t; }
+void Analyzer::visit_string_expr(const Expressions::String& expr) { expr.type = host_.core_types().string_t; }
+void Analyzer::visit_variable_expr(const Expressions::Variable& expr) {} // NOT IMPLEMENTED
+void Analyzer::visit_this_expr(const Expressions::This& expr) {}         // NOT IMPLEMENTED
+void Analyzer::visit_super_expr(const Expressions::Super& expr) {}       // NOT IMPLEMENTED
+void Analyzer::visit_print_expr(const Expressions::Print& expr) {}       // NOT IMPLEMENTED
 
 std::optional<int> Analyzer::loop_id_with_label(const Token* match_label) {
   for (auto riter {loops_.rbegin()}; riter != loops_.rend(); ++riter) {

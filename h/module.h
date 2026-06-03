@@ -84,7 +84,7 @@ class ModuleLoader : public AnalyzerHost {
 
   public:
   // AnalyzerHost interface methods
-  bool ensure_loaded(std::string_view current_module, std::string& new_path) override;
+  bool ensure_loaded(const std::string& new_path) override;
   [[nodiscard]] const CoreTypes& core_types() const override { return core_->types; }
 
   std::pair<std::unordered_map<std::string, StandardModule>::iterator, bool> load_by_path(const std::string& path);

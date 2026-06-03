@@ -242,7 +242,7 @@ def render_base_nodes(categories: List[NodeCategory]) -> str:
         f"  R accept({category.label}Visitor<R>& visitor) {{",
         f"    return std::any_cast<R>(accept(static_cast<{category.label}VisitorAny&>(visitor)));",
         "  }",
-        "",
+        "\n  mutable TypeId type {};\n" if category.label == "Expr" else "",
         f"  virtual ~{category.label}() = default;",
         "};",
         "",

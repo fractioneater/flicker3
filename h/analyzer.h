@@ -204,6 +204,11 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
 
   void clear_diagnostics() { diagnostics_.clear(); }
 
+  void inherit_types(const Analyzer& other) {
+    if (!types_.empty()) throw std::system_error(70, std::generic_category()); // Exit code 70: internal software error.
+    types_ = other.types_;
+  }
+
   TypeId find_type(const std::string& name) {
     for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope)
       if (scope->types.contains(name))

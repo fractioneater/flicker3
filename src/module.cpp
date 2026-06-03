@@ -52,8 +52,8 @@ std::string read_entire_file(const std::string& path) {
   return std::string {std::istreambuf_iterator(in), std::istreambuf_iterator<char>()};
 }
 
-bool ModuleLoader::ensure_loaded(std::string_view current_module, std::string& new_path) {
-  return load_by_path(new_path).second;
+bool ModuleLoader::ensure_loaded(const std::string& new_path) {
+  return load_by_path(new_path).first != loaded_.end();
 }
 
 void debug_print_tokens(const std::vector<Token>& tokens, const Lexer& lexer) {
@@ -164,7 +164,12 @@ std::pair<std::unordered_map<std::string, StandardModule>::iterator, bool> Modul
   if (core_ == nullptr) load_core();
   // If the module is already loaded, try_emplace shouldn't overwrite it.
   // The first param is the map key, the next few are for StandardModule constructor.
-  return loaded_.try_emplace(name, *this, name, read_entire_file(path));
+  const auto result {loaded_.try_emplace(name, *this, name, read_entire_file(path))};
+
+  // If the module was just loaded, copy the core TypeArena into its arena.
+  if (result.second) result.first->second.analyzer.inherit_types(core_->analyzer);
+
+  return result;
 }
 
 StandardModule::StandardModule(AnalyzerHost& host, const std::string& name, std::string src) : Module {host} {
@@ -210,7 +215,10 @@ bool CoreModule::run() {
 
 void ModuleLoader::run_repl() {
   if (core_ == nullptr) load_core();
-  if (repl_ == nullptr) repl_ = std::make_unique<ReplModule>(*this);
+  if (repl_ == nullptr) {
+    repl_ = std::make_unique<ReplModule>(*this);
+    repl_->analyzer.inherit_types(core_->analyzer);
+  }
 
   constexpr std::string_view prompt {"~ > "};
   std::string line {};

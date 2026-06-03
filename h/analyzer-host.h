@@ -28,11 +28,10 @@ class AnalyzerHost {
 
   /**
    * Make sure a module exists (attempt to load it if it doesn't).
-   * @param current_module The module being compiled; the one with the 'using' statement. Storing this should help later with errors.
    * @param new_path Path of the module to load.
    * @return Whether the module is loaded after an attempt.
    */
-  virtual bool ensure_loaded(std::string_view current_module, std::string& new_path) = 0;
+  virtual bool ensure_loaded(const std::string& new_path) = 0;
 
   [[nodiscard]] virtual const CoreTypes& core_types() const = 0;
 };

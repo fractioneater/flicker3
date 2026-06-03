@@ -263,4 +263,8 @@ class TypeArena {
   [[nodiscard]] const SemanticType& at(TypeId id) const {
     return types_[id.value];
   }
+
+  [[nodiscard]] bool empty() const {
+    return types_.empty();
+  }
 };
