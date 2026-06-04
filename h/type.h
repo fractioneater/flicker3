@@ -110,6 +110,7 @@ struct TypeId {
 
 struct Named {
   std::string name {}; // Just for hashing, really.
+  int arity {0};       // In case this is a template type.
   bool operator==(const Named& other) const = default;
 };
 
@@ -145,6 +146,7 @@ struct TypeKey {
     return type == other.type;
   }
 
+  // I know the IDE wants you to pass by value and std::move, but DON'T DO IT! We need a copy here.
   explicit TypeKey(const SemanticType& t) : type {t} {}
 };
 
@@ -178,6 +180,7 @@ namespace Type_hash {
     size_t seed {0};
     hash_combine(seed, 1u);
     hash_combine(seed, t.name);
+    hash_combine(seed, t.arity);
     return seed;
   }
 

@@ -38,7 +38,7 @@ void Analyzer::visit_variable_stmt(const Statements::Variable& stmt) {
 }
 
 void Analyzer::visit_function_stmt(const Statements::Function& stmt) {
-  // Step 1: Define type params.
+  // Define type params.
   begin_scope();
   for (auto param_iter {std::begin(stmt.type_params)}; param_iter != std::end(stmt.type_params); ++param_iter) {
     add_type_safe(
@@ -46,23 +46,23 @@ void Analyzer::visit_function_stmt(const Statements::Function& stmt) {
       host_.type_arena().add(TypeParam {static_cast<int>(param_iter - std::begin(stmt.type_params)), std::string {stmt.identifier->src_string}})
     );
   }
-  // Step 2: Define regular params.
+  // Define regular params.
   std::vector<TypeId> param_types {};
   param_types.reserve(stmt.params.size());
-  for (const auto& param : stmt.params) {
-    const TypeId t {resolve_syntactic_type(param.type)};
+  for (const auto& [identifier, param_type, modifier] : stmt.params) {
+    const TypeId t {resolve_syntactic_type(param_type)};
     param_types.emplace_back(t);
-    add_object_safe(param.identifier, {param.mod != Param::Modifier::VAL, t});
+    add_object_safe(identifier, {modifier != Param::Modifier::VAL, t});
   }
-  // Step 3: Store return type as state.
+  // Store return type as state.
   const TypeId return_type {stmt.return_type ? resolve_syntactic_type(stmt.return_type) : TypeId {}};
   functions_.emplace_back(return_type); // TODO: infer return type from body, maybe.
-  // Step 4: Function body
+  // Function body
   stmt.body->VISIT;
-  // Step 5: Leave params and function scopes.
+  // Leave params and function scopes.
   functions_.pop_back();
   end_scope();
-  // Step 6: Define name with its signature.
+  // Define name with its signature.
   const Function signature {param_types, return_type};                          // TODO: Unit type???
   add_object_safe(stmt.identifier, {false, host_.type_arena().add(signature)}); // TODO: Overloading?
 }
@@ -71,7 +71,7 @@ void Analyzer::visit_initializer_stmt(const Statements::Initializer& stmt) {} //
 void Analyzer::visit_method_stmt(const Statements::Method& stmt) {}           // NOT IMPLEMENTED
 
 void Analyzer::visit_class_stmt(const Statements::Class& stmt) {
-  // Step 1: Define type params
+  // Define type params
   begin_scope();
   for (auto param_iter {std::begin(stmt.type_params)}; param_iter != std::end(stmt.type_params); ++param_iter) {
     add_type_safe(
@@ -79,29 +79,29 @@ void Analyzer::visit_class_stmt(const Statements::Class& stmt) {
       host_.type_arena().add(TypeParam {static_cast<int>(param_iter - std::begin(stmt.type_params)), std::string {stmt.identifier->src_string}})
     );
   }
-  // Step 2: Find superclass.
+  // Find superclass.
   const auto super {stmt.superclass ? find_type(std::string {stmt.superclass->src_string}) : TypeId {}};
   if (stmt.superclass && !super)
     diagnostics_.emplace_back(
       std::format("Unresolved reference to type '{}'", stmt.superclass->src_string), stmt.superclass, Diagnostic::ERROR
     );
-  classes_.emplace_back(super);
-  // Step _: Visit namespace items.
+  // Define class early so we can use it inside itself.
+  const TypeId t {host_.type_arena().add(Named {std::string {stmt.identifier->src_string}, static_cast<int>(stmt.type_params.size())})};
+  add_type_safe(stmt.identifier, t);
+  classes_.emplace_back(t, super);
+  // Visit namespace items.
   begin_scope();
   for (const auto& it : stmt.namespace_items) it->VISIT;
   // TODO: Before everything goes away, store it in the class somewhere.
   end_scope();
-  // Step _: Visit initializers.
+  // Visit initializers.
   for (const auto& it : stmt.initializers) it->VISIT;
   // TODO: Everything with scoping is going wrong.
-  // Step _: Visit declarations.
+  // Visit declarations.
   // TODO.
-  // Step _: Leave scopes.
+  // Leave scopes.
   classes_.pop_back();
   end_scope();
-  // Step _: Define class
-  const TypeId t {host_.type_arena().add(Named {std::string {stmt.identifier->src_string}})};
-  add_type_safe(stmt.identifier, t);
 }
 
 void Analyzer::visit_namespace_stmt(const Statements::Namespace& stmt) {} // NOT IMPLEMENTED
@@ -147,7 +147,11 @@ void Analyzer::visit_typealias_stmt(const Statements::Typealias& stmt) {
   add_type_safe(stmt.identifier, resolve_syntactic_type(stmt.type));
 }
 
-void Analyzer::visit_if_stmt(const Statements::If& stmt) {} // NOT IMPLEMENTED
+void Analyzer::visit_if_stmt(const Statements::If& stmt) {
+  stmt.condition->VISIT;
+  stmt.then_body->VISIT;
+  stmt.else_body->VISIT;
+}
 
 void Analyzer::visit_while_stmt(const Statements::While& stmt) {
   stmt.condition->VISIT;
@@ -155,6 +159,7 @@ void Analyzer::visit_while_stmt(const Statements::While& stmt) {
   if (stmt.label && loop_id_with_label(stmt.label))
     diagnostics_.emplace_back("A loop with this label already exists", stmt.label, Diagnostic::WARNING);
   loops_.emplace_back(stmt.label);
+
   stmt.loop_body->VISIT;
   stmt.around_body->VISIT;
 
@@ -162,7 +167,24 @@ void Analyzer::visit_while_stmt(const Statements::While& stmt) {
   stmt.else_body->VISIT;
 }
 
-void Analyzer::visit_each_stmt(const Statements::Each& stmt) {} // NOT IMPLEMENTED
+void Analyzer::visit_each_stmt(const Statements::Each& stmt) {
+  // Create a loop frame to store the label for scopes inside.
+  if (stmt.label && loop_id_with_label(stmt.label))
+    diagnostics_.emplace_back("A loop with this label already exists", stmt.label, Diagnostic::WARNING);
+  loops_.emplace_back(stmt.label);
+
+  // TODO: Check for Sequence
+  stmt.iterator->VISIT;
+
+  add_object_safe(stmt.iter_var, {false, TypeId {}}); // TODO: Type of the iter var is the type param of iterator.
+  if (stmt.index_var) add_object_safe(stmt.index_var, {false, host_.core_types().number_t});
+
+  stmt.loop_body->VISIT;
+  stmt.around_body->VISIT;
+
+  loops_.pop_back();
+  stmt.else_body->VISIT;
+}
 
 void Analyzer::visit_for_stmt(const Statements::For& stmt) {
   stmt.begin->VISIT; // Adds any initialization variables to the scope.
@@ -237,9 +259,21 @@ void Analyzer::visit_nil_expr(const Expressions::Nil& expr) { expr.type = host_.
 void Analyzer::visit_char_expr(const Expressions::Char& expr) { expr.type = host_.core_types().char_t; }
 void Analyzer::visit_string_expr(const Expressions::String& expr) { expr.type = host_.core_types().string_t; }
 void Analyzer::visit_variable_expr(const Expressions::Variable& expr) {} // NOT IMPLEMENTED
-void Analyzer::visit_this_expr(const Expressions::This& expr) {}         // NOT IMPLEMENTED
-void Analyzer::visit_super_expr(const Expressions::Super& expr) {}       // NOT IMPLEMENTED
-void Analyzer::visit_print_expr(const Expressions::Print& expr) {}       // NOT IMPLEMENTED
+
+void Analyzer::visit_this_expr(const Expressions::This& expr) {
+  if (classes_.empty()) {
+    diagnostics_.emplace_back("'this' expression outside of class", expr.identifier, Diagnostic::ERROR);
+    return;
+  }
+  expr.type = classes_.back().id;
+}
+
+void Analyzer::visit_super_expr(const Expressions::Super& expr) {} // NOT IMPLEMENTED
+
+void Analyzer::visit_print_expr(const Expressions::Print& expr) {
+  expr.expr->VISIT;
+  expr.type = expr.expr->type;
+}
 
 std::optional<int> Analyzer::loop_id_with_label(const Token* match_label) {
   for (auto riter {loops_.rbegin()}; riter != loops_.rend(); ++riter) {

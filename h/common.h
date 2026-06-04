@@ -8,7 +8,7 @@
 
 // DEBUG FLAGS ---------------------------------------------------------------------------
 
-// For the following three flags: 0 to disable, 1 to print user code, 2 to print everything (including core module)
+// For the following three flags: 0 to disable, 1 to print user code, 2 to print everything (including core module).
 // Don't compile; just print the tokens straight from the lexer.
 #define DEBUG_PRINT_TOKENS 0
 // Print bytecode instructions immediately after compiling.

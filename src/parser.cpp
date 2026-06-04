@@ -76,10 +76,10 @@ std::optional<StmtNode> Parser::function_declaration() {
   // Consume TOKEN_FUN.
   advance();
 
-  // Property 1: Function name
+  // Function name
   const Token* identifier {expect(TOKEN_IDENTIFIER, "Expecting either a function name for a function declaration or '(' for a lambda")};
 
-  // Property 2: Type parameters
+  // Type parameters
   std::vector<Token*> type_params {};
   if (match_generic()) {
     if (!check(TOKEN_IDENTIFIER)) report_error({"Expecting a type parameter", current_, Diagnostic::ERROR});
@@ -87,13 +87,13 @@ std::optional<StmtNode> Parser::function_declaration() {
       type_params.emplace_back(previous_);
   }
 
-  // Property 3: Parameters
+  // Parameters
   const std::vector params {param_list()};
 
-  // Property 4: Return type
+  // Return type
   const auto return_type {match(TOKEN_RIGHT_ARROW) ? broad_type() : nullptr};
 
-  // Property 5: Body
+  // Body
   const Token* would_be_the_eq {current_};
   StmtNode body {
     match(TOKEN_EQ)
@@ -632,12 +632,12 @@ ExprNode Parser::map(const ExprNode& first_item) {
     }
   };
 
-  // Step 1: First key (already parsed by collection()) and its value.
+  // First key (already parsed by collection()) and its value.
   validate_key(first_item);
   match(TOKEN_RIGHT_ARROW); // We already know it exists, just consume it a bit late so validate_key has the right previous_.
   values.emplace_back(parse_expression());
 
-  // Step 2: Parse the rest of the map.
+  // Parse the rest of the map.
   while (!check(TOKEN_RIGHT_BRACKET)) {
     validate_key(parse_expression());
     expect(TOKEN_RIGHT_ARROW, "Expecting '->' after map key");

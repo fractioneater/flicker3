@@ -36,10 +36,11 @@ struct FunctionFrame {
 };
 
 struct ClassFrame {
+  TypeId id {};
   bool has_superclass {};
   TypeId superclass {};
 
-  explicit ClassFrame(TypeId id) : has_superclass {id}, superclass {id} {}
+  explicit ClassFrame(TypeId this_id, TypeId super_id) : id {this_id}, has_superclass {super_id}, superclass {super_id} {}
 };
 
 // Tiny interface for some fun exceptions.
@@ -66,6 +67,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   std::vector<FunctionFrame> functions_ {};
   // Class contexts (for superclass).
   std::vector<ClassFrame> classes_ {};
+  // TODO: Consider one stack for all contexts (for variable resolution in class scope).
 
   void visit_program_stmt(const Statements::Program& stmt) override;
   void visit_block_stmt(const Statements::Block& stmt) override;
