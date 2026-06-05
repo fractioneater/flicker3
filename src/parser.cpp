@@ -180,7 +180,7 @@ StmtNode Parser::using_declaration() {
         // A star or a dot will import all variables at the scope's level; leaving out the 'for' clause will import in a namespace (module::item).
         advance();
         import_all = true;
-        imports.emplace_back(previous_);
+        imports.emplace_back(previous_); // The star or dot (for errors).
       } else {
         // TODO: Arrow aliases.
         imports = parse_list<Token*>(TOKEN_LINE, [this] { return expect(TOKEN_IDENTIFIER, "Expecting a name for an object to import"); });
@@ -488,13 +488,13 @@ bool Parser::unexpected_indent() {
 // Expressions --------------------------------------------------
 
 ExprNode Parser::binary_right_assoc(const ExprNode& left) {
-  const Precedence prec {static_cast<int>(rules[previous_->type].prec)};
-  return std::make_shared<Expressions::Binary>(rules[previous_->type].fn_name, left, parse_expression(prec));
+  const Precedence prec {static_cast<int>(RULES[previous_->type].prec)};
+  return std::make_shared<Expressions::Binary>(RULES[previous_->type].fn_name, left, parse_expression(prec));
 }
 
 ExprNode Parser::binary(const ExprNode& left) {
-  const Precedence prec {static_cast<int>(rules[previous_->type].prec) + 1};
-  return std::make_shared<Expressions::Binary>(rules[previous_->type].fn_name, left, parse_expression(prec));
+  const Precedence prec {static_cast<int>(RULES[previous_->type].prec) + 1};
+  return std::make_shared<Expressions::Binary>(RULES[previous_->type].fn_name, left, parse_expression(prec));
 }
 
 ExprNode Parser::infix_not(const ExprNode& left) {
@@ -517,7 +517,7 @@ ExprNode Parser::comparison(const ExprNode& left) {
   std::vector operands {left};
 
   do {
-    comparison_funcs.emplace_back(rules[previous_->type].fn_name);
+    comparison_funcs.emplace_back(RULES[previous_->type].fn_name);
     operands.emplace_back(parse_expression(prec));
   } while (match_precedence(Precedence::COMPARISON));
 
@@ -540,7 +540,7 @@ ExprNode Parser::postfix_inc_dec(const ExprNode& expr) {
   diagnostics_.emplace_back(
     "Postfix increment and decrement operators behave as their prefix equivalent; prefer the prefix version", previous_, Diagnostic::WARNING
   );
-  return std::make_shared<Expressions::Unary>(rules[previous_->type].fn_name, expr);
+  return std::make_shared<Expressions::Unary>(RULES[previous_->type].fn_name, expr);
 }
 
 ExprNode Parser::call(const ExprNode& expr) {
@@ -577,7 +577,7 @@ ExprNode Parser::namespace_member(const ExprNode& expr) {
 }
 
 ExprNode Parser::unary() {
-  return std::make_shared<Expressions::Unary>(rules[previous_->type].fn_name, parse_expression(Precedence::PREFIX));
+  return std::make_shared<Expressions::Unary>(RULES[previous_->type].fn_name, parse_expression(Precedence::PREFIX));
 }
 
 ExprNode Parser::prefix_not() {
@@ -585,7 +585,7 @@ ExprNode Parser::prefix_not() {
 }
 
 ExprNode Parser::print() {
-  return std::make_shared<Expressions::Print>(rules[previous_->type].fn_name, parse_expression(Precedence::PRINT));
+  return std::make_shared<Expressions::Print>(RULES[previous_->type].fn_name, parse_expression(Precedence::PRINT));
 }
 
 ExprNode Parser::list(ExprNode first_item) {
@@ -779,7 +779,7 @@ ExprNode Parser::parse_expression() { return parse_expression(Precedence::BEGIN)
 
 ExprNode Parser::parse_expression(Precedence precedence) {
   advance();
-  const PrefixFn prefix_rule {rules[previous_->type].prefix};
+  const PrefixFn prefix_rule {RULES[previous_->type].prefix};
   if (prefix_rule == nullptr) {
     report_error({"Expecting an expression", previous_, Diagnostic::ERROR});
     return nullptr;
@@ -787,9 +787,9 @@ ExprNode Parser::parse_expression(Precedence precedence) {
 
   auto expr {(this->*prefix_rule)()};
 
-  while (precedence <= rules[current_->type].prec) {
+  while (precedence <= RULES[current_->type].prec) {
     advance();
-    const InfixFn infix_rule {rules[previous_->type].infix};
+    const InfixFn infix_rule {RULES[previous_->type].infix};
     expr = (this->*infix_rule)(expr);
   }
 

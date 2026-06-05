@@ -123,7 +123,7 @@
 		{
 			"name": "Binary",
 			"fields": [
-				{"type": "std::string", "name": "fn_name"},
+				{"type": "std::string", "name": "fn_name", "move": true},
 				{"type": "ExprNode", "name": "left", "move": true},
 				{"type": "ExprNode", "name": "right", "move": true}
 			]
@@ -166,7 +166,7 @@
 			]
 		}, {
 			"name": "Unary", "fields": [
-				{"type": "std::string", "name": "fn_name"},
+				{"type": "std::string", "name": "fn_name", "move": true},
 				{"type": "ExprNode", "name": "expr", "move": true}
 			]
 		}, {
@@ -215,7 +215,7 @@
 			"name": "Super", "fields": [{"type": "Token*", "name": "identifier"}]
 		}, {
 			"name": "Print", "fields": [
-				{"type": "std::string", "name": "fn_name"},
+				{"type": "std::string", "name": "fn_name", "move": true},
 				{"type": "ExprNode", "name": "expr", "move": true}
 			]
 		}

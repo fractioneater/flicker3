@@ -439,7 +439,7 @@ class DotTreeWalker {
       std::string blah {"..."};
       for (const auto& comparison : expr.fn_names) {
         blah += " ";
-        blah += static_cast<std::string>(comparison);
+        blah += comparison;
         blah += " ...";
       }
       return blah;

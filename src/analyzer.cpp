@@ -6,7 +6,6 @@
 
 #include "analyzer.h"
 
-#include <cassert>
 #include <iostream>
 
 #define VISIT accept(*this)
@@ -31,15 +30,15 @@ void Analyzer::visit_expression_stmt(const Statements::Expression& stmt) {
 }
 
 void Analyzer::visit_variable_stmt(const Statements::Variable& stmt) {
-  const TypeId declared_type {stmt.type ? resolve_syntactic_type(stmt.type) : TypeId {}};
+  const std::optional declared_type {stmt.type ? resolve_syntactic_type(stmt.type) : std::optional<TypeId> {}};
   if (stmt.initializer) {
     stmt.initializer->VISIT;
-    if (stmt.initializer->type && declared_type) {
-      if (stmt.initializer->type != declared_type)
+    if (stmt.initializer->type && declared_type.has_value()) {
+      if (stmt.initializer->type != *declared_type)
         diagnostics_.emplace_back("Value type does not match annotation", stmt.identifier + 2, Diagnostic::ERROR);
       else
         diagnostics_.emplace_back("Unnecessary type annotation", stmt.identifier + 2, Diagnostic::NOTE);
-    } else if (!(stmt.initializer->type || declared_type)) {
+    } else if (!(stmt.initializer->type || declared_type.has_value())) {
       diagnostics_.emplace_back("Not enough type information to declare variable", stmt.identifier, Diagnostic::ERROR);
     }
   }
@@ -57,6 +56,7 @@ void Analyzer::visit_function_stmt(const Statements::Function& stmt) {
       host_.type_arena().add(TypeParam {static_cast<int>(param_iter - std::begin(stmt.type_params)), std::string {stmt.identifier->src_string}})
     );
   }
+
   // Define regular params.
   std::vector<TypeId> param_types {};
   param_types.reserve(stmt.params.size());
@@ -65,16 +65,25 @@ void Analyzer::visit_function_stmt(const Statements::Function& stmt) {
     param_types.emplace_back(t);
     add_object_safe(identifier, {modifier != Param::Modifier::VAL, t});
   }
+
   // Store return type as state.
-  const TypeId return_type {stmt.return_type ? resolve_syntactic_type(stmt.return_type) : TypeId {}};
-  functions_.emplace_back(return_type); // TODO: infer return type from body, maybe.
+  // In case of a Unit-returning function, this'll be nullopt. It may be invalid if resolve_syntactic_type() encounters an error.
+  std::optional return_type {stmt.return_type ? resolve_syntactic_type(stmt.return_type) : std::optional<TypeId> {std::nullopt}};
+  functions_.emplace_back();
   // Function body
   stmt.body->VISIT;
+  for (const auto& [ret , where] : functions_.back().returns) {
+    if (return_type.has_value() && ret != return_type)
+      diagnostics_.emplace_back("Return type mismatch", where + 1, Diagnostic::ERROR);
+    return_type = host_.core_types().any_t; // TODO: Find supertype for all returns. Show warning if it's Any or Any?.
+  }
+
   // Leave params and function scopes.
   functions_.pop_back();
   end_scope();
+
   // Define name with its signature.
-  const Function signature {param_types, return_type};                          // TODO: Unit type???
+  const Function signature {param_types, return_type.value_or(host_.core_types().unit_t)};
   add_object_safe(stmt.identifier, {false, host_.type_arena().add(signature)}); // TODO: Overloading?
 }
 
@@ -85,6 +94,7 @@ void Analyzer::visit_class_stmt(const Statements::Class& stmt) {
   // Define class early so we can use it inside itself.
   const TypeId t {host_.type_arena().new_named(static_cast<std::string>(stmt.identifier->src_string), static_cast<int>(stmt.type_params.size()))};
   add_type_safe(stmt.identifier, t);
+
   // Define type params
   begin_scope();
   for (auto param_iter {std::begin(stmt.type_params)}; param_iter != std::end(stmt.type_params); ++param_iter) {
@@ -93,21 +103,25 @@ void Analyzer::visit_class_stmt(const Statements::Class& stmt) {
       host_.type_arena().add(TypeParam {static_cast<int>(param_iter - std::begin(stmt.type_params)), std::string {stmt.identifier->src_string}})
     );
   }
+
   // Find superclass.
-  const auto super {stmt.superclass ? find_type(std::string {stmt.superclass->src_string}) : TypeId {}};
-  if (stmt.superclass && !super)
+  const std::optional super {stmt.superclass ? find_type(std::string {stmt.superclass->src_string}) : std::optional<TypeId> {std::nullopt}};
+  if (stmt.superclass && !super.value())
     diagnostics_.emplace_back(std::format("Unresolved reference to type '{}'", stmt.superclass->src_string), stmt.superclass, Diagnostic::ERROR);
   classes_.emplace_back(t, super);
+
   // Visit namespace items.
   begin_scope();
   for (const auto& it : stmt.namespace_items) it->VISIT;
   // TODO: Before everything goes away, store it in the class somewhere.
   end_scope();
+
   // Visit initializers.
   for (const auto& it : stmt.initializers) it->VISIT;
   // TODO: Everything with scoping is going wrong.
   // Visit declarations.
   // TODO.
+
   // Leave scopes.
   classes_.pop_back();
   end_scope();
@@ -119,10 +133,11 @@ void Analyzer::visit_import_stmt(const Statements::Import& stmt) {
   std::unordered_map<std::string, ObjectSymbol> object_exports {};
   std::unordered_map<std::string, TypeId> type_exports {};
   try {
+    // Calling exports() will load the file, analyze it, and return its exports. It does all the work.
     const auto& [objects, types] {host_.exports(stmt.path)};
     object_exports = objects;
     type_exports   = types;
-  } catch (std::runtime_error& e) {
+  } catch (std::runtime_error& _) {
     diagnostics_.emplace_back(std::format("Failed to load '{}'", stmt.path), Diagnostic::ERROR); // TODO: Where?
     return;
   }
@@ -130,9 +145,11 @@ void Analyzer::visit_import_stmt(const Statements::Import& stmt) {
   if (stmt.imports.empty()) {
     // Import all as a namespace.
     // TODO.
+    // ReSharper disable once CppDFAConstantConditions :(
   } else if (stmt.import_all) {
     // Import all by name.
     // The first (and only) token in stmt.imports is the '.' or '*' character.
+    // ReSharper disable once CppDFAUnreachableCode :(
     for (const auto& [name, symbol] : object_exports)
       import_object_safe(stmt.imports.front(), name, symbol);
     for (const auto& [name, type] : type_exports)
@@ -230,18 +247,13 @@ void Analyzer::break_or_continue(const char* name, const Token* label) {
 }
 
 void Analyzer::visit_return_stmt(const Statements::Return& stmt) {
-  if (stmt.value) stmt.value->VISIT;
-  if (functions_.empty()) {
+  // Better to show this error first (before any errors inside the value).
+  if (functions_.empty())
     diagnostics_.emplace_back("Return statement outside of function", stmt.where, Diagnostic::ERROR);
-    return;
-  }
-  if (stmt.value) {
-    if (stmt.value->type != functions_.back().return_type)
-      diagnostics_.emplace_back("Incorrect return value type", stmt.where + 1, Diagnostic::ERROR);
-  } else {
-    if (functions_.back().returns)
-      diagnostics_.emplace_back("Must return a value", stmt.where, Diagnostic::ERROR);
-  }
+
+  if (stmt.value) stmt.value->VISIT;
+  if (!functions_.empty())
+    functions_.back().returns.emplace_back(stmt.value ? stmt.value->type : host_.core_types().unit_t, stmt.where);
 }
 
 void Analyzer::visit_pass_stmt(const Statements::Pass& stmt) {} // Nothing to check.
@@ -277,7 +289,7 @@ void Analyzer::visit_list_expr(const Expressions::List& expr) {}                
 void Analyzer::visit_map_expr(const Expressions::Map& expr) {}                          // NOT IMPLEMENTED
 void Analyzer::visit_number_expr(const Expressions::Number& expr) { expr.type = host_.core_types().number_t; }
 void Analyzer::visit_boolean_expr(const Expressions::Boolean& expr) { expr.type = host_.core_types().bool_t; }
-void Analyzer::visit_nil_expr(const Expressions::Nil& expr) { expr.type = host_.core_types().nil_t; }
+void Analyzer::visit_nil_expr(const Expressions::Nil& expr) { expr.type = host_.type_arena().add(Optional {host_.core_types().nothing_t}); }
 void Analyzer::visit_char_expr(const Expressions::Char& expr) { expr.type = host_.core_types().char_t; }
 void Analyzer::visit_string_expr(const Expressions::String& expr) { expr.type = host_.core_types().string_t; }
 
@@ -340,7 +352,6 @@ TypeId Analyzer::resolve_syntactic_type(const SyntacticTypePtr& type) {
       return host_.type_arena().add(Function {params, resolve_syntactic_type(function->result)});
     }
     default:
-      std::cerr << "Unhandled type kind" << std::endl;
-      abort();
+      throw std::runtime_error("Unhandled type kind");
   }
 }

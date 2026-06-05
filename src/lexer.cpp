@@ -18,7 +18,7 @@ namespace Helpers {
   // I believe keywords should be lowercase because that's what most programmers are used to.
   // Constants (nil, true, false) are usually lowercase, and because they aren't classes, I don't believe they should be Capitalized,
   //   although CAPITALIZED would be okay.
-  const std::unordered_map<std::string_view, TokenType> keywords {
+  const std::unordered_map<std::string_view, TokenType> KEYWORDS {
     {"and", TOKEN_AND},
     {"around", TOKEN_AROUND},
     {"break", TOKEN_BREAK},
@@ -57,8 +57,8 @@ namespace Helpers {
 
   TokenType word_type(std::string_view word) {
     // This namespace that holds the map is in lexer.h.
-    const auto found {keywords.find(word)};
-    if (found != keywords.end())
+    const auto found {KEYWORDS.find(word)};
+    if (found != KEYWORDS.end())
       return found->second; // Return the associated TokenType.
 
     // Then return IDENTIFIER if it's not a reserved word.

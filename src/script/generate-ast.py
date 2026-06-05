@@ -3,26 +3,10 @@
 """
 Generate h/ast.h from a spec that lists statement and expression AST nodes and their fields.
 
-Example:
-{
-  "includes": ["<any>", "<memory>", "\"lexer.h\""],
-  "namespaces": { "statements": "Statements", "expressions": "Expressions" },
-  "aliases": [
-    "using StmtNode = std::unique_ptr<Stmt>;",
-    "using ExprNode = std::unique_ptr<Expr>;",
-  ],
-  "statements": [
-    {"name": "Block", "fields": [{"type": "std::vector<StmtNode>", "name": "statements", "move": true}]},
-    {"name": "Expression", "fields": [{"type": "ExprNode", "name": "expression", "move": true}]}
-  ],
-  "expressions": [
-    {"name": "Literal", "fields": [{"type": "std::any", "name": "value", "move": true}]}
-  ]
-}
+For an example, see src/script/ast-spec.json.
 
 Usage:
   python src/script/generate_ast.py --output h/ast.h --spec static/ast.types.json
-If --spec is omitted, the current AST layout is used.
 
 This script is way overkill. It's amazing.
 """

@@ -300,7 +300,7 @@ Error handling can be finished later. It's time for the analyzer! It is both a `
 patterns (storing an owner) I used in the DOT printer.
 
 As I've already mentioned, it's a visitor, but the most important things about it are its contexts. All the state frames, blocks, etc. that it keeps track of.
-This will involve all of the following:
+This will involve the following:
 
 - Symbol table for any defined or declared object and its type
 - Symbol table for the types themselves

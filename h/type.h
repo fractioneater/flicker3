@@ -150,8 +150,7 @@ struct TypeKey {
     return type == other.type;
   }
 
-  // I know the IDE wants to pass by value and std::move, but DON'T DO IT! We need a copy here.
-  explicit TypeKey(const SemanticType& t) : type {t} {}
+  explicit TypeKey(SemanticType t) : type {std::move(t)} {}
 };
 
 // Hashing functions for SemanticType
@@ -162,7 +161,7 @@ struct std::hash<TypeId> {
   }
 };
 
-namespace Type_hash {
+namespace TypeHash {
   inline void hash_combine(size_t& seed, size_t h) noexcept {
     seed ^= h + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
   }
@@ -223,16 +222,17 @@ namespace Type_hash {
 
 template <>
 struct std::hash<TypeKey> {
-  size_t operator()(const TypeKey& key) const {
+  size_t operator()(const TypeKey& key) const noexcept {
     return std::visit(
       []<typename T>(T&& k) -> size_t {
         using A = std::decay_t<T>;
-        if constexpr (std::is_same_v<A, Named>) return Type_hash::hash_named(k);
-        else if constexpr (std::is_same_v<A, TypeParam>) return Type_hash::hash_typeparam(k);
-        else if constexpr (std::is_same_v<A, Optional>) return Type_hash::hash_optional(k);
-        else if constexpr (std::is_same_v<A, Function>) return Type_hash::hash_function(k);
-        else if constexpr (std::is_same_v<A, Applied>) return Type_hash::hash_applied(k);
+        if constexpr (std::is_same_v<A, Named>) return TypeHash::hash_named(k);
+        else if constexpr (std::is_same_v<A, TypeParam>) return TypeHash::hash_typeparam(k);
+        else if constexpr (std::is_same_v<A, Optional>) return TypeHash::hash_optional(k);
+        else if constexpr (std::is_same_v<A, Function>) return TypeHash::hash_function(k);
+        else if constexpr (std::is_same_v<A, Applied>) return TypeHash::hash_applied(k);
         else static_assert(false, "TypeKey visitor isn't exhaustive!");
+        return 0;
       },
       key.type
     );
@@ -272,6 +272,10 @@ class TypeArena {
 
   std::vector<TypeDefinition> definitions_ {};
 
+  [[nodiscard]] const SemanticType& at_(TypeId id) const {
+    return types_[id.value];
+  }
+
   public:
   TypeArena() {
     types_.reserve(TYPE_ARENA_RESERVE_SIZE + 1);
@@ -287,7 +291,8 @@ class TypeArena {
 
   TypeId add(SemanticType&& t) {
     // This makes a copy. I've tried to find a way that allows single ownership (using std::list is one), but I'm not sure if it's worth the fight.
-    const TypeKey key {t};
+    const SemanticType new_t {t};
+    const TypeKey key {new_t};
     const auto existing {interned_.find(key)};
     if (existing != interned_.end()) return existing->second;
 
@@ -298,7 +303,8 @@ class TypeArena {
   }
 
   [[nodiscard]] const SemanticType& at(TypeId id) const {
-    return types_[id.value];
+    if (!id) throw std::runtime_error("Invalid type ID");
+    return at_(id);
   }
 
   [[nodiscard]] TypeId method_return_type(TypeId id, const std::string& method_name, const std::vector<TypeId>& params) const {
@@ -318,7 +324,7 @@ class TypeArena {
   }
 
   std::string to_string(TypeId id) const {
-    if (!id) return "(Invalid)";
+    if (!id) throw std::runtime_error("Invalid type ID");
     return std::visit(
       [*this]<typename T>(const T& t) -> std::string {
         using A = std::decay_t<T>;
@@ -341,7 +347,8 @@ class TypeArena {
           }
           return result;
         } else static_assert(false, "as_string visitor isn't exhaustive!");
-      }, at(id)
+        return "";
+      }, at_(id)
     );
   }
 

@@ -9,6 +9,7 @@
 #include <array>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 
 #include "lexer.h"
 #include "parser.h"
@@ -82,7 +83,7 @@ void debug_print_tokens(const std::vector<Token>& tokens, const Lexer& lexer) {
 
 enum class CompileStage { LEXER = 0, PARSER, ANALYZER, BYTECODE_GEN, VM };
 
-static constexpr std::array stage_names {"Lexer", "Parser", "Analyzer", "Bytecode Generator", "Virtual Machine"};
+static constexpr std::array STAGE_NAMES {"Lexer", "Parser", "Analyzer", "Bytecode Generator", "Virtual Machine"};
 
 template <typename T>
 bool print_errors(const T& component, const Lexer& lexer, std::string_view module_name, CompileStage stage) {
@@ -91,15 +92,15 @@ bool print_errors(const T& component, const Lexer& lexer, std::string_view modul
 
   if (component.encountered_halt()) {
     const auto error_stage {static_cast<int>(stage)};
-    std::cout << "Compiling halted at " << stage_names[error_stage] << '\n';
+    std::cout << "Compiling halted at " << STAGE_NAMES[error_stage] << '\n';
 
     #if PRINT_COLORS
     std::cout << "\033[4m"; // 4m: underline.
-    for (int i {0}; i < stage_names.size(); ++i) {
+    for (int i {0}; i < STAGE_NAMES.size(); ++i) {
       if (i > 0) std::cout << (i <= error_stage ? RESULT_COLOR : DARK_GRAY_COLOR) << " -> ";
 
       std::cout << (i < error_stage ? RESULT_COLOR : (i == error_stage ? ERROR_COLOR : DARK_GRAY_COLOR));
-      std::cout << stage_names[i];
+      std::cout << STAGE_NAMES[i];
     }
     std::cout << CLEAR_FORMAT << '\n';
     #endif

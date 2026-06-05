@@ -124,7 +124,7 @@ class Parser {
    * @return A boolean, true if the token's precedence matches prec
    */
   bool match_precedence(Precedence prec) {
-    if (rules[current_->type].prec != prec) return false;
+    if (RULES[current_->type].prec != prec) return false;
     advance();
     return true;
   }
@@ -149,7 +149,7 @@ class Parser {
    * @return Previous token after match is called (which, in case of success, is the current token at the time of call)
    */
   Token* expect(TokenType type, std::string_view message, Token* error_token = nullptr) {
-    error_token = (error_token == nullptr) ? current_ : error_token;
+    error_token = error_token == nullptr ? current_ : error_token;
     if (!match(type))
       report_error({std::string {message}, error_token, Diagnostic::ERROR});
     return previous_;
@@ -161,7 +161,7 @@ class Parser {
    * @param error_token Token to associate the error with
    */
   void expect_line(std::string_view message, Token* error_token = nullptr) {
-    error_token = (error_token == nullptr) ? current_ : error_token;
+    error_token = error_token == nullptr ? current_ : error_token;
     if (!match_line()) report_error({std::string {message}, error_token, Diagnostic::ERROR});
   }
 
@@ -174,7 +174,7 @@ class Parser {
    * @return Previous token after match is called (which, in case of success, is the current token at the time of call)
    */
   Token* expect(TokenType type, std::string_view message, Diagnostic& context, Token* error_token = nullptr) {
-    error_token = (error_token == nullptr) ? current_ : error_token;
+    error_token = error_token == nullptr ? current_ : error_token;
     if (!match(type))
       report_error({std::string {message}, context, error_token, Diagnostic::ERROR});
     return previous_;
@@ -347,7 +347,7 @@ class Parser {
   // @formatter:off; it will separate the comments from the rest of their lines, which is horrifying.
   // IMPORTANT: Prefix rules always have a precedence of none! Their precedence is decided by the parse_expression(prec) call inside them, not the parse rule table!
   // This means that for "BOTH" rules, the precedence only applies to the infix rule.
-  static constexpr std::array<ParseRule, 92> rules {{
+  static constexpr std::array<ParseRule, 92> RULES {{
     /* TOKEN_LEFT_PAREN    */ BOTH(grouping, call, "", POSTFIX),
     /* TOKEN_RIGHT_PAREN   */ UNUSED,
     /* TOKEN_LEFT_BRACKET  */ BOTH(collection, subscript, "", POSTFIX),

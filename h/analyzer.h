@@ -29,18 +29,25 @@ struct LoopFrame {
 };
 
 struct FunctionFrame {
-  bool returns {};
-  TypeId return_type {};
-
-  explicit FunctionFrame(TypeId id) : returns {id}, return_type {id} {}
+  /**
+   * Used to check return statements against the function's return type and infer the return type from returns.
+   * Token* points to the keyword "return," so if the value isn't core_types().unit_t, the token plus one should be the start of the value expr.
+   * It is possible for the type to be invalid, only in the case where a return value is not inferrable.
+   */
+  std::vector<std::pair<TypeId, const Token*>> returns {};
 };
 
 struct ClassFrame {
-  TypeId id {};
-  bool has_superclass {};
-  TypeId superclass {};
+  /**
+   * The class's type. This should never be invalid.
+   */
+  TypeId id;
+  /**
+   * Superclass type ID. Will be nullopt if the class doesn't give a superclass, and invalid if a nonexistent type name is provided.
+   */
+  std::optional<TypeId> superclass;
 
-  explicit ClassFrame(TypeId this_id, TypeId super_id) : id {this_id}, has_superclass {super_id}, superclass {super_id} {}
+  explicit ClassFrame(TypeId this_id, std::optional<TypeId> super_id) : id {this_id}, superclass {super_id} {}
 };
 
 // Tiny interface for some fun exceptions.

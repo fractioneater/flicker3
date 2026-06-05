@@ -762,7 +762,7 @@ class Statements::Pass : public Stmt {
 // Expressions --------------------------------------------------
 class Expressions::Binary : public Expr {
   public:
-  Binary(std::string fn_name, ExprNode left, ExprNode right) : fn_name {fn_name}, left {std::move(left)}, right {std::move(right)} {}
+  Binary(std::string fn_name, ExprNode left, ExprNode right) : fn_name {std::move(fn_name)}, left {std::move(left)}, right {std::move(right)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_binary_expr_any(*this);
@@ -893,7 +893,7 @@ class Expressions::NamespaceMember : public Expr {
 
 class Expressions::Unary : public Expr {
   public:
-  Unary(std::string fn_name, ExprNode expr) : fn_name {fn_name}, expr {std::move(expr)} {}
+  Unary(std::string fn_name, ExprNode expr) : fn_name {std::move(fn_name)}, expr {std::move(expr)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_unary_expr_any(*this);
@@ -1107,7 +1107,7 @@ class Expressions::Super : public Expr {
 
 class Expressions::Print : public Expr {
   public:
-  Print(std::string fn_name, ExprNode expr) : fn_name {fn_name}, expr {std::move(expr)} {}
+  Print(std::string fn_name, ExprNode expr) : fn_name {std::move(fn_name)}, expr {std::move(expr)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_print_expr_any(*this);
