@@ -1,3 +1,6 @@
+class Any
+  fun test() = "..."
+
 class Bool
   fun test() = "..."
 
@@ -10,11 +13,14 @@ class List of A
 class Map of A
   fun test() = "..."
 
-class Nil
+class Nothing
   fun test() = "..."
 
 class Number
   fun test() = "..."
 
 class String
+  fun test() = "..."
+
+class Unit
   fun test() = "..."

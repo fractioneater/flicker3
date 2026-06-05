@@ -11,7 +11,10 @@
 #include <string_view>
 
 namespace Core {
-  constexpr std::string_view src {
+  constexpr std::string_view SRC {
+    "class Any\n"
+    "  fun test() = \"...\"\n"
+    "\n"
     "class Bool\n"
     "  fun test() = \"...\"\n"
     "\n"
@@ -24,13 +27,16 @@ namespace Core {
     "class Map of A\n"
     "  fun test() = \"...\"\n"
     "\n"
-    "class Nil\n"
+    "class Nothing\n"
     "  fun test() = \"...\"\n"
     "\n"
     "class Number\n"
     "  fun test() = \"...\"\n"
     "\n"
     "class String\n"
+    "  fun test() = \"...\"\n"
+    "\n"
+    "class Unit\n"
     "  fun test() = \"...\"\n"
   };
 }

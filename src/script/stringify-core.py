@@ -41,7 +41,7 @@ def main():
     f.write("#pragma once\n\n")
     f.write("#include <string_view>\n\n")
     f.write("namespace Core {\n");
-    f.write("  constexpr std::string_view src {\n")
+    f.write("  constexpr std::string_view SRC {\n")
     f.write("\n".join(escaped_lines))
     f.write("\n  };\n")
     f.write("}\n")

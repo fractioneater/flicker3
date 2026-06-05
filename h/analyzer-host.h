@@ -19,13 +19,20 @@ struct ModuleExports {
 };
 
 struct CoreTypes {
+  TypeId any_t {};
   TypeId bool_t {};
   TypeId char_t {};
   TypeId list_t {};
   TypeId map_t {};
-  TypeId nil_t {};
+  TypeId nothing_t {};
   TypeId number_t {};
   TypeId string_t {};
+  TypeId unit_t {};
+
+  CoreTypes() = default;
+
+  CoreTypes(TypeId any, TypeId bool_, TypeId char_, TypeId list, TypeId map, TypeId nothing, TypeId number, TypeId string, TypeId unit) :
+    any_t {any}, bool_t {bool_}, char_t {char_}, list_t {list}, map_t {map}, nothing_t {nothing}, number_t {number}, string_t {string}, unit_t {unit} {}
 };
 
 // The interface containing everything a ModuleLoader needs to expose to an Analyzer. This involves:

@@ -17,7 +17,7 @@
 
 // There are two types of types: the parser's types, and the analyzer's types. Look for a comment above each category for an explanation of the structure.
 
-#define CORE_CLASS_COUNT 4
+#define TYPE_ARENA_RESERVE_SIZE 32
 
 /**
  * SYNTACTIC (PARSER) TYPES --------------------------------------------------
@@ -99,21 +99,21 @@ struct FunctionType final : SyntacticType {
 struct TypeId {
   uint32_t value {};
 
-  static constexpr uint32_t invalid {std::numeric_limits<uint32_t>::max()};
+  static constexpr uint32_t INVALID {std::numeric_limits<uint32_t>::max()};
 
-  constexpr TypeId() : value {invalid} {}
+  constexpr TypeId() : value {INVALID} {}
   constexpr explicit TypeId(uint32_t value) : value {value} {}
 
   constexpr bool operator==(const TypeId& other) const { return value == other.value; }
   constexpr bool operator!=(const TypeId& other) const { return value != other.value; }
-  constexpr explicit operator bool() const { return value != invalid; }
+  constexpr explicit operator bool() const { return value != INVALID; }
 };
 
-using TypeDefId = TypeId;
+using TypeDefId = uint32_t;
 
 struct Named {
   std::string name {}; // For hashing and error messages.
-  TypeDefId definition {};
+  std::optional<TypeDefId> definition {};
   int arity {0}; // In case this is a template type.
   bool operator==(const Named& other) const = default;
 };
@@ -184,7 +184,7 @@ namespace Type_hash {
     size_t seed {0};
     hash_combine(seed, 1u);
     hash_combine(seed, t.name);
-    hash_combine(seed, t.definition);
+    hash_combine(seed, t.definition.value_or(std::numeric_limits<uint32_t>::max()));
     hash_combine(seed, t.arity);
     return seed;
   }
@@ -274,8 +274,8 @@ class TypeArena {
 
   public:
   TypeArena() {
-    types_.reserve(CORE_CLASS_COUNT + 1);
-    interned_.reserve(CORE_CLASS_COUNT + 1);
+    types_.reserve(TYPE_ARENA_RESERVE_SIZE + 1);
+    interned_.reserve(TYPE_ARENA_RESERVE_SIZE + 1);
   }
 
   TypeId new_named(std::string&& name, int arity) {
@@ -307,7 +307,8 @@ class TypeArena {
       [*this, &method_name, &params]<typename T>(T&& k) -> TypeId {
         using A = std::decay_t<T>;
         if constexpr (std::is_same_v<A, Named>) {
-          return definitions_[k.definition.value].method_return_type(method_name, params);
+          if (!k.definition) throw std::runtime_error("Type '" + k.name + "' doesn't have a definition");
+          return definitions_[k.definition.value()].method_return_type(method_name, params);
         } else if constexpr (std::is_same_v<A, Applied>) {
           return method_return_type(k.base, method_name, params);
         } else return {};
@@ -317,6 +318,7 @@ class TypeArena {
   }
 
   std::string to_string(TypeId id) const {
+    if (!id) return "(Invalid)";
     return std::visit(
       [*this]<typename T>(const T& t) -> std::string {
         using A = std::decay_t<T>;

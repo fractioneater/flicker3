@@ -55,7 +55,7 @@ struct StandardModule : Module {
  * - It remembers its types for other modules to use.
  */
 struct CoreModule : Module {
-  static constexpr std::string_view core_name {"core"};
+  static constexpr std::string_view CORE_NAME {"core"};
 
   CoreTypes types {};
 
@@ -68,7 +68,7 @@ struct CoreModule : Module {
  * The idea of this is weird, but a ReplModule could potentially be loaded into a StandardModule to make an integrated debugger. Maybe.
  */
 struct ReplModule : Module {
-  static constexpr std::string_view repl_name {"input"};
+  static constexpr std::string_view REPL_NAME {"input"};
 
   bool run_line(const std::string& line);
 

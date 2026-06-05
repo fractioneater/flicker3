@@ -194,20 +194,25 @@ void ModuleLoader::load_core() {
 }
 
 CoreModule::CoreModule(AnalyzerHost& host) : Module {host} {
-  compile(core_name, std::string {Core::src}, 2);
+  compile(CORE_NAME, std::string {Core::SRC}, 2);
   if (status != MODULE_COMPILED) {
     std::cerr << "This is a core library compilation error---it's not your fault. Submit an issue on Codeberg or communicate this to me however possible.\n";
     // Exit code 70: internal software error (core library error, my fault).
     throw std::system_error(70, std::generic_category());
   }
 
-  types.bool_t   = analyzer.find_type("Bool");
-  types.number_t = analyzer.find_type("Number");
-  types.string_t = analyzer.find_type("String");
-  types.char_t   = analyzer.find_type("Char");
-  types.nil_t    = analyzer.find_type("Nil");
-  types.list_t   = analyzer.find_type("List");
-  types.map_t    = analyzer.find_type("Map");
+  // Initialized all at once to ensure everything is present.
+  types = {
+    analyzer.find_type("Any"),
+    analyzer.find_type("Bool"),
+    analyzer.find_type("Number"),
+    analyzer.find_type("String"),
+    analyzer.find_type("Char"),
+    analyzer.find_type("Nothing"),
+    analyzer.find_type("List"),
+    analyzer.find_type("Map"),
+    analyzer.find_type("Unit")
+  };
 }
 
 bool CoreModule::run() {
@@ -254,7 +259,7 @@ void ModuleLoader::send_repl_line(const std::string& line) const {
 bool ReplModule::run_line(const std::string& line) {
   analyzer.clear_diagnostics();
 
-  const bool success {compile(repl_name, line)};
+  const bool success {compile(REPL_NAME, line)};
   if (!success) return false;
 
   return run();
