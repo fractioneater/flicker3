@@ -22,7 +22,7 @@
 #define DEBUG_LOG_GC 0
 
 // Print the parse tree in DOT format for GraphViz. Uses the same 0/1/2 system as above.
-#define DEBUG_PRINT_DOT 1
+#define DEBUG_PRINT_DOT 0
 #define DEBUG_DOT_FILENAME "/home/fractioneater/stuff/git/flicker-3/tree.dot"
 
 // OTHER FLAGS ---------------------------------------------------------------------------

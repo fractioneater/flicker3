@@ -17,8 +17,8 @@ struct ScopeFrame {
   std::unordered_map<std::string, ObjectSymbol> objects {};
   std::unordered_map<std::string, TypeId> types {};
 
-  std::unordered_map<std::string, ObjectSymbol> import_objects {};
-  std::unordered_map<std::string, TypeId> import_types {};
+  std::unordered_map<std::string, ObjectSymbol> object_imports {};
+  std::unordered_map<std::string, TypeId> type_imports {};
 };
 
 struct LoopFrame {
@@ -44,7 +44,7 @@ struct ClassFrame {
 };
 
 // Tiny interface for some fun exceptions.
-enum class ExceptionKind { REDECLARED_NAME, SHADOWED_NAME, INDETERMINABLE_TYPE };
+enum class ExceptionKind { REDECLARED_NAME, SHADOWED_NAME };
 
 struct AnalyzerException : std::exception {
   ExceptionKind kind;
@@ -121,13 +121,6 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   std::optional<int> loop_id_with_label(const Token* match_label);
   void break_or_continue(const char* name, const Token* label);
 
-  /**
-   * Infers the type of an expression, and if it's indeterminable, throws an INDETERMINABLE_TYPE exception.
-   * @param expr Expression to determine the type of
-   * @return Type
-   */
-  TypeId find_expr_type(const ExprNode& expr);
-
   TypeId resolve_syntactic_type(const SyntacticTypePtr& type);
 
   // Functions that look nicer when you write them like this:
@@ -146,7 +139,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
    */
   void check_duplicate_name(bool is_type, const std::string& name) {
     for (auto iter {std::begin(scopes_)}; iter != std::end(scopes_); ++iter) {
-      if (is_type ? (iter->types.contains(name) || iter->import_types.contains(name)) : (iter->objects.contains(name) || iter->import_objects.contains(name))) {
+      if (is_type ? (iter->types.contains(name) || iter->type_imports.contains(name)) : (iter->objects.contains(name) || iter->object_imports.contains(name))) {
         if (std::next(iter) == scopes_.end())
           throw AnalyzerException {ExceptionKind::REDECLARED_NAME};
         throw AnalyzerException {ExceptionKind::SHADOWED_NAME};
@@ -199,7 +192,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   void import_object_safe(const Token* where, const std::string& name, ObjectSymbol symbol) {
     try {
       check_duplicate_name(false, name);
-      scopes_.back().import_objects.emplace(name, symbol);
+      scopes_.back().object_imports.emplace(name, symbol);
     } catch (AnalyzerException& e) {
       Diagnostic tip {"Use '->' to create an import alias: using \"...\" for a -> b", Diagnostic::NOTE};
       if (e.kind == ExceptionKind::REDECLARED_NAME)
@@ -218,7 +211,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   void import_type_safe(const Token* where, const std::string& name, TypeId t) {
     try {
       check_duplicate_name(true, name);
-      scopes_.back().import_types.emplace(name, t);
+      scopes_.back().type_imports.emplace(name, t);
     } catch (AnalyzerException& e) {
       Diagnostic tip {"Use '->' to create an import alias: using \"...\" for a -> b", Diagnostic::NOTE};
       if (e.kind == ExceptionKind::REDECLARED_NAME)
@@ -232,10 +225,10 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   explicit Analyzer(AnalyzerHost& host) : host_ {host} {}
 
   explicit Analyzer(AnalyzerHost& host, Analyzer& parent) : host_ {host} {
-    const auto& [o , t , io, it] {parent.global_scope()};
+    const auto& [o , t , o_i, t_i] {parent.global_scope()};
     // Copy all of parent's top-level declarations into this analyzer's imports.
-    scopes_.back().import_objects = o;
-    scopes_.back().import_types   = t;
+    scopes_.back().object_imports = o;
+    scopes_.back().type_imports   = t;
   }
 
   [[nodiscard]] const std::vector<Diagnostic>& get_diagnostics() const { return diagnostics_; }
@@ -248,10 +241,22 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope) {
       if (scope->types.contains(name))
         return scope->types.at(name);
-      if (scope->import_types.contains(name))
-        return scope->import_types.at(name);
+      if (scope->type_imports.contains(name))
+        return scope->type_imports.at(name);
     }
+    diagnostics_.emplace_back(std::format("Type '{}' not found", name), Diagnostic::ERROR); // TODO: Where
     return {};
+  }
+
+  std::optional<ObjectSymbol> find_object(const std::string& name) {
+    for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope) {
+      if (scope->objects.contains(name))
+        return scope->objects.at(name);
+      if (scope->object_imports.contains(name))
+        return scope->object_imports.at(name);
+    }
+    diagnostics_.emplace_back(std::format("'{}' not found", name), Diagnostic::ERROR); // TODO: Where
+    return std::nullopt;
   }
 
   [[nodiscard]] bool encountered_halt() const {

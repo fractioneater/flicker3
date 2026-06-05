@@ -432,9 +432,8 @@ class Expr {
 };
 
 // Aliases --------------------------------------------------
-using StmtNode      = std::shared_ptr<Stmt>;
-using ExprNode      = std::shared_ptr<Expr>;
-using NamedFunction = std::string_view;
+using StmtNode = std::shared_ptr<Stmt>;
+using ExprNode = std::shared_ptr<Expr>;
 
 // Statements --------------------------------------------------
 class Statements::Program : public Stmt {
@@ -763,7 +762,7 @@ class Statements::Pass : public Stmt {
 // Expressions --------------------------------------------------
 class Expressions::Binary : public Expr {
   public:
-  Binary(NamedFunction fn_name, ExprNode left, ExprNode right) : fn_name {fn_name}, left {std::move(left)}, right {std::move(right)} {}
+  Binary(std::string fn_name, ExprNode left, ExprNode right) : fn_name {fn_name}, left {std::move(left)}, right {std::move(right)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_binary_expr_any(*this);
@@ -773,14 +772,14 @@ class Expressions::Binary : public Expr {
     visitor.visit_binary_expr(*this);
   }
 
-  const NamedFunction fn_name {};
+  const std::string fn_name {};
   const ExprNode left {};
   const ExprNode right {};
 };
 
 class Expressions::Comparison : public Expr {
   public:
-  Comparison(std::vector<NamedFunction> fn_names, std::vector<ExprNode> expressions) : fn_names {std::move(fn_names)}, expressions {std::move(expressions)} {}
+  Comparison(std::vector<std::string> fn_names, std::vector<ExprNode> expressions) : fn_names {std::move(fn_names)}, expressions {std::move(expressions)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_comparison_expr_any(*this);
@@ -790,7 +789,7 @@ class Expressions::Comparison : public Expr {
     visitor.visit_comparison_expr(*this);
   }
 
-  const std::vector<NamedFunction> fn_names {};
+  const std::vector<std::string> fn_names {};
   const std::vector<ExprNode> expressions {};
 };
 
@@ -894,7 +893,7 @@ class Expressions::NamespaceMember : public Expr {
 
 class Expressions::Unary : public Expr {
   public:
-  Unary(NamedFunction fn_name, ExprNode expr) : fn_name {fn_name}, expr {std::move(expr)} {}
+  Unary(std::string fn_name, ExprNode expr) : fn_name {fn_name}, expr {std::move(expr)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_unary_expr_any(*this);
@@ -904,7 +903,7 @@ class Expressions::Unary : public Expr {
     visitor.visit_unary_expr(*this);
   }
 
-  const NamedFunction fn_name {};
+  const std::string fn_name {};
   const ExprNode expr {};
 };
 
@@ -1108,7 +1107,7 @@ class Expressions::Super : public Expr {
 
 class Expressions::Print : public Expr {
   public:
-  Print(NamedFunction fn_name, ExprNode expr) : fn_name {fn_name}, expr {std::move(expr)} {}
+  Print(std::string fn_name, ExprNode expr) : fn_name {fn_name}, expr {std::move(expr)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_print_expr_any(*this);
@@ -1118,6 +1117,6 @@ class Expressions::Print : public Expr {
     visitor.visit_print_expr(*this);
   }
 
-  const NamedFunction fn_name {};
+  const std::string fn_name {};
   const ExprNode expr {};
 };

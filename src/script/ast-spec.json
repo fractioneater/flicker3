@@ -1,9 +1,8 @@
 {
 	"includes": ["<any>", "<memory>", "\"lexer.h\"", "\"param.h\"", "\"type.h\""],
 	"aliases": [
-		"using StmtNode      = std::shared_ptr<Stmt>;",
-		"using ExprNode      = std::shared_ptr<Expr>;",
-		"using NamedFunction = std::string_view;"
+		"using StmtNode = std::shared_ptr<Stmt>;",
+		"using ExprNode = std::shared_ptr<Expr>;"
 	],
 	"namespaces": {
 		"statements": "Statements", "expressions": "Expressions"
@@ -124,13 +123,13 @@
 		{
 			"name": "Binary",
 			"fields": [
-				{"type": "NamedFunction", "name": "fn_name"},
+				{"type": "std::string", "name": "fn_name"},
 				{"type": "ExprNode", "name": "left", "move": true},
 				{"type": "ExprNode", "name": "right", "move": true}
 			]
 		}, {
 			"name": "Comparison", "fields": [
-				{"type": "std::vector<NamedFunction>", "name": "fn_names", "move": true},
+				{"type": "std::vector<std::string>", "name": "fn_names", "move": true},
 				{"type": "std::vector<ExprNode>", "name": "expressions", "move": true}
 			]
 		}, {
@@ -167,7 +166,7 @@
 			]
 		}, {
 			"name": "Unary", "fields": [
-				{"type": "NamedFunction", "name": "fn_name"},
+				{"type": "std::string", "name": "fn_name"},
 				{"type": "ExprNode", "name": "expr", "move": true}
 			]
 		}, {
@@ -216,7 +215,7 @@
 			"name": "Super", "fields": [{"type": "Token*", "name": "identifier"}]
 		}, {
 			"name": "Print", "fields": [
-				{"type": "NamedFunction", "name": "fn_name"},
+				{"type": "std::string", "name": "fn_name"},
 				{"type": "ExprNode", "name": "expr", "move": true}
 			]
 		}

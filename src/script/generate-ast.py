@@ -8,9 +8,8 @@ Example:
   "includes": ["<any>", "<memory>", "\"lexer.h\""],
   "namespaces": { "statements": "Statements", "expressions": "Expressions" },
   "aliases": [
-    "using StmtNode      = std::unique_ptr<Stmt>;",
-    "using ExprNode      = std::unique_ptr<Expr>;",
-    "using NamedFunction = std::string_view;"
+    "using StmtNode = std::unique_ptr<Stmt>;",
+    "using ExprNode = std::unique_ptr<Expr>;",
   ],
   "statements": [
     {"name": "Block", "fields": [{"type": "std::vector<StmtNode>", "name": "statements", "move": true}]},

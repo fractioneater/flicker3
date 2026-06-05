@@ -335,7 +335,7 @@ class Parser {
   struct ParseRule {
     PrefixFn prefix {};
     InfixFn infix {};
-    NamedFunction fn_name {};
+    std::string fn_name {};
     Precedence prec {};
   };
 

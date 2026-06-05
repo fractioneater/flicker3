@@ -31,9 +31,20 @@ void Analyzer::visit_expression_stmt(const Statements::Expression& stmt) {
 }
 
 void Analyzer::visit_variable_stmt(const Statements::Variable& stmt) {
-  if (stmt.initializer) stmt.initializer->VISIT;
+  const TypeId declared_type {stmt.type ? resolve_syntactic_type(stmt.type) : TypeId {}};
+  if (stmt.initializer) {
+    stmt.initializer->VISIT;
+    if (stmt.initializer->type && declared_type) {
+      if (stmt.initializer->type != declared_type)
+        diagnostics_.emplace_back("Value type does not match annotation", stmt.identifier + 2, Diagnostic::ERROR);
+      else
+        diagnostics_.emplace_back("Unnecessary type annotation", stmt.identifier + 2, Diagnostic::NOTE);
+    } else if (!(stmt.initializer->type || declared_type)) {
+      diagnostics_.emplace_back("Not enough type information to declare variable", stmt.identifier, Diagnostic::ERROR);
+    }
+  }
 
-  if (const TypeId type = stmt.type ? resolve_syntactic_type(stmt.type) : find_expr_type(stmt.initializer))
+  if (const TypeId type = stmt.type ? resolve_syntactic_type(stmt.type) : stmt.initializer->type)
     add_object_safe(stmt.identifier, {stmt.is_mutable, type});
 }
 
@@ -71,6 +82,9 @@ void Analyzer::visit_initializer_stmt(const Statements::Initializer& stmt) {} //
 void Analyzer::visit_method_stmt(const Statements::Method& stmt) {}           // NOT IMPLEMENTED
 
 void Analyzer::visit_class_stmt(const Statements::Class& stmt) {
+  // Define class early so we can use it inside itself.
+  const TypeId t {host_.type_arena().new_named(static_cast<std::string>(stmt.identifier->src_string), static_cast<int>(stmt.type_params.size()))};
+  add_type_safe(stmt.identifier, t);
   // Define type params
   begin_scope();
   for (auto param_iter {std::begin(stmt.type_params)}; param_iter != std::end(stmt.type_params); ++param_iter) {
@@ -82,12 +96,7 @@ void Analyzer::visit_class_stmt(const Statements::Class& stmt) {
   // Find superclass.
   const auto super {stmt.superclass ? find_type(std::string {stmt.superclass->src_string}) : TypeId {}};
   if (stmt.superclass && !super)
-    diagnostics_.emplace_back(
-      std::format("Unresolved reference to type '{}'", stmt.superclass->src_string), stmt.superclass, Diagnostic::ERROR
-    );
-  // Define class early so we can use it inside itself.
-  const TypeId t {host_.type_arena().add(Named {std::string {stmt.identifier->src_string}, static_cast<int>(stmt.type_params.size())})};
-  add_type_safe(stmt.identifier, t);
+    diagnostics_.emplace_back(std::format("Unresolved reference to type '{}'", stmt.superclass->src_string), stmt.superclass, Diagnostic::ERROR);
   classes_.emplace_back(t, super);
   // Visit namespace items.
   begin_scope();
@@ -227,7 +236,7 @@ void Analyzer::visit_return_stmt(const Statements::Return& stmt) {
     return;
   }
   if (stmt.value) {
-    if (find_expr_type(stmt.value) != functions_.back().return_type)
+    if (stmt.value->type != functions_.back().return_type)
       diagnostics_.emplace_back("Incorrect return value type", stmt.where + 1, Diagnostic::ERROR);
   } else {
     if (functions_.back().returns)
@@ -239,7 +248,20 @@ void Analyzer::visit_pass_stmt(const Statements::Pass& stmt) {} // Nothing to ch
 
 // Expressions --------------------------------------------------
 
-void Analyzer::visit_binary_expr(const Expressions::Binary& expr) {}                    // NOT IMPLEMENTED
+void Analyzer::visit_binary_expr(const Expressions::Binary& expr) {
+  expr.left->VISIT;
+  expr.right->VISIT;
+  if (expr.left->type) {
+    const TypeId return_type {host_.type_arena().method_return_type(expr.left->type, expr.fn_name, {expr.right->type})};
+    expr.type = return_type;
+    if (!return_type)
+      diagnostics_.emplace_back(
+        std::format("'{}' does not implement '{}'", host_.type_arena().to_string(expr.left->type), expr.fn_name), Diagnostic::ERROR
+      ); // TODO: Where?
+  }
+  // TODO: Something else went wrong, how to report it?
+}
+
 void Analyzer::visit_comparison_expr(const Expressions::Comparison& expr) {}            // NOT IMPLEMENTED
 void Analyzer::visit_if_expr(const Expressions::If& expr) {}                            // NOT IMPLEMENTED
 void Analyzer::visit_assignment_expr(const Expressions::Assignment& expr) {}            // NOT IMPLEMENTED
@@ -258,7 +280,13 @@ void Analyzer::visit_boolean_expr(const Expressions::Boolean& expr) { expr.type 
 void Analyzer::visit_nil_expr(const Expressions::Nil& expr) { expr.type = host_.core_types().nil_t; }
 void Analyzer::visit_char_expr(const Expressions::Char& expr) { expr.type = host_.core_types().char_t; }
 void Analyzer::visit_string_expr(const Expressions::String& expr) { expr.type = host_.core_types().string_t; }
-void Analyzer::visit_variable_expr(const Expressions::Variable& expr) {} // NOT IMPLEMENTED
+
+void Analyzer::visit_variable_expr(const Expressions::Variable& expr) {
+  const std::string name {expr.identifier->src_string};
+  const auto symbol {find_object(name)};
+  if (!symbol) return;
+  expr.type = symbol->declared_type;
+}
 
 void Analyzer::visit_this_expr(const Expressions::This& expr) {
   if (classes_.empty()) {
@@ -283,11 +311,6 @@ std::optional<int> Analyzer::loop_id_with_label(const Token* match_label) {
   }
 
   return std::nullopt;
-}
-
-TypeId Analyzer::find_expr_type(const ExprNode& expr) {
-  // TODO. This is going to be tricky.
-  throw AnalyzerException {ExceptionKind::INDETERMINABLE_TYPE};
 }
 
 TypeId Analyzer::resolve_syntactic_type(const SyntacticTypePtr& type) {

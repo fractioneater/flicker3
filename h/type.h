@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <string>
@@ -108,9 +109,12 @@ struct TypeId {
   constexpr explicit operator bool() const { return value != invalid; }
 };
 
+using TypeDefId = TypeId;
+
 struct Named {
-  std::string name {}; // Just for hashing, really.
-  int arity {0};       // In case this is a template type.
+  std::string name {}; // For hashing and error messages.
+  TypeDefId definition {};
+  int arity {0}; // In case this is a template type.
   bool operator==(const Named& other) const = default;
 };
 
@@ -146,7 +150,7 @@ struct TypeKey {
     return type == other.type;
   }
 
-  // I know the IDE wants you to pass by value and std::move, but DON'T DO IT! We need a copy here.
+  // I know the IDE wants to pass by value and std::move, but DON'T DO IT! We need a copy here.
   explicit TypeKey(const SemanticType& t) : type {t} {}
 };
 
@@ -180,6 +184,7 @@ namespace Type_hash {
     size_t seed {0};
     hash_combine(seed, 1u);
     hash_combine(seed, t.name);
+    hash_combine(seed, t.definition);
     hash_combine(seed, t.arity);
     return seed;
   }
@@ -234,6 +239,26 @@ struct std::hash<TypeKey> {
   }
 };
 
+struct Overload {
+  std::vector<TypeId> params {};
+  TypeId return_type {};
+};
+
+class TypeDefinition {
+  std::unordered_map<std::string, std::vector<Overload>> symbols_ {};
+
+  public:
+  TypeId method_return_type(const std::string& name, const std::vector<TypeId>& params) const {
+    if (!symbols_.contains(name)) return {};
+
+    const auto& overloads {symbols_.find(name)->second};
+    const auto& match {std::ranges::find_if(overloads, [&params](const Overload& o) { return o.params == params; })};
+    if (match != overloads.end()) return match->return_type;
+
+    return {};
+  }
+};
+
 /**
  * The location where the compiler's (semantic) types are stored. Consists of a vector of type objects, accessible with at(),
  * and an unordered_map for interning, so type equality can be determined cheaply by ID.
@@ -245,10 +270,19 @@ class TypeArena {
   std::vector<SemanticType> types_ {};
   std::unordered_map<TypeKey, TypeId> interned_ {};
 
+  std::vector<TypeDefinition> definitions_ {};
+
   public:
   TypeArena() {
     types_.reserve(CORE_CLASS_COUNT + 1);
     interned_.reserve(CORE_CLASS_COUNT + 1);
+  }
+
+  TypeId new_named(std::string&& name, int arity) {
+    definitions_.emplace_back();
+    const TypeDefId definition {static_cast<uint32_t>(definitions_.size() - 1)};
+
+    return add(Named {std::move(name), definition, arity});
   }
 
   TypeId add(SemanticType&& t) {
@@ -265,6 +299,48 @@ class TypeArena {
 
   [[nodiscard]] const SemanticType& at(TypeId id) const {
     return types_[id.value];
+  }
+
+  [[nodiscard]] TypeId method_return_type(TypeId id, const std::string& method_name, const std::vector<TypeId>& params) const {
+    const SemanticType& t {at(id)};
+    return std::visit(
+      [*this, &method_name, &params]<typename T>(T&& k) -> TypeId {
+        using A = std::decay_t<T>;
+        if constexpr (std::is_same_v<A, Named>) {
+          return definitions_[k.definition.value].method_return_type(method_name, params);
+        } else if constexpr (std::is_same_v<A, Applied>) {
+          return method_return_type(k.base, method_name, params);
+        } else return {};
+      },
+      t
+    );
+  }
+
+  std::string to_string(TypeId id) const {
+    return std::visit(
+      [*this]<typename T>(const T& t) -> std::string {
+        using A = std::decay_t<T>;
+        if constexpr (std::is_same_v<A, Named>) return t.name;
+        else if constexpr (std::is_same_v<A, TypeParam>) return t.host_name;
+        else if constexpr (std::is_same_v<A, Optional>) return std::string {to_string(t.inner) + "?"};
+        else if constexpr (std::is_same_v<A, Function>) {
+          std::string result {"("};
+          for (size_t i {0}; i < t.params.size(); ++i) {
+            if (i > 0) result += ", ";
+            result += to_string(t.params[i]);
+          }
+          result += ") -> " + to_string(t.return_type);
+          return result;
+        } else if constexpr (std::is_same_v<A, Applied>) {
+          std::string result {to_string(t.base) + " of"};
+          for (size_t i {0}; i < t.args.size(); ++i) {
+            result += " ";
+            result += to_string(t.args[i]);
+          }
+          return result;
+        } else static_assert(false, "as_string visitor isn't exhaustive!");
+      }, at(id)
+    );
   }
 
   [[nodiscard]] bool empty() const {

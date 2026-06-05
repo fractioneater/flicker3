@@ -173,10 +173,10 @@ std::pair<std::unordered_map<std::string, StandardModule>::iterator, bool> Modul
 
 StandardModule::StandardModule(AnalyzerHost& host, Analyzer& parent, const std::string& name, std::string src) : Module {host, parent} {
   compile(name, std::move(src));
-  const auto& [o, h, io, it] {analyzer.global_scope()};
+  const auto& [o, t, o_i, t_i] {analyzer.global_scope()};
   for (const auto& [object_name, symbol] : o)
     exports.objects.try_emplace(object_name, symbol);
-  for (const auto& [type_name, id] : h)
+  for (const auto& [type_name, id] : t)
     exports.types.try_emplace(type_name, id);
 }
 

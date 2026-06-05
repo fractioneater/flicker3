@@ -513,7 +513,7 @@ ExprNode Parser::binary_is(const ExprNode& left) {
 ExprNode Parser::comparison(const ExprNode& left) {
   // Like in Python, comparisons can be chained: 2 < x < 44 does what a mathematician would expect it to.
   constexpr Precedence prec {static_cast<int>(Precedence::COMPARISON) + 1};
-  std::vector<NamedFunction> comparison_funcs {};
+  std::vector<std::string> comparison_funcs {};
   std::vector operands {left};
 
   do {
