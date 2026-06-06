@@ -1,4 +1,3 @@
-#-
 using Speach = (Roman, Numeral) -> Toast of Tree
 
 class Rabbi is Rabbit
@@ -23,7 +22,6 @@ while:outer b
 
 fun g(b: String) -> Oak
   print b
--#
 
 using Cat = String
 

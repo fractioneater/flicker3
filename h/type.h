@@ -51,10 +51,13 @@ class SyntacticType {
 
 using SyntacticTypePtr = std::shared_ptr<SyntacticType>;
 
+struct Token;
+
 struct NamedType final : SyntacticType {
   std::string name {};
+  const Token* identifier {};
 
-  explicit NamedType(std::string name) : name {std::move(name)} {}
+  explicit NamedType(std::string name, const Token* token) : name {std::move(name)}, identifier {token} {}
   [[nodiscard]] TypeKind kind() const override { return TypeKind::NAMED; }
 };
 

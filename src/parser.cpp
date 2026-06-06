@@ -281,7 +281,7 @@ SyntacticTypePtr Parser::standard_type(const std::string& thing_to_look_for, boo
 
   // Hacky, but I think it's okay... ish.
   const std::string name {expect(TOKEN_IDENTIFIER, "Expecting " + thing_to_look_for)->src_string};
-  SyntacticTypePtr type {std::make_shared<NamedType>(name)};
+  SyntacticTypePtr type {std::make_shared<NamedType>(name, previous_)};
 
   const bool is_optional {match(TOKEN_QUEST)};
 

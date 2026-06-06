@@ -105,9 +105,14 @@ void Analyzer::visit_class_stmt(const Statements::Class& stmt) {
   }
 
   // Find superclass.
-  const std::optional super {stmt.superclass ? find_type(std::string {stmt.superclass->src_string}) : std::optional<TypeId> {std::nullopt}};
-  if (stmt.superclass && !super.value())
-    diagnostics_.emplace_back(std::format("Unresolved reference to type '{}'", stmt.superclass->src_string), stmt.superclass, Diagnostic::ERROR);
+  std::optional<TypeId> super {};
+  if (stmt.superclass) {
+    try {
+      super = find_type(std::string {stmt.superclass->src_string});
+    } catch (AnalyzerException& _) {
+      diagnostics_.emplace_back(std::format("Unresolved reference to type '{}'", stmt.superclass->src_string), stmt.superclass, Diagnostic::ERROR);
+    }
+  }
   classes_.emplace_back(t, super);
 
   // Visit namespace items.
@@ -295,8 +300,13 @@ void Analyzer::visit_string_expr(const Expressions::String& expr) { expr.type = 
 
 void Analyzer::visit_variable_expr(const Expressions::Variable& expr) {
   const std::string name {expr.identifier->src_string};
-  const auto symbol {find_object(name)};
-  if (!symbol) return;
+  std::optional<ObjectSymbol> symbol {};
+  try {
+    symbol = find_object(name);
+  } catch (AnalyzerException& _) {
+    return;
+  }
+
   expr.type = symbol->declared_type;
 }
 
@@ -330,16 +340,19 @@ TypeId Analyzer::resolve_syntactic_type(const SyntacticTypePtr& type) {
     case TypeKind::NAMED: {
       const auto named {std::dynamic_pointer_cast<NamedType>(type)};
       // If the type being used already exists, this should never add a type to the arena. We get it instead from the scopes.
-      const auto found {find_type(named->name)};
-
-      if (!found) diagnostics_.emplace_back(std::format("Unresolved reference to type '{}'", named->name), Diagnostic::ERROR); // TODO: Where?
-      return found;
+      try {
+        return find_type(named->name);
+      } catch (AnalyzerException& _) {
+        diagnostics_.emplace_back(std::format("Unresolved reference to type '{}'", named->name), named->identifier, Diagnostic::ERROR); // TODO: Where?
+        return TypeId {};
+      }
     }
     case TypeKind::APPLIED: {
       const auto applied {std::dynamic_pointer_cast<AppliedType>(type)};
+      const TypeId base {resolve_syntactic_type(applied->constructor)};
       std::vector<TypeId> args {};
       for (const auto& arg : applied->args) args.emplace_back(resolve_syntactic_type(arg));
-      return host_.type_arena().add(Applied {resolve_syntactic_type(applied->constructor), args});
+      return host_.type_arena().add(Applied {base, args});
     }
     case TypeKind::OPTIONAL: {
       const auto optional {std::dynamic_pointer_cast<OptionalType>(type)};

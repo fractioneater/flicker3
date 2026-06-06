@@ -51,7 +51,7 @@ struct ClassFrame {
 };
 
 // Tiny interface for some fun exceptions.
-enum class ExceptionKind { REDECLARED_NAME, SHADOWED_NAME };
+enum class ExceptionKind { REDECLARED_NAME, SHADOWED_NAME, SYMBOL_NOT_FOUND };
 
 struct AnalyzerException : std::exception {
   ExceptionKind kind;
@@ -244,6 +244,11 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
 
   ScopeFrame& global_scope() { return scopes_.front(); }
 
+  /**
+   * IMPORTANT: Can throw AnalyzerException {SYMBOL_NOT_FOUND}; use in try block.
+   * @param name Symbol name
+   * @return Imported or declared-in-module type with the specified name
+   */
   TypeId find_type(const std::string& name) {
     for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope) {
       if (scope->types.contains(name))
@@ -251,10 +256,14 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
       if (scope->type_imports.contains(name))
         return scope->type_imports.at(name);
     }
-    diagnostics_.emplace_back(std::format("Type '{}' not found", name), Diagnostic::ERROR); // TODO: Where
-    return {};
+    throw AnalyzerException {ExceptionKind::SYMBOL_NOT_FOUND};
   }
 
+  /**
+   * IMPORTANT: Can throw AnalyzerException {SYMBOL_NOT_FOUND}; use in try block.
+   * @param name Symbol name
+   * @return Imported or declared-in-module object with the specified name
+   */
   std::optional<ObjectSymbol> find_object(const std::string& name) {
     for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope) {
       if (scope->objects.contains(name))
@@ -262,8 +271,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
       if (scope->object_imports.contains(name))
         return scope->object_imports.at(name);
     }
-    diagnostics_.emplace_back(std::format("'{}' not found", name), Diagnostic::ERROR); // TODO: Where
-    return std::nullopt;
+    throw AnalyzerException {ExceptionKind::SYMBOL_NOT_FOUND};
   }
 
   [[nodiscard]] bool encountered_halt() const {
