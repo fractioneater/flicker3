@@ -276,22 +276,69 @@ void Analyzer::visit_binary_expr(const Expressions::Binary& expr) {
         std::format("'{}' does not implement '{}'", host_.type_arena().to_string(expr.left->type), expr.fn_name), Diagnostic::ERROR
       ); // TODO: Where?
   }
-  // TODO: Something else went wrong, how to report it?
 }
 
-void Analyzer::visit_comparison_expr(const Expressions::Comparison& expr) {}            // NOT IMPLEMENTED
-void Analyzer::visit_if_expr(const Expressions::If& expr) {}                            // NOT IMPLEMENTED
+void Analyzer::visit_comparison_expr(const Expressions::Comparison& expr) {} // NOT IMPLEMENTED
+
+void Analyzer::visit_if_expr(const Expressions::If& expr) {
+  // They're in this order (___ if ___ else ___).
+  expr.then->VISIT;
+  expr.condition->VISIT;
+  expr.else_expr->VISIT;
+  // Condition doesn't need to be a bool. Flicker's truthy checking is very simple: only false and nil are falsy.
+  if (expr.then->type && expr.else_expr->type) {
+    if (expr.then->type != expr.else_expr->type)
+      diagnostics_.emplace_back("Mismatched types between branches", Diagnostic::ERROR); // TODO: Where?
+    else
+      expr.type = expr.then->type;
+  }
+}
+
 void Analyzer::visit_assignment_expr(const Expressions::Assignment& expr) {}            // NOT IMPLEMENTED
 void Analyzer::visit_call_expr(const Expressions::Call& expr) {}                        // NOT IMPLEMENTED
 void Analyzer::visit_subscript_expr(const Expressions::Subscript& expr) {}              // NOT IMPLEMENTED
 void Analyzer::visit_member_expr(const Expressions::Member& expr) {}                    // NOT IMPLEMENTED
 void Analyzer::visit_namespace_member_expr(const Expressions::NamespaceMember& expr) {} // NOT IMPLEMENTED
-void Analyzer::visit_unary_expr(const Expressions::Unary& expr) {}                      // NOT IMPLEMENTED
-void Analyzer::visit_interpolation_expr(const Expressions::Interpolation& expr) {}      // NOT IMPLEMENTED
-void Analyzer::visit_lambda_expr(const Expressions::Lambda& expr) {}                    // NOT IMPLEMENTED
-void Analyzer::visit_grouping_expr(const Expressions::Grouping& expr) {}                // NOT IMPLEMENTED
-void Analyzer::visit_list_expr(const Expressions::List& expr) {}                        // NOT IMPLEMENTED
-void Analyzer::visit_map_expr(const Expressions::Map& expr) {}                          // NOT IMPLEMENTED
+
+void Analyzer::visit_unary_expr(const Expressions::Unary& expr) {
+  expr.expr->VISIT;
+  if (expr.expr->type) {
+    const TypeId return_type {host_.type_arena().method_return_type(expr.expr->type, expr.fn_name, {})};
+    expr.type = return_type;
+    if (!return_type)
+      diagnostics_.emplace_back(
+        std::format("'{}' does not implement '{}'", host_.type_arena().to_string(expr.expr->type), expr.fn_name), Diagnostic::ERROR
+      ); // TODO: Where?
+  }
+}
+
+void Analyzer::visit_interpolation_expr(const Expressions::Interpolation& expr) {
+  for (const auto& e : expr.expressions) e->VISIT;
+  expr.type = host_.core_types().string_t;
+}
+
+void Analyzer::visit_lambda_expr(const Expressions::Lambda& expr) {} // NOT IMPLEMENTED
+
+void Analyzer::visit_grouping_expr(const Expressions::Grouping& expr) {
+  expr.expr->VISIT;
+  expr.type = expr.expr->type;
+  // Expr doesn't look like a word anymore...
+  // wait, it never was.
+}
+
+void Analyzer::visit_list_expr(const Expressions::List& expr) {
+  for (const auto& item : expr.items) item->VISIT;
+  // Find superclass for all item types. TODO. (and warn if it's Any or Any?). Don't forget to pass it below.
+  expr.type = host_.type_arena().add(Applied {host_.core_types().list_t, {host_.core_types().any_t}});
+}
+
+void Analyzer::visit_map_expr(const Expressions::Map& expr) {
+  // Keys are always strings, which makes this easier for us. Instead of Map of A B, we just have Map of A.
+  for (const auto& item : expr.values) item->VISIT;
+  // Find superclass for all item types. TODO. (and warn if it's Any or Any?). Don't forget to pass it below.
+  expr.type = host_.type_arena().add(Applied {host_.core_types().map_t, {host_.core_types().any_t}});
+}
+
 void Analyzer::visit_number_expr(const Expressions::Number& expr) { expr.type = host_.core_types().number_t; }
 void Analyzer::visit_boolean_expr(const Expressions::Boolean& expr) { expr.type = host_.core_types().bool_t; }
 void Analyzer::visit_nil_expr(const Expressions::Nil& expr) { expr.type = host_.type_arena().add(Optional {host_.core_types().nothing_t}); }

@@ -206,12 +206,12 @@ CoreModule::CoreModule(AnalyzerHost& host) : Module {host} {
   types = {
     analyzer.find_type("Any"),
     analyzer.find_type("Bool"),
-    analyzer.find_type("Number"),
-    analyzer.find_type("String"),
     analyzer.find_type("Char"),
-    analyzer.find_type("Nothing"),
     analyzer.find_type("List"),
     analyzer.find_type("Map"),
+    analyzer.find_type("Nothing"),
+    analyzer.find_type("Number"),
+    analyzer.find_type("String"),
     analyzer.find_type("Unit")
   };
 }
