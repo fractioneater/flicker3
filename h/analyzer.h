@@ -167,7 +167,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     } catch (AnalyzerException& e) {
       if (e.kind == ExceptionKind::REDECLARED_NAME)
         diagnostics_.emplace_back("Name has already been declared in this scope", token, Diagnostic::ERROR);
-      else
+      else if (e.kind == ExceptionKind::SHADOWED_NAME)
         diagnostics_.emplace_back("Name shadows a declaration from another scope", token, Diagnostic::WARNING);
     }
   }
@@ -185,7 +185,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     } catch (AnalyzerException& e) {
       if (e.kind == ExceptionKind::REDECLARED_NAME)
         diagnostics_.emplace_back("Type name has already been declared in this scope", token, Diagnostic::ERROR);
-      else
+      else if (e.kind == ExceptionKind::SHADOWED_NAME)
         diagnostics_.emplace_back("Type name shadows a declaration from another scope", token, Diagnostic::WARNING);
     }
   }
@@ -204,7 +204,7 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
       Diagnostic tip {"Use '->' to create an import alias: using \"...\" for a -> b", Diagnostic::NOTE};
       if (e.kind == ExceptionKind::REDECLARED_NAME)
         diagnostics_.emplace_back(std::format("Import '{}' conflicts with a declaration in this scope", name), tip, where, Diagnostic::ERROR);
-      else
+      else if (e.kind == ExceptionKind::SHADOWED_NAME)
         diagnostics_.emplace_back(std::format("Import '{}' shadows a declaration from another scope", name), tip, where, Diagnostic::WARNING);
     }
   }
@@ -223,8 +223,22 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
       Diagnostic tip {"Use '->' to create an import alias: using \"...\" for a -> b", Diagnostic::NOTE};
       if (e.kind == ExceptionKind::REDECLARED_NAME)
         diagnostics_.emplace_back(std::format("Import '{}' conflicts with a declaration in this scope", name), tip, where, Diagnostic::ERROR);
-      else
+      else if (e.kind == ExceptionKind::SHADOWED_NAME)
         diagnostics_.emplace_back(std::format("Import '{}' shadows a declaration from another scope", name), tip, where, Diagnostic::WARNING);
+    }
+  }
+
+  /**
+   * Rebinds an object symbol to a new type. Used for overload sets (when a new overload is added).
+   * @param name Object name to rebind
+   * @param t The symbol's new type
+   */
+  void rebind_object(const std::string& name, TypeId t) {
+    for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope) {
+      if (auto e {scope->objects.find(name)}; e != scope->objects.end()) {
+        e->second.declared_type = t; // Keep is_mutable.
+        return;
+      }
     }
   }
 

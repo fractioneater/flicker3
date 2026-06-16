@@ -1,28 +1,4 @@
-using Speach = (Roman, Numeral) -> Toast of Tree
+fun greet(a: String) -> Bool
+  return true
 
-class Rabbi is Rabbit
-  var g = 32
-
-while:raphael true
-  print 32
-else
-  continue:raphael
-
-while:jorge a == 3
-  while:jorge b == 4
-    var yup: Speach?
-    print 3
-    break:jorge
-    break:raphael
-
-# Actual use case for labels:
-while:outer b
-  while c
-    break:outer
-
-fun g(b: String) -> Oak
-  print b
-
-using Cat = String
-
-nil + 833
+print greet + 3

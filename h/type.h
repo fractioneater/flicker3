@@ -138,13 +138,29 @@ struct Function {
   bool operator==(const Function& other) const = default;
 };
 
+struct OverloadSet {
+  std::string name {};              // For hashing.
+  std::vector<TypeId> overloads {}; // Should only hold Function TypeIds.
+
+  [[nodiscard]] bool has(const TypeId signature) const {
+    return std::ranges::any_of(overloads, [&](const TypeId& id) { return id == signature; });
+  }
+
+  void add(const TypeId signature) {
+    // We're just going to hope very optimistically (and nervously) that a Function is passed.
+    overloads.emplace_back(signature);
+  }
+
+  bool operator==(const OverloadSet& other) const = default;
+};
+
 struct Applied {
   TypeId base;
   std::vector<TypeId> args;
   bool operator==(const Applied& other) const = default;
 };
 
-using SemanticType = std::variant<Named, TypeParam, Optional, Function, Applied>;
+using SemanticType = std::variant<Named, TypeParam, Optional, Function, OverloadSet, Applied>;
 
 struct TypeKey {
   SemanticType type {};
@@ -214,6 +230,14 @@ namespace TypeHash {
     return seed;
   }
 
+  inline size_t hash_overload_set(const OverloadSet& t) noexcept {
+    size_t seed {0};
+    hash_combine(seed, 5u);
+    hash_combine(seed, t.name);
+    hash_combine(seed, hash_vec(t.overloads));
+    return seed;
+  }
+
   inline size_t hash_applied(const Applied& t) noexcept {
     size_t seed {0};
     hash_combine(seed, 5u);
@@ -233,6 +257,7 @@ struct std::hash<TypeKey> {
         else if constexpr (std::is_same_v<A, TypeParam>) return TypeHash::hash_typeparam(k);
         else if constexpr (std::is_same_v<A, Optional>) return TypeHash::hash_optional(k);
         else if constexpr (std::is_same_v<A, Function>) return TypeHash::hash_function(k);
+        else if constexpr (std::is_same_v<A, OverloadSet>) return TypeHash::hash_overload_set(k);
         else if constexpr (std::is_same_v<A, Applied>) return TypeHash::hash_applied(k);
         else static_assert(false, "TypeKey visitor isn't exhaustive!");
         return 0;
@@ -241,25 +266,14 @@ struct std::hash<TypeKey> {
     );
   }
 };
-
-struct Overload {
-  std::vector<TypeId> params {};
-  TypeId return_type {};
-};
+class TypeArena;
 
 class TypeDefinition {
-  std::unordered_map<std::string, std::vector<Overload>> symbols_ {};
+  std::unordered_map<std::string, TypeId> namespace_symbols_ {}; // TODO NEXT. Also add the normal symbols.
+  std::unordered_map<std::string, TypeId> symbols_ {};
 
   public:
-  TypeId method_return_type(const std::string& name, const std::vector<TypeId>& params) const {
-    if (!symbols_.contains(name)) return {};
-
-    const auto& overloads {symbols_.find(name)->second};
-    const auto& match {std::ranges::find_if(overloads, [&params](const Overload& o) { return o.params == params; })};
-    if (match != overloads.end()) return match->return_type;
-
-    return {};
-  }
+  TypeId method_return_type(const TypeArena& arena, const std::string& name, const std::vector<TypeId>& params) const;
 };
 
 /**
@@ -317,7 +331,7 @@ class TypeArena {
         using A = std::decay_t<T>;
         if constexpr (std::is_same_v<A, Named>) {
           if (!k.definition) throw std::runtime_error("Type '" + k.name + "' doesn't have a definition");
-          return definitions_[k.definition.value()].method_return_type(method_name, params);
+          return definitions_[k.definition.value()].method_return_type(*this, method_name, params);
         } else if constexpr (std::is_same_v<A, Applied>) {
           return method_return_type(k.base, method_name, params);
         } else return {};
@@ -342,6 +356,13 @@ class TypeArena {
           }
           result += ") -> " + to_string(t.return_type);
           return result;
+        } else if constexpr (std::is_same_v<A, OverloadSet>) {
+          std::string result {"<fn " + t.name + ", overloading [ "};
+          for (size_t i {0}; i < t.overloads.size(); ++i) {
+            if (i > 0) result += "; ";
+            result += to_string(t.overloads[i]);
+          }
+          return result + " ]>";
         } else if constexpr (std::is_same_v<A, Applied>) {
           std::string result {to_string(t.base) + " of"};
           for (size_t i {0}; i < t.args.size(); ++i) {
@@ -359,3 +380,18 @@ class TypeArena {
     return types_.empty();
   }
 };
+
+inline TypeId TypeDefinition::method_return_type(const TypeArena& arena, const std::string& name, const std::vector<TypeId>& params) const {
+  const auto it {symbols_.find(name)};
+  if (it == symbols_.end()) return {};
+  const SemanticType& symbol {arena.at(it->second)};
+
+  // Check if it's an overload set.
+  if (!std::holds_alternative<OverloadSet>(symbol)) return {};
+
+  for (const TypeId overload : std::get<OverloadSet>(symbol).overloads) {
+    const auto& [overload_params, return_type] {std::get<Function>(arena.at(overload))};
+    if (overload_params == params) return return_type;
+  }
+  return {};
+}

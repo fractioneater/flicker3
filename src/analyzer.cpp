@@ -84,7 +84,48 @@ void Analyzer::visit_function_stmt(const Statements::Function& stmt) {
 
   // Define name with its signature.
   const Function signature {param_types, return_type.value_or(host_.core_types().unit_t)};
-  add_object_safe(stmt.identifier, {false, host_.type_arena().add(signature)}); // TODO: Overloading?
+  const TypeId sig_id {host_.type_arena().add(signature)};
+
+  // Lots of work just for a little overloading.
+  const std::string name {stmt.identifier->src_string};
+  try {
+    const TypeId type {find_object(name)->declared_type};
+    if (!type) throw AnalyzerException {ExceptionKind::SYMBOL_NOT_FOUND};
+    const SemanticType& it {host_.type_arena().at(type)};
+    if (std::holds_alternative<OverloadSet>(it)) {
+      // Symbol found and is an overload.
+      const OverloadSet& current {std::get<OverloadSet>(it)};
+      if (current.has(sig_id)) {
+        diagnostics_.emplace_back("A function with this signature has already been declared in this scope", stmt.identifier, Diagnostic::ERROR);
+      } else {
+        OverloadSet updated {current};
+        updated.add(sig_id);
+        const TypeId new_set {host_.type_arena().add(std::move(updated))};
+        rebind_object(name, new_set);
+      }
+    } else {
+      // If it's defined as something other than an overload, give an error just like add_object_safe would.
+      try {
+        check_duplicate_name(false, name);
+      } catch (AnalyzerException& e) {
+        if (e.kind == ExceptionKind::REDECLARED_NAME)
+          diagnostics_.emplace_back("Name has already been declared in this scope", stmt.identifier, Diagnostic::ERROR);
+        else if (e.kind == ExceptionKind::SHADOWED_NAME)
+          diagnostics_.emplace_back("Name shadows a declaration from another scope", stmt.identifier, Diagnostic::WARNING);
+      }
+    }
+  } catch (AnalyzerException& _) {
+    // Symbol doesn't exist; create a new overload set.
+    add_object_safe(
+      stmt.identifier,
+      {
+        false,
+        host_.type_arena().add(
+          OverloadSet {name, {sig_id}}
+        )
+      }
+    );
+  }
 }
 
 void Analyzer::visit_initializer_stmt(const Statements::Initializer& stmt) {} // NOT IMPLEMENTED
