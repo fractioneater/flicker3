@@ -4,12 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#pragma once
-
+module;
 #include <sstream>
 #include <vector>
 
 #include "ast.h"
+#include "parser.h"
+
+export module dotprinter;
 
 class DotTreeWalker {
   int id_counter_ {};
@@ -518,12 +520,85 @@ class DotTreeWalker {
   StmtNameVisitor stmt_name_visitor_ {*this};
   ExprNameVisitor expr_name_visitor_ {*this};
 
-  void walk(const ExprNode& node, int parent_id);
-  void walk(const StmtNode& node, int parent_id);
-  void walk(const SyntacticTypePtr& type, int parent_id);
+  void walk(const ExprNode& node, int parent_id) {
+    const int my_id {id_counter_++};
+    const std::string label {node->accept(expr_name_visitor_)};
+
+    out_ << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=royalblue, fontcolor=royalblue4];\n";
+    out_ << "  n" << parent_id << " -> n" << my_id << ";\n";
+
+    const int previous_parent {current_parent_id_};
+    current_parent_id_ = my_id;
+    node->accept(expr_children_visitor_);
+    current_parent_id_ = previous_parent;
+  }
+
+  void walk(const StmtNode& node, int parent_id) {
+    const int my_id {id_counter_++};
+    const std::string label {node->accept(stmt_name_visitor_)};
+
+    out_ << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=indianred, fontcolor=maroon];\n";
+    out_ << "  n" << parent_id << " -> n" << my_id << ";\n";
+
+    const int previous_parent {current_parent_id_};
+    current_parent_id_ = my_id;
+    node->accept(stmt_children_visitor_);
+    current_parent_id_ = previous_parent;
+  }
+
+  // Types aren't AST nodes, but they behave similarly. Instead of using a visitor pattern, they're just handled with a switch.
+  void walk(const SyntacticTypePtr& type, int parent_id) {
+    const int my_id {id_counter_++};
+
+    if (!type) {
+      out_ << "  n" << my_id << " [label=\"inferred\", shape=box, color=plum4, fontcolor=rebeccapurple];\n";
+      out_ << "  n" << parent_id << " -> n" << my_id << ";\n";
+      return;
+    }
+
+    std::string label {};
+    switch (type->kind()) {
+      case TypeKind::NAMED: {
+        const auto named {std::dynamic_pointer_cast<NamedType>(type)};
+        label = named && !named->name.empty() ? named->name : "named";
+        break;
+      }
+      case TypeKind::APPLIED: label = "applied";
+        break;
+      case TypeKind::OPTIONAL: label = "optional";
+        break;
+      case TypeKind::FUNCTION: label = "function (...+) -> ...";
+        break;
+    }
+
+    out_ << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=plum4, fontcolor=rebeccapurple];\n";
+    out_ << "  n" << parent_id << " -> n" << my_id << ";\n";
+
+    if (const auto applied {std::dynamic_pointer_cast<AppliedType>(type)}) {
+      walk(applied->constructor, my_id);
+      for (const auto& arg : applied->args) walk(arg, my_id);
+    } else if (const auto optional {std::dynamic_pointer_cast<OptionalType>(type)}) {
+      walk(optional->inner, my_id);
+    } else if (const auto fn {std::dynamic_pointer_cast<FunctionType>(type)}) {
+      for (const auto& param : fn->params) walk(param, my_id);
+      walk(fn->result, my_id);
+    }
+  }
 
   public:
-  std::string render(const std::vector<StmtNode>& tree);
+  std::string render(const std::vector<StmtNode>& tree) {
+    out_.str("");
+    out_.clear();
+    out_ << "digraph Program {\n";
+    out_ << "  rankdir=TB;\n";
+    out_ << "  node [fontname=\"Iosevka Term SS09\"];\n";
+    out_ << "  n0 [label=\"PROGRAM\", shape=box, color=darkorange2, fontcolor=black];\n";
+    id_counter_        = 1;
+    current_parent_id_ = 0;
+    for (const auto& stmt : tree) walk(stmt, 0);
+    out_ << "}\n";
+    return out_.str();
+  }
 };
 
 /**
@@ -531,4 +606,7 @@ class DotTreeWalker {
  * @param tree Parse tree to export
  * @return A string containing the DOT representation of the tree
  */
-std::string to_dot(const std::vector<StmtNode>& tree);
+export std::string to_dot(const std::vector<StmtNode>& tree) {
+  DotTreeWalker walker {};
+  return walker.render(tree);
+}

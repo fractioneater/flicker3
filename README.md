@@ -114,7 +114,7 @@ To _test_ flicker:
 
 1. Download or clone this repo.
 2. Make sure you have CMake (at least 4.0) and Ninja installed.
-3. Make sure you have a C++ compiler capable of using the **C++20 standard**.
+3. Make sure you have a C++ compiler capable of using the **C++23 standard**.
 4. **One-time setup:** run `cmake -S . -B build` to configure CMake's build directory.
 5. Run `cmake --build --target flicker_3 --preset release` (use `--preset debug` if you prefer).
 6. The executable will be in `build/flicker_3`. Give it execute permissions if necessary, then run it by itself for a REPL, or with a file path as an argument.

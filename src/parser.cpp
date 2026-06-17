@@ -11,7 +11,7 @@
 #include <iostream>
 #include <utility>
 
-#include "dot-printer.h"
+import dotprinter;
 
 // Declarations --------------------------------------------------
 
