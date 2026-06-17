@@ -1,4 +1,11 @@
 fun greet(a: String) -> Bool
+  if a
+    return 43
   return true
 
 print greet + 3
+
+fun greet(t: String, g: Number) -> Number
+  print 323
+
+print greet - 6

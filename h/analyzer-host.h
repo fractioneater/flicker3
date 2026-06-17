@@ -8,11 +8,6 @@
 
 #include "type.h"
 
-struct ObjectSymbol {
-  bool is_mutable {false};
-  TypeId declared_type {};
-};
-
 struct ModuleExports {
   std::unordered_map<std::string, ObjectSymbol> objects {};
   std::unordered_map<std::string, TypeId> types {};

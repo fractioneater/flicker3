@@ -69,14 +69,19 @@ void Analyzer::visit_function_stmt(const Statements::Function& stmt) {
   // Store return type as state.
   // In case of a Unit-returning function, this'll be nullopt. It may be invalid if resolve_syntactic_type() encounters an error.
   std::optional return_type {stmt.return_type ? resolve_syntactic_type(stmt.return_type) : std::optional<TypeId> {std::nullopt}};
+  // And it no longer can be invalid.
+  if (return_type.has_value() && !return_type.value()) return_type = std::nullopt;
+
   functions_.emplace_back();
   // Function body
   stmt.body->VISIT;
   for (const auto& [ret , where] : functions_.back().returns) {
     if (return_type.has_value() && ret != return_type)
       diagnostics_.emplace_back("Return type mismatch", where + 1, Diagnostic::ERROR);
-    return_type = host_.core_types().any_t; // TODO: Find supertype for all returns. Show warning if it's Any or Any?.
   }
+
+  // If there's no value given, infer instead of going straight to unit.
+  if (!return_type) return_type = host_.core_types().any_t; // TODO: Find supertype for all returns. Show warning if it's Any or Any?.
 
   // Leave params and function scopes.
   functions_.pop_back();
@@ -101,7 +106,8 @@ void Analyzer::visit_function_stmt(const Statements::Function& stmt) {
         OverloadSet updated {current};
         updated.add(sig_id);
         const TypeId new_set {host_.type_arena().add(std::move(updated))};
-        rebind_object(name, new_set);
+        if (!rebind_object(name, new_set))
+          diagnostics_.emplace_back("Cannot overload imported function", stmt.identifier, Diagnostic::ERROR);
       }
     } else {
       // If it's defined as something other than an overload, give an error just like add_object_safe would.

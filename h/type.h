@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -93,10 +94,10 @@ struct FunctionType final : SyntacticType {
  * Unlike the shared_ptr weirdness of SyntacticType, SemanticType is a variant of Named, TypeParam, Optional, Function, and Applied. Most of these classes are
  * exactly the same as their syntactic counterparts, but instead of storing a SyntacticTypePtr, they store a TypeId.
  *
- * All types are stored in the type arena, which maintains a vector for storage and an unordered_map for interning. Types are accessed via
- * TypeId (by index in the vector) rather than pointers/references since the vector can reallocate when resized. Interning is done with a quick hash through
- * TypeKey, which is an owning wrapper around SemanticType. Yes, this does mean the types exist in two places, but the only "real" storage location is the
- * vector.
+ * All types are stored in the type arena, which maintains a vector for storage and an unordered_set for interning. Types are accessed via
+ * TypeId (by index in the vector) rather than pointers/references since the vector can reallocate when resized. Interning is done by storing TypeId indices
+ * in the set, whose transparent hash/equality functors dereference back into the storage vector. Finally, each type lives in exactly one place (the vector)
+ * and is never copied for interning.
  */
 
 struct TypeId {
@@ -140,7 +141,7 @@ struct Function {
 
 struct OverloadSet {
   std::string name {};              // For hashing.
-  std::vector<TypeId> overloads {}; // Should only hold Function TypeIds.
+  std::vector<TypeId> overloads {}; // Should only hold Function TypeIds. DO NOT MUTATE! It would throw off interning.
 
   [[nodiscard]] bool has(const TypeId signature) const {
     return std::ranges::any_of(overloads, [&](const TypeId& id) { return id == signature; });
@@ -161,16 +162,6 @@ struct Applied {
 };
 
 using SemanticType = std::variant<Named, TypeParam, Optional, Function, OverloadSet, Applied>;
-
-struct TypeKey {
-  SemanticType type {};
-
-  bool operator==(const TypeKey& other) const {
-    return type == other.type;
-  }
-
-  explicit TypeKey(SemanticType t) : type {std::move(t)} {}
-};
 
 // Hashing functions for SemanticType
 template <>
@@ -240,52 +231,75 @@ namespace TypeHash {
 
   inline size_t hash_applied(const Applied& t) noexcept {
     size_t seed {0};
-    hash_combine(seed, 5u);
+    hash_combine(seed, 6u);
     hash_combine(seed, t.base);
     hash_combine(seed, hash_vec(t.args));
     return seed;
   }
 }
 
-template <>
-struct std::hash<TypeKey> {
-  size_t operator()(const TypeKey& key) const noexcept {
-    return std::visit(
-      []<typename T>(T&& k) -> size_t {
-        using A = std::decay_t<T>;
-        if constexpr (std::is_same_v<A, Named>) return TypeHash::hash_named(k);
-        else if constexpr (std::is_same_v<A, TypeParam>) return TypeHash::hash_typeparam(k);
-        else if constexpr (std::is_same_v<A, Optional>) return TypeHash::hash_optional(k);
-        else if constexpr (std::is_same_v<A, Function>) return TypeHash::hash_function(k);
-        else if constexpr (std::is_same_v<A, OverloadSet>) return TypeHash::hash_overload_set(k);
-        else if constexpr (std::is_same_v<A, Applied>) return TypeHash::hash_applied(k);
-        else static_assert(false, "TypeKey visitor isn't exhaustive!");
-        return 0;
-      },
-      key.type
-    );
-  }
+inline size_t hash_semantic_type(const SemanticType& t) noexcept {
+  return std::visit(
+    []<typename T>(T&& k) -> size_t {
+      using A = std::decay_t<T>;
+      if constexpr (std::is_same_v<A, Named>) return TypeHash::hash_named(k);
+      else if constexpr (std::is_same_v<A, TypeParam>) return TypeHash::hash_typeparam(k);
+      else if constexpr (std::is_same_v<A, Optional>) return TypeHash::hash_optional(k);
+      else if constexpr (std::is_same_v<A, Function>) return TypeHash::hash_function(k);
+      else if constexpr (std::is_same_v<A, OverloadSet>) return TypeHash::hash_overload_set(k);
+      else if constexpr (std::is_same_v<A, Applied>) return TypeHash::hash_applied(k);
+      else static_assert(false, "SemanticType visitor isn't exhaustive!");
+      return 0;
+    },
+    t
+  );
+}
+
+// Hash and equality functors for interning by TypeId index. They dereference into the arena's type vector, so the type lives in one place and never needs
+// to be copied for interning. TypeIds (indices) are stored instead of pointers or refs, because a vector resize won't invalidate them.
+struct ArenaTypeHash {
+  // ReSharper disable once CppInconsistentNaming; is_transparent has to be written this way.
+  using is_transparent = void;
+  const std::vector<SemanticType>* types {};
+
+  size_t operator()(const TypeId id) const noexcept { return hash_semantic_type((*types)[id.value]); }
+  size_t operator()(const SemanticType& t) const noexcept { return hash_semantic_type(t); }
 };
-class TypeArena;
 
-class TypeDefinition {
-  std::unordered_map<std::string, TypeId> namespace_symbols_ {}; // TODO NEXT. Also add the normal symbols.
-  std::unordered_map<std::string, TypeId> symbols_ {};
+struct ArenaTypeEq {
+  // ReSharper disable once CppInconsistentNaming; is_transparent has to be written this way.
+  using is_transparent = void;
+  const std::vector<SemanticType>* types {};
 
-  public:
-  TypeId method_return_type(const TypeArena& arena, const std::string& name, const std::vector<TypeId>& params) const;
+  bool operator()(const TypeId a, const TypeId b) const { return (*types)[a.value] == (*types)[b.value]; }
+  bool operator()(const TypeId a, const SemanticType& b) const { return (*types)[a.value] == b; }
+  bool operator()(const SemanticType& a, const TypeId b) const { return a == (*types)[b.value]; }
+};
+
+/**
+ * An lvalue. Stores a bool is_mutable and a TypeId declared_type.
+ * Its type may be INVALID if an error occurs in the user's code (or Flicker's code, but... you know what I mean).
+ */
+struct ObjectSymbol {
+  bool is_mutable {false};
+  TypeId declared_type {};
+};
+
+struct TypeDefinition {
+  std::unordered_map<std::string, ObjectSymbol> namespace_symbols {};
+  std::unordered_map<std::string, ObjectSymbol> symbols {};
 };
 
 /**
  * The location where the compiler's (semantic) types are stored. Consists of a vector of type objects, accessible with at(),
- * and an unordered_map for interning, so type equality can be determined cheaply by ID.
+ * and an unordered_set for interning, so type equality can be determined cheaply by ID.
  *
  * Because the data type for storage is a vector, references and pointers are not stable (all will be invalidated on resize),
  * so access is done with a TypeId (AKA uint32_t).
  */
 class TypeArena {
   std::vector<SemanticType> types_ {};
-  std::unordered_map<TypeKey, TypeId> interned_ {};
+  std::unordered_set<TypeId, ArenaTypeHash, ArenaTypeEq> interned_;
 
   std::vector<TypeDefinition> definitions_ {};
 
@@ -293,10 +307,25 @@ class TypeArena {
     return types_[id.value];
   }
 
+  std::optional<TypeDefId> definition_of(TypeId id) const {
+    const SemanticType& t {at(id)};
+    return std::visit(
+      [*this]<typename T>(T&& k) -> std::optional<TypeDefId> {
+        using A = std::decay_t<T>;
+        if constexpr (std::is_same_v<A, Named>) {
+          if (!k.definition) throw std::runtime_error("Named type '" + k.name + "' doesn't have a definition");
+          return k.definition.value();
+        } else if constexpr (std::is_same_v<A, Applied>) {
+          return definition_of(k.base);
+        } else return std::nullopt;
+      },
+      t
+    );
+  }
+
   public:
-  TypeArena() {
-    types_.reserve(TYPE_ARENA_RESERVE_SIZE + 1);
-    interned_.reserve(TYPE_ARENA_RESERVE_SIZE + 1);
+  TypeArena() : interned_(TYPE_ARENA_RESERVE_SIZE, ArenaTypeHash {&types_}, ArenaTypeEq {&types_}) {
+    types_.reserve(TYPE_ARENA_RESERVE_SIZE);
   }
 
   TypeId new_named(std::string&& name, int arity) {
@@ -307,46 +336,62 @@ class TypeArena {
   }
 
   TypeId add(SemanticType&& t) {
-    // This makes a copy. I've tried to find a way that allows single ownership (using std::list is one), but I'm not sure if it's worth the fight.
-    const SemanticType new_t {t};
-    const TypeKey key {new_t};
-    const auto existing {interned_.find(key)};
-    if (existing != interned_.end()) return existing->second;
+    // Check by value with transparent lookup—no copy needed!
+    if (const auto existing {interned_.find(t)}; existing != interned_.end()) return *existing;
 
-    types_.emplace_back(std::forward<SemanticType>(t));
-    TypeId id {static_cast<uint32_t>(types_.size() - 1)};
-    interned_.emplace(key, id);
+    // Not interned, so put it in the vector and intern the index.
+    types_.emplace_back(std::move(t));
+    const TypeId id {static_cast<uint32_t>(types_.size() - 1)};
+    interned_.insert(id);
     return id;
   }
 
   [[nodiscard]] const SemanticType& at(TypeId id) const {
-    if (!id) throw std::runtime_error("Invalid type ID");
+    if (!id) throw std::runtime_error("Invalid type ID in at()");
     return at_(id);
   }
 
+  // May return TypeId::INVALID, which needs to be handled.
   [[nodiscard]] TypeId method_return_type(TypeId id, const std::string& method_name, const std::vector<TypeId>& params) const {
-    const SemanticType& t {at(id)};
-    return std::visit(
-      [*this, &method_name, &params]<typename T>(T&& k) -> TypeId {
-        using A = std::decay_t<T>;
-        if constexpr (std::is_same_v<A, Named>) {
-          if (!k.definition) throw std::runtime_error("Type '" + k.name + "' doesn't have a definition");
-          return definitions_[k.definition.value()].method_return_type(*this, method_name, params);
-        } else if constexpr (std::is_same_v<A, Applied>) {
-          return method_return_type(k.base, method_name, params);
-        } else return {};
-      },
-      t
-    );
+    if (const std::optional def {definition_of(id)}) {
+      const auto symbols {definitions_[*def].symbols};
+      const auto it {symbols.find(method_name)};
+      if (it == symbols.end()) return {};
+      const SemanticType& symbol {at(it->second.declared_type)};
+
+      // Check if it's an overload set.
+      if (!std::holds_alternative<OverloadSet>(symbol)) return {};
+
+      for (const TypeId overload : std::get<OverloadSet>(symbol).overloads) {
+        const auto& [overload_params, return_type] {std::get<Function>(at(overload))};
+        if (overload_params == params) return return_type;
+      }
+    }
+
+    return {};
+  }
+
+  [[nodiscard]] const std::unordered_map<std::string, ObjectSymbol>* members_of(TypeId id) const {
+    // TODO NEXT: Instead of accessing whole member lists, create funcs for adding and searching type of members.
+    if (const std::optional def {definition_of(id)})
+      return &definitions_[*def].symbols;
+    return nullptr;
+  }
+
+  [[nodiscard]] const std::unordered_map<std::string, ObjectSymbol>* namespace_members_of(TypeId id) const {
+    // TODO NEXT: Instead of accessing whole member lists, create funcs for adding and searching type of members.
+    if (const std::optional def {definition_of(id)})
+      return &definitions_[*def].namespace_symbols;
+    return nullptr;
   }
 
   std::string to_string(TypeId id) const {
-    if (!id) throw std::runtime_error("Invalid type ID");
+    if (!id) throw std::runtime_error("Invalid type ID in to_string()");
     return std::visit(
       [*this]<typename T>(const T& t) -> std::string {
         using A = std::decay_t<T>;
         if constexpr (std::is_same_v<A, Named>) return t.name;
-        else if constexpr (std::is_same_v<A, TypeParam>) return t.host_name;
+        else if constexpr (std::is_same_v<A, TypeParam>) return t.host_name + "@" + std::to_string(t.index);
         else if constexpr (std::is_same_v<A, Optional>) return std::string {to_string(t.inner) + "?"};
         else if constexpr (std::is_same_v<A, Function>) {
           std::string result {"("};
@@ -380,18 +425,3 @@ class TypeArena {
     return types_.empty();
   }
 };
-
-inline TypeId TypeDefinition::method_return_type(const TypeArena& arena, const std::string& name, const std::vector<TypeId>& params) const {
-  const auto it {symbols_.find(name)};
-  if (it == symbols_.end()) return {};
-  const SemanticType& symbol {arena.at(it->second)};
-
-  // Check if it's an overload set.
-  if (!std::holds_alternative<OverloadSet>(symbol)) return {};
-
-  for (const TypeId overload : std::get<OverloadSet>(symbol).overloads) {
-    const auto& [overload_params, return_type] {std::get<Function>(arena.at(overload))};
-    if (overload_params == params) return return_type;
-  }
-  return {};
-}

@@ -233,13 +233,14 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
    * @param name Object name to rebind
    * @param t The symbol's new type
    */
-  void rebind_object(const std::string& name, TypeId t) {
+  bool rebind_object(const std::string& name, TypeId t) {
     for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope) {
       if (auto e {scope->objects.find(name)}; e != scope->objects.end()) {
         e->second.declared_type = t; // Keep is_mutable.
-        return;
+        return true;
       }
     }
+    return false;
   }
 
   public:
