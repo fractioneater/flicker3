@@ -13,8 +13,9 @@
 #include "analyzer-host.h"
 #include "analyzer.h"
 #include "core.fl.h"
-#include "lexer.h"
 #include "parser.h"
+
+import lexer;
 
 enum ModuleStatus { MODULE_COMPILED, MODULE_COMPILE_ERROR, MODULE_RUNTIME_ERROR };
 

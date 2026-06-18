@@ -9,9 +9,10 @@
 #include <functional>
 
 #include "ast.h"
-#include "diagnostic.h"
 #include "param.h"
 #include "type.h"
+
+import diagnostic;
 
 enum class Precedence {
   NONE,           // so the compiler doesn't destroy itself trying to call the infix rule of a prefix-only token
@@ -58,7 +59,15 @@ class Parser {
   // Errors AND warnings (and notes)---gotta use inclusive language, folks.
   std::vector<Diagnostic> diagnostics_ {};
 
-  void report_error(const Diagnostic& d) {
+  static Diagnostic diagnostic_from_token(std::string&& message, const Token* token, Diagnostic::Severity severity) {
+    return {std::move(message), token->start_offset, severity};
+  }
+
+  void report_error(
+    std::string&& message, const Token* error_token, Diagnostic::Severity severity = Diagnostic::ERROR, std::optional<Diagnostic> context = std::nullopt
+  ) {
+    Diagnostic d {diagnostic_from_token(std::move(message), error_token, severity)};
+    if (context) d.add_context(std::move(*context));
     if (panic_mode_) return;
     panic_mode_                        = true;
     panic_causing_token_or_not_really_ = previous_;
@@ -146,12 +155,13 @@ class Parser {
    * @param type Expected type of the next token
    * @param message Error message in case the expected type is not found
    * @param error_token Token to associate the error with
+   * @param context Context to add to the error
    * @return Previous token after match is called (which, in case of success, is the current token at the time of call)
    */
-  Token* expect(TokenType type, std::string_view message, Token* error_token = nullptr) {
+  Token* expect(TokenType type, std::string_view message, Token* error_token = nullptr, std::optional<Diagnostic> context = std::nullopt) {
     error_token = error_token == nullptr ? current_ : error_token;
     if (!match(type))
-      report_error({std::string {message}, error_token, Diagnostic::ERROR});
+      report_error(std::string {message}, error_token, Diagnostic::ERROR, context);
     return previous_;
   }
 
@@ -162,22 +172,7 @@ class Parser {
    */
   void expect_line(std::string_view message, Token* error_token = nullptr) {
     error_token = error_token == nullptr ? current_ : error_token;
-    if (!match_line()) report_error({std::string {message}, error_token, Diagnostic::ERROR});
-  }
-
-  /**
-   * If the next token matches a certain type, advances, otherwise creates an error.
-   * @param type Expected type of the next token
-   * @param message Error message in case the expected type is not found
-   * @param context Context to add to the error
-   * @param error_token Token to associate the error with
-   * @return Previous token after match is called (which, in case of success, is the current token at the time of call)
-   */
-  Token* expect(TokenType type, std::string_view message, Diagnostic& context, Token* error_token = nullptr) {
-    error_token = error_token == nullptr ? current_ : error_token;
-    if (!match(type))
-      report_error({std::string {message}, context, error_token, Diagnostic::ERROR});
-    return previous_;
+    if (!match_line()) report_error(std::string {message}, error_token);
   }
 
   /**
@@ -223,9 +218,7 @@ class Parser {
       if (panic_mode_) synchronize();
 
       if (!check(end_type) && !match_line())
-        report_error(
-          {"Extraneous line content (" + name + " item has already been fully parsed)", current_, Diagnostic::ERROR}
-        );
+        report_error("Extraneous line content (" + name + " item has already been fully parsed)", current_);
     }
     advance(); // Match the end_type we've already checked for.
     return items;

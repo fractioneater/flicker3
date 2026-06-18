@@ -60,6 +60,7 @@ class NodeCategory:
 @dataclass
 class Spec:
   includes: List[str]
+  imports: List[str]
   aliases: List[str]
   namespaces: dict
   statements: NodeCategory
@@ -105,6 +106,7 @@ def load_spec(path: Optional[Path]) -> Spec:
     raise ValueError("A spec file is required.")
 
   includes = raw.get("includes")
+  imports = raw.get("imports")
   aliases = raw.get("aliases")
   namespaces = raw.get("namespaces")
 
@@ -114,9 +116,9 @@ def load_spec(path: Optional[Path]) -> Spec:
   stmt_category = NodeCategory(label="Stmt", namespace=namespaces["statements"], suffix="stmt", types=statements)
   expr_category = NodeCategory(label="Expr", namespace=namespaces["expressions"], suffix="expr", types=expressions)
 
-  return Spec(includes=includes, aliases=aliases, namespaces=namespaces, statements=stmt_category, expressions=expr_category)
+  return Spec(includes=includes, imports=imports, aliases=aliases, namespaces=namespaces, statements=stmt_category, expressions=expr_category)
 
-def render_includes(includes: List[str]) -> str:
+def render_includes(includes: List[str], imports: List[str]) -> str:
   rendered = []
   previous_kind: Optional[str] = None
   for include in includes:
@@ -125,6 +127,12 @@ def render_includes(includes: List[str]) -> str:
       rendered.append("")
     rendered.append(f"#include {include}")
     previous_kind = kind
+
+  if len(imports) > 0 and len(rendered) > 0:
+    rendered.append("")
+  for imp in imports:
+    rendered.append(f"import {imp};")
+
   return "\n".join(rendered)
 
 def render_forward_declarations(categories: List[NodeCategory]) -> str:
@@ -277,7 +285,7 @@ def render_file(spec: Spec) -> str:
     "",
     "#pragma once",
     "",
-    render_includes(spec.includes),
+    render_includes(spec.includes, spec.imports),
     "",
     render_forward_declarations(spec.categories),
     "",

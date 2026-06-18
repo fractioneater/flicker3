@@ -35,11 +35,11 @@ void Analyzer::visit_variable_stmt(const Statements::Variable& stmt) {
     stmt.initializer->VISIT;
     if (stmt.initializer->type && declared_type.has_value()) {
       if (stmt.initializer->type != *declared_type)
-        diagnostics_.emplace_back("Value type does not match annotation", stmt.identifier + 2, Diagnostic::ERROR);
+        report_error("Value type does not match annotation", stmt.identifier + 2);
       else
-        diagnostics_.emplace_back("Unnecessary type annotation", stmt.identifier + 2, Diagnostic::NOTE);
+        report_error("Unnecessary type annotation", stmt.identifier + 2, Diagnostic::NOTE);
     } else if (!(stmt.initializer->type || declared_type.has_value())) {
-      diagnostics_.emplace_back("Not enough type information to declare variable", stmt.identifier, Diagnostic::ERROR);
+      report_error("Not enough type information to declare variable", stmt.identifier);
     }
   }
 
@@ -77,7 +77,7 @@ void Analyzer::visit_function_stmt(const Statements::Function& stmt) {
   stmt.body->VISIT;
   for (const auto& [ret , where] : functions_.back().returns) {
     if (return_type.has_value() && ret != return_type)
-      diagnostics_.emplace_back("Return type mismatch", where + 1, Diagnostic::ERROR);
+      report_error("Return type mismatch", where + 1);
   }
 
   // If there's no value given, infer instead of going straight to unit.
@@ -101,13 +101,13 @@ void Analyzer::visit_function_stmt(const Statements::Function& stmt) {
       // Symbol found and is an overload.
       const OverloadSet& current {std::get<OverloadSet>(it)};
       if (current.has(sig_id)) {
-        diagnostics_.emplace_back("A function with this signature has already been declared in this scope", stmt.identifier, Diagnostic::ERROR);
+        report_error("A function with this signature has already been declared in this scope", stmt.identifier);
       } else {
         OverloadSet updated {current};
         updated.add(sig_id);
         const TypeId new_set {host_.type_arena().add(std::move(updated))};
         if (!rebind_object(name, new_set))
-          diagnostics_.emplace_back("Cannot overload imported function", stmt.identifier, Diagnostic::ERROR);
+          report_error("Cannot overload imported function", stmt.identifier);
       }
     } else {
       // If it's defined as something other than an overload, give an error just like add_object_safe would.
@@ -115,9 +115,9 @@ void Analyzer::visit_function_stmt(const Statements::Function& stmt) {
         check_duplicate_name(false, name);
       } catch (AnalyzerException& e) {
         if (e.kind == ExceptionKind::REDECLARED_NAME)
-          diagnostics_.emplace_back("Name has already been declared in this scope", stmt.identifier, Diagnostic::ERROR);
+          report_error("Name has already been declared in this scope", stmt.identifier, Diagnostic::ERROR);
         else if (e.kind == ExceptionKind::SHADOWED_NAME)
-          diagnostics_.emplace_back("Name shadows a declaration from another scope", stmt.identifier, Diagnostic::WARNING);
+          report_error("Name shadows a declaration from another scope", stmt.identifier, Diagnostic::WARNING);
       }
     }
   } catch (AnalyzerException& _) {
@@ -157,7 +157,7 @@ void Analyzer::visit_class_stmt(const Statements::Class& stmt) {
     try {
       super = find_type(std::string {stmt.superclass->src_string});
     } catch (AnalyzerException& _) {
-      diagnostics_.emplace_back(std::format("Unresolved reference to type '{}'", stmt.superclass->src_string), stmt.superclass, Diagnostic::ERROR);
+      report_error(std::format("Unresolved reference to type '{}'", stmt.superclass->src_string), stmt.superclass);
     }
   }
   classes_.emplace_back(t, super);
@@ -190,7 +190,7 @@ void Analyzer::visit_import_stmt(const Statements::Import& stmt) {
     object_exports = objects;
     type_exports   = types;
   } catch (std::runtime_error& _) {
-    diagnostics_.emplace_back(std::format("Failed to load '{}'", stmt.path), Diagnostic::ERROR); // TODO: Where?
+    report_error(std::format("Failed to load '{}'", stmt.path), nullptr); // TODO: Where?
     return;
   }
 
@@ -235,7 +235,7 @@ void Analyzer::visit_while_stmt(const Statements::While& stmt) {
   stmt.condition->VISIT;
   // Create a loop frame to store the label for scopes inside.
   if (stmt.label && loop_id_with_label(stmt.label))
-    diagnostics_.emplace_back("A loop with this label already exists", stmt.label, Diagnostic::WARNING);
+    report_error("A loop with this label already exists", stmt.label, Diagnostic::WARNING);
   loops_.emplace_back(stmt.label);
 
   stmt.loop_body->VISIT;
@@ -248,7 +248,7 @@ void Analyzer::visit_while_stmt(const Statements::While& stmt) {
 void Analyzer::visit_each_stmt(const Statements::Each& stmt) {
   // Create a loop frame to store the label for scopes inside.
   if (stmt.label && loop_id_with_label(stmt.label))
-    diagnostics_.emplace_back("A loop with this label already exists", stmt.label, Diagnostic::WARNING);
+    report_error("A loop with this label already exists", stmt.label, Diagnostic::WARNING);
   loops_.emplace_back(stmt.label);
 
   // TODO: Check for Sequence
@@ -273,7 +273,7 @@ void Analyzer::visit_for_stmt(const Statements::For& stmt) {
 
   // Create a loop frame to store the label for scopes inside.
   if (stmt.label && loop_id_with_label(stmt.label))
-    diagnostics_.emplace_back("A loop with this label already exists", stmt.label, Diagnostic::WARNING);
+    report_error("A loop with this label already exists", stmt.label, Diagnostic::WARNING);
   loops_.emplace_back(stmt.label);
 
   stmt.loop_body->VISIT;
@@ -288,11 +288,11 @@ void Analyzer::visit_continue_stmt(const Statements::Continue& stmt) { break_or_
 
 void Analyzer::break_or_continue(const char* name, const Token* label) {
   if (loops_.empty()) {
-    diagnostics_.emplace_back(std::string {name} + " statement outside of loop", Diagnostic::ERROR); // TODO: Where?
+    report_error(std::string {name} + " statement outside of loop", nullptr); // TODO: Where?
     return;
   }
   if (label && loop_id_with_label(label)) {
-    diagnostics_.emplace_back("Label does not match any loop", label, Diagnostic::ERROR);
+    report_error("Label does not match any loop", label);
     return;
   }
   // TODO: I feel like I should give back some helpful context from this. loop_id_with_label() returns how many loops to break from, but that info is ignored.
@@ -301,7 +301,7 @@ void Analyzer::break_or_continue(const char* name, const Token* label) {
 void Analyzer::visit_return_stmt(const Statements::Return& stmt) {
   // Better to show this error first (before any errors inside the value).
   if (functions_.empty())
-    diagnostics_.emplace_back("Return statement outside of function", stmt.where, Diagnostic::ERROR);
+    report_error("Return statement outside of function", stmt.where);
 
   if (stmt.value) stmt.value->VISIT;
   if (!functions_.empty())
@@ -319,8 +319,8 @@ void Analyzer::visit_binary_expr(const Expressions::Binary& expr) {
     const TypeId return_type {host_.type_arena().method_return_type(expr.left->type, expr.fn_name, {expr.right->type})};
     expr.type = return_type;
     if (!return_type)
-      diagnostics_.emplace_back(
-        std::format("'{}' does not implement '{}'", host_.type_arena().to_string(expr.left->type), expr.fn_name), Diagnostic::ERROR
+      report_error(
+        std::format("'{}' does not implement '{}'", host_.type_arena().to_string(expr.left->type), expr.fn_name), nullptr
       ); // TODO: Where?
   }
 }
@@ -335,7 +335,7 @@ void Analyzer::visit_if_expr(const Expressions::If& expr) {
   // Condition doesn't need to be a bool. Flicker's truthy checking is very simple: only false and nil are falsy.
   if (expr.then->type && expr.else_expr->type) {
     if (expr.then->type != expr.else_expr->type)
-      diagnostics_.emplace_back("Mismatched types between branches", Diagnostic::ERROR); // TODO: Where?
+      report_error("Mismatched types between branches", nullptr); // TODO: Where?
     else
       expr.type = expr.then->type;
   }
@@ -353,8 +353,8 @@ void Analyzer::visit_unary_expr(const Expressions::Unary& expr) {
     const TypeId return_type {host_.type_arena().method_return_type(expr.expr->type, expr.fn_name, {})};
     expr.type = return_type;
     if (!return_type)
-      diagnostics_.emplace_back(
-        std::format("'{}' does not implement '{}'", host_.type_arena().to_string(expr.expr->type), expr.fn_name), Diagnostic::ERROR
+      report_error(
+        std::format("'{}' does not implement '{}'", host_.type_arena().to_string(expr.expr->type), expr.fn_name), nullptr
       ); // TODO: Where?
   }
 }
@@ -406,7 +406,7 @@ void Analyzer::visit_variable_expr(const Expressions::Variable& expr) {
 
 void Analyzer::visit_this_expr(const Expressions::This& expr) {
   if (classes_.empty()) {
-    diagnostics_.emplace_back("'this' expression outside of class", expr.identifier, Diagnostic::ERROR);
+    report_error("'this' expression outside of class", expr.identifier);
     return;
   }
   expr.type = classes_.back().id;
@@ -437,7 +437,7 @@ TypeId Analyzer::resolve_syntactic_type(const SyntacticTypePtr& type) {
       try {
         return find_type(named->name);
       } catch (AnalyzerException& _) {
-        diagnostics_.emplace_back(std::format("Unresolved reference to type '{}'", named->name), named->identifier, Diagnostic::ERROR); // TODO: Where?
+        report_error(std::format("Unresolved reference to type '{}'", named->name), named->identifier); // TODO: Where?
         return TypeId {};
       }
     }

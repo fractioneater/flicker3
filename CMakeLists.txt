@@ -20,13 +20,13 @@ add_library(flicker_lib)
 target_sources(flicker_lib
 	PRIVATE
 	src/analyzer.cpp
-	src/diagnostic.cpp
-	src/lexer.cpp
 	src/module.cpp
 	src/parser.cpp
 	src/vm.cpp
 	PUBLIC FILE_SET CXX_MODULES FILES
+	src/diagnostic.cppm
 	src/dot-printer.cppm
+	src/lexer.cppm
 )
 
 target_compile_options(flicker_lib PRIVATE -Wall -Werror)

@@ -16,6 +16,8 @@
 #include <variant>
 #include <vector>
 
+import lexer;
+
 // There are two types of types: the parser's types, and the analyzer's types. Look for a comment above each category for an explanation of the structure.
 
 #define TYPE_ARENA_RESERVE_SIZE 32
@@ -51,8 +53,6 @@ class SyntacticType {
 };
 
 using SyntacticTypePtr = std::shared_ptr<SyntacticType>;
-
-struct Token;
 
 struct NamedType final : SyntacticType {
   std::string name {};

@@ -3,8 +3,9 @@
 #include <fstream>
 #include <gtest/gtest.h>
 
-#include "lexer.h"
 #include "vm.h"
+
+import lexer;
 
 TEST(GeneralParsing, BasicVariableDeclaration) {
   const std::string src {"var x = 42\n"};

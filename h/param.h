@@ -8,8 +8,6 @@
 
 #include "type.h"
 
-struct Token;
-
 struct Param {
   enum Modifier {
     NONE, VAL, VAR

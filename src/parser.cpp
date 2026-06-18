@@ -11,6 +11,8 @@
 #include <iostream>
 #include <utility>
 
+#include "common.h"
+
 import dotprinter;
 
 // Declarations --------------------------------------------------
@@ -36,7 +38,7 @@ StmtNode Parser::declaration_or_statement() {
 StmtNode Parser::declaration_in_namespace() {
   if (const auto decl {declaration()}) return *decl;
 
-  report_error({"Expected a declaration", current_, Diagnostic::ERROR});
+  report_error("Expected a declaration", current_);
   return nullptr;
 }
 
@@ -47,8 +49,8 @@ StmtNode Parser::val_declaration() {
 
   Diagnostic context {"You probably don't want an immutable variable just to hold 'nil'", Diagnostic::NOTE};
   if (type && type->kind() != TypeKind::OPTIONAL)
-    context.add_context({"Your type isn't even able to hold 'nil'!", Diagnostic::NOTE});
-  expect(TOKEN_EQ, "Val declarations must have an initializer", context);
+    context.add_context(Diagnostic {"Your type isn't even able to hold 'nil'!", Diagnostic::NOTE});
+  expect(TOKEN_EQ, "Val declarations must have an initializer", nullptr, context);
   return std::make_shared<Statements::Variable>(false, identifier, type, parse_expression());
 }
 
@@ -61,7 +63,7 @@ StmtNode Parser::var_declaration() {
     type = broad_type();
     if (match(TOKEN_EQ)) initializer = parse_expression();
     else if (type && type->kind() != TypeKind::OPTIONAL)
-      report_error({"Non-optional variable must have an initializer; the default value of 'nil' is not allowed", current_, Diagnostic::ERROR});
+      report_error("Non-optional variable must have an initializer; the default value of 'nil' is not allowed", current_);
   } else {
     expect(TOKEN_EQ, "Var declaration with no type must have an initializer");
     initializer = parse_expression();
@@ -82,7 +84,7 @@ std::optional<StmtNode> Parser::function_declaration() {
   // Type parameters
   std::vector<Token*> type_params {};
   if (match_generic()) {
-    if (!check(TOKEN_IDENTIFIER)) report_error({"Expecting a type parameter", current_, Diagnostic::ERROR});
+    if (!check(TOKEN_IDENTIFIER)) report_error("Expecting a type parameter", current_);
     while (match(TOKEN_IDENTIFIER))
       type_params.emplace_back(previous_);
   }
@@ -111,7 +113,7 @@ StmtNode Parser::class_declaration() {
   // Property 2: Type parameters
   std::vector<Token*> type_params {};
   if (match_generic()) {
-    if (!check(TOKEN_IDENTIFIER)) report_error({"Expecting a type parameter", current_, Diagnostic::ERROR});
+    if (!check(TOKEN_IDENTIFIER)) report_error("Expecting a type parameter", current_);
     while (match(TOKEN_IDENTIFIER))
       type_params.emplace_back(previous_);
   }
@@ -142,20 +144,18 @@ StmtNode Parser::class_declaration() {
     else if (unexpected_indent()) continue;
     else if (match(TOKEN_NAMESPACE)) {
       if (namespace_items.empty())
-        report_error({"Namespace must come first", previous_, Diagnostic::ERROR});
+        report_error("Namespace must come first", previous_);
       else
-        report_error({"Classes can only have one namespace", previous_, Diagnostic::ERROR});
+        report_error("Classes can only have one namespace", previous_);
     } else {
-      report_error({"Invalid class item—expecting a namespace, initializer, method, or variable declaration", current_, Diagnostic::ERROR});
+      report_error("Invalid class item—expecting a namespace, initializer, method, or variable declaration", current_);
       advance();
     }
 
     if (panic_mode_) synchronize();
 
     if (!check(TOKEN_DEDENT) && !match_line())
-      report_error(
-        {"Extraneous line content (class member has already been fully parsed)", current_, Diagnostic::ERROR}
-      );
+      report_error("Extraneous line content (class member has already been fully parsed)", current_);
   }
   advance(); // Match the dedent we've already checked for.
 
@@ -216,7 +216,7 @@ StmtNode Parser::initializer() {
   };
   expect(TOKEN_RIGHT_PAREN, "Expecting ')' after parameter list");
 
-  if (match(TOKEN_EQ)) report_error({"Cannot return from initializer", previous_, Diagnostic::ERROR});
+  if (match(TOKEN_EQ)) report_error("Cannot return from initializer", previous_);
   StmtNode body {block_or_statement()};
 
   return std::make_shared<Statements::Initializer>(params, body);
@@ -247,7 +247,7 @@ SyntacticTypePtr Parser::broad_type() {
   if (match(TOKEN_LEFT_PAREN)) return function_type();
 
   if (match(TOKEN_RIGHT_ARROW)) {
-    report_error({"Place empty parentheses for a function type with no parameters", previous_, Diagnostic::ERROR});
+    report_error("Place empty parentheses for a function type with no parameters", previous_);
     return nullptr;
   }
 
@@ -270,12 +270,10 @@ SyntacticTypePtr Parser::function_type() {
 SyntacticTypePtr Parser::standard_type(const std::string& thing_to_look_for, bool allow_generics) {
   if (match(TOKEN_LEFT_PAREN)) {
     report_error(
-      {
-        "For readability's sake, inside a complex type, you must define other complex types with an alias",
-        {"How to create an alias: 'using YourAliasName = (...) -> ...'", Diagnostic::NOTE},
-        previous_,
-        Diagnostic::ERROR
-      }
+      "For readability's sake, inside a complex type, you must define other complex types with an alias",
+      previous_,
+      Diagnostic::ERROR,
+      Diagnostic {"How to create an alias: 'using YourAliasName = (...) -> ...'", Diagnostic::NOTE}
     );
   }
 
@@ -295,12 +293,10 @@ SyntacticTypePtr Parser::standard_type(const std::string& thing_to_look_for, boo
     } else {
       // Generics are not allowed! Oh, no!
       report_error(
-        {
-          "For readability's sake, inside a complex type, you must define other complex types with an alias",
-          {"How to create an alias: 'using YourAliasName = ... for/of ...'", Diagnostic::NOTE},
-          previous_,
-          Diagnostic::ERROR
-        }
+        "For readability's sake, inside a complex type, you must define other complex types with an alias",
+        previous_,
+        Diagnostic::ERROR,
+        Diagnostic {"How to create an alias: 'using YourAliasName = ... for/of ...'", Diagnostic::NOTE}
       );
     }
   }
@@ -345,7 +341,7 @@ StmtNode Parser::while_statement() {
   const StmtNode else_body {optional_block(TOKEN_ELSE)};
 
   if (match_after_newlines(TOKEN_AROUND))
-    report_error({"Place 'around' clause before 'else' clause", previous_, Diagnostic::ERROR});
+    report_error("Place 'around' clause before 'else' clause", previous_);
 
   return std::make_shared<Statements::While>(label, condition, loop_body, around_body, else_body);
 }
@@ -369,7 +365,7 @@ StmtNode Parser::each_statement() {
   const StmtNode else_body {optional_block(TOKEN_ELSE)};
 
   if (match_after_newlines(TOKEN_AROUND))
-    report_error({"Place 'around' clause before 'else' clause", previous_, Diagnostic::ERROR});
+    report_error("Place 'around' clause before 'else' clause", previous_);
 
   return std::make_shared<Statements::Each>(label, iter_var, index_var, expr, loop_body, around_body, else_body);
 }
@@ -389,8 +385,8 @@ StmtNode Parser::for_statement() {
         : std::make_shared<Statements::Expression>(parse_expression())
   };
 
-  Diagnostic context {"'for' creates a C-style for loop; use 'each' for iteration", for_token, Diagnostic::NOTE};
-  expect(TOKEN_SEMICOLON, "Expecting ';' between for loop clauses", context);
+  Diagnostic context {diagnostic_from_token("'for' creates a C-style for loop; use 'each' for iteration", for_token, Diagnostic::NOTE)};
+  expect(TOKEN_SEMICOLON, "Expecting ';' between for loop clauses", nullptr, context);
 
   // Only expressions are acceptable for the next two clauses.
   ExprNode condition {std::make_shared<Expressions::Boolean>(true)}; // The default value is true; "for ;;" is an infinite loop.
@@ -406,7 +402,7 @@ StmtNode Parser::for_statement() {
   const StmtNode else_body {optional_block(TOKEN_ELSE)};
 
   if (match_after_newlines(TOKEN_AROUND))
-    report_error({"Place 'around' clause before 'else' clause", previous_, Diagnostic::ERROR});
+    report_error("Place 'around' clause before 'else' clause", previous_);
 
   return std::make_shared<Statements::For>(label, begin, condition, end, loop_body, around_body, else_body);
 }
@@ -481,7 +477,7 @@ bool Parser::unexpected_indent() {
   // The only place where an ignored token can be seen! The parser will silently skip by it later.
   t->type = TOKEN_IGNORED_DEDENT;
 
-  report_error({"Unexpected indentation change", previous_, Diagnostic::ERROR});
+  report_error("Unexpected indentation change", previous_);
   return true;
 }
 
@@ -538,15 +534,17 @@ ExprNode Parser::assignment(const ExprNode& left) {
 
 ExprNode Parser::postfix_inc_dec(const ExprNode& expr) {
   diagnostics_.emplace_back(
-    "Postfix increment and decrement operators behave as their prefix equivalent; prefer the prefix version", previous_, Diagnostic::WARNING
+    diagnostic_from_token(
+      "Postfix increment and decrement operators behave as their prefix equivalent; prefer the prefix version", previous_, Diagnostic::WARNING
+    )
   );
   return std::make_shared<Expressions::Unary>(RULES[previous_->type].fn_name, expr);
 }
 
 ExprNode Parser::call(const ExprNode& expr) {
-  Diagnostic start_context {"To match this one", previous_, Diagnostic::NOTE};
+  Diagnostic start_context {diagnostic_from_token("To match this one", previous_, Diagnostic::NOTE)};
   std::vector args {parse_list<ExprNode>(TOKEN_RIGHT_PAREN, [this] { return parse_expression(); })};
-  expect(TOKEN_RIGHT_PAREN, "Expecting a closing parenthesis ')'", start_context);
+  expect(TOKEN_RIGHT_PAREN, "Expecting a closing parenthesis ')'", nullptr, start_context);
 
   return std::make_shared<Expressions::Call>(expr, args);
 }
@@ -556,9 +554,9 @@ ExprNode Parser::lambda_call(const ExprNode& expr) {
 }
 
 ExprNode Parser::subscript(const ExprNode& expr) {
-  Diagnostic start_context {"To match this one", previous_, Diagnostic::NOTE};
+  Diagnostic start_context {diagnostic_from_token("To match this one", previous_, Diagnostic::NOTE)};
   std::vector args {parse_list<ExprNode>(TOKEN_RIGHT_BRACKET, [this] { return parse_expression(); })};
-  expect(TOKEN_RIGHT_BRACKET, "Expecting a closing bracket ']'", start_context);
+  expect(TOKEN_RIGHT_BRACKET, "Expecting a closing bracket ']'", nullptr, start_context);
 
   return std::make_shared<Expressions::Subscript>(expr, args);
 }
@@ -572,7 +570,7 @@ ExprNode Parser::namespace_member(const ExprNode& expr) {
   if (const auto var_expr {std::dynamic_pointer_cast<Expressions::Variable>(expr)}) {
     return std::make_shared<Expressions::NamespaceMember>(var_expr->identifier, expect(TOKEN_IDENTIFIER, "Expecting a namespace member"));
   }
-  report_error({"'::' (namespace access) only works for namespaces", previous_, Diagnostic::ERROR});
+  report_error("'::' (namespace access) only works for namespaces", previous_);
   return std::make_shared<Expressions::Nil>();
 }
 
@@ -607,13 +605,13 @@ ExprNode Parser::map(const ExprNode& first_item) {
       // A string is valid, but identifiers are the preferred style for readability.
       if (const auto str {std::dynamic_pointer_cast<Expressions::String>(key)}) {
         keys.emplace_back(str->value);
-        diagnostics_.emplace_back("It's recommended to use identifiers instead of strings as keys", previous_, Diagnostic::WARNING);
+        diagnostics_.emplace_back(diagnostic_from_token("It's recommended to use identifiers instead of strings as keys", previous_, Diagnostic::WARNING));
         return;
       }
 
       // String interpolation for keys is not supported yet.
       if (std::dynamic_pointer_cast<Expressions::Interpolation>(key)) {
-        report_error({"String interpolation for keys is not yet supported", previous_, Diagnostic::ERROR});
+        report_error("String interpolation for keys is not yet supported", previous_);
         keys.emplace_back("");
         return;
       }
@@ -623,12 +621,9 @@ ExprNode Parser::map(const ExprNode& first_item) {
         return;
       }
 
-      diagnostics_.emplace_back(
-        "Invalid key type",
-        Diagnostic {"If you're trying to use a reserved word, wrap it in backticks (ex. `class`)", Diagnostic::NOTE},
-        previous_,
-        Diagnostic::ERROR
-      );
+      Diagnostic d {diagnostic_from_token("Invalid key type", previous_, Diagnostic::ERROR)};
+      d.add_context(Diagnostic {"If you're trying to use a reserved word, wrap it in backticks (ex. `class`)", Diagnostic::NOTE});
+      diagnostics_.emplace_back(d);
     }
   };
 
@@ -734,7 +729,7 @@ ExprNode Parser::string_interpolation() {
     }
     if (check(TOKEN_INTERPOLATION)) end_strings.emplace_back(std::any_cast<std::string>(current_->value));
     else {
-      report_error({"You've found a lexer bug: string interpolation with no ending token—tell this to the developer", current_, Diagnostic::ERROR});
+      report_error("You've found a lexer bug: string interpolation with no ending token—tell this to the developer", current_);
       break;
     }
   } while (match(TOKEN_INTERPOLATION));
@@ -769,9 +764,9 @@ ExprNode Parser::super_id() {
 }
 
 ExprNode Parser::grouping() {
-  Diagnostic start_context {"To match this one", previous_, Diagnostic::NOTE};
+  Diagnostic start_context {diagnostic_from_token("To match this one", previous_, Diagnostic::NOTE)};
   const auto grouping {std::make_shared<Expressions::Grouping>(parse_expression())};
-  expect(TOKEN_RIGHT_PAREN, "Expecting a closing parenthesis", start_context);
+  expect(TOKEN_RIGHT_PAREN, "Expecting a closing parenthesis", nullptr, start_context);
   return grouping;
 }
 
@@ -781,7 +776,7 @@ ExprNode Parser::parse_expression(Precedence precedence) {
   advance();
   const PrefixFn prefix_rule {RULES[previous_->type].prefix};
   if (prefix_rule == nullptr) {
-    report_error({"Expecting an expression", previous_, Diagnostic::ERROR});
+    report_error("Expecting an expression", previous_);
     return nullptr;
   }
 
@@ -846,7 +841,7 @@ void Parser::synchronize() { // TODO NEXT: Test in lambdas.
 
 StmtNode Parser::parse() {
   if (tokens_.empty()) {
-    report_error({"No tokens to parse", Diagnostic::ERROR});
+    diagnostics_.emplace_back("No tokens to parse");
     return nullptr;
   }
 

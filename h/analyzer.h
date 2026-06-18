@@ -13,6 +13,8 @@
 #include "analyzer-host.h"
 #include "ast.h"
 
+import diagnostic;
+
 struct ScopeFrame {
   std::unordered_map<std::string, ObjectSymbol> objects {};
   std::unordered_map<std::string, TypeId> types {};
@@ -75,6 +77,15 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   // Class contexts (for superclass).
   std::vector<ClassFrame> classes_ {};
   // TODO: Consider one stack for all contexts (for variable resolution in class scope).
+
+  void report_error(
+    const std::string& message, const Token* error_token, Diagnostic::Severity severity = Diagnostic::ERROR, const Diagnostic* context = nullptr
+  ) {
+    if (error_token)
+      diagnostics_.emplace_back(message, error_token->start_offset, severity, context);
+    else
+      diagnostics_.emplace_back(message, severity, context);
+  }
 
   void visit_program_stmt(const Statements::Program& stmt) override;
   void visit_block_stmt(const Statements::Block& stmt) override;
@@ -166,9 +177,9 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
       scopes_.back().objects.emplace(name, symbol);
     } catch (AnalyzerException& e) {
       if (e.kind == ExceptionKind::REDECLARED_NAME)
-        diagnostics_.emplace_back("Name has already been declared in this scope", token, Diagnostic::ERROR);
+        report_error("Name has already been declared in this scope", token, Diagnostic::ERROR);
       else if (e.kind == ExceptionKind::SHADOWED_NAME)
-        diagnostics_.emplace_back("Name shadows a declaration from another scope", token, Diagnostic::WARNING);
+        report_error("Name shadows a declaration from another scope", token, Diagnostic::WARNING);
     }
   }
 
@@ -184,9 +195,9 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
       scopes_.back().types.emplace(name, t);
     } catch (AnalyzerException& e) {
       if (e.kind == ExceptionKind::REDECLARED_NAME)
-        diagnostics_.emplace_back("Type name has already been declared in this scope", token, Diagnostic::ERROR);
+        report_error("Type name has already been declared in this scope", token, Diagnostic::ERROR);
       else if (e.kind == ExceptionKind::SHADOWED_NAME)
-        diagnostics_.emplace_back("Type name shadows a declaration from another scope", token, Diagnostic::WARNING);
+        report_error("Type name shadows a declaration from another scope", token, Diagnostic::WARNING);
     }
   }
 
@@ -203,9 +214,9 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     } catch (AnalyzerException& e) {
       Diagnostic tip {"Use '->' to create an import alias: using \"...\" for a -> b", Diagnostic::NOTE};
       if (e.kind == ExceptionKind::REDECLARED_NAME)
-        diagnostics_.emplace_back(std::format("Import '{}' conflicts with a declaration in this scope", name), tip, where, Diagnostic::ERROR);
+        report_error(std::format("Import '{}' conflicts with a declaration in this scope", name), where, Diagnostic::ERROR, &tip);
       else if (e.kind == ExceptionKind::SHADOWED_NAME)
-        diagnostics_.emplace_back(std::format("Import '{}' shadows a declaration from another scope", name), tip, where, Diagnostic::WARNING);
+        report_error(std::format("Import '{}' shadows a declaration from another scope", name), where, Diagnostic::WARNING, &tip);
     }
   }
 
@@ -222,9 +233,9 @@ class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     } catch (AnalyzerException& e) {
       Diagnostic tip {"Use '->' to create an import alias: using \"...\" for a -> b", Diagnostic::NOTE};
       if (e.kind == ExceptionKind::REDECLARED_NAME)
-        diagnostics_.emplace_back(std::format("Import '{}' conflicts with a declaration in this scope", name), tip, where, Diagnostic::ERROR);
+        report_error(std::format("Import '{}' conflicts with a declaration in this scope", name), where, Diagnostic::ERROR, &tip);
       else if (e.kind == ExceptionKind::SHADOWED_NAME)
-        diagnostics_.emplace_back(std::format("Import '{}' shadows a declaration from another scope", name), tip, where, Diagnostic::WARNING);
+        report_error(std::format("Import '{}' shadows a declaration from another scope", name), where, Diagnostic::WARNING, &tip);
     }
   }
 

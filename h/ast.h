@@ -11,9 +11,10 @@
 #include <any>
 #include <memory>
 
-#include "lexer.h"
 #include "param.h"
 #include "type.h"
+
+import lexer;
 
 namespace Statements {
   class Program;
