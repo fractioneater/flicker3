@@ -6,8 +6,8 @@
 
 #include "vm.h"
 
-#include <iostream>
-
 #include "common.h"
+
+import std;
 
 // Well, there's nothing here for now.

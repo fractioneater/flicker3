@@ -8,12 +8,10 @@
 
 #pragma once
 
-#include <any>
-#include <memory>
-
 #include "param.h"
 #include "type.h"
 
+import std;
 import lexer;
 
 namespace Statements {

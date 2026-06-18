@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <string_view>
+import std;
 
 namespace Core {
   constexpr std::string_view SRC {

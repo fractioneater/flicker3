@@ -6,13 +6,9 @@
 
 #include "module.h"
 
-#include <array>
-#include <filesystem>
-#include <fstream>
-#include <iostream>
-
 #include "parser.h"
 
+import std;
 import lexer;
 
 // Random things --------------------------------------------------
@@ -88,8 +84,8 @@ static constexpr std::array STAGE_NAMES {"Lexer", "Parser", "Analyzer", "Bytecod
 
 template <typename T>
 bool print_errors(const T& component, const Lexer& lexer, std::string_view module_name, CompileStage stage) {
-  std::function<std::pair<size_t, size_t>(size_t)> line_col {[&lexer](size_t it) { return lexer.offset_to_line_col(it); }};
-  std::function<std::string_view(size_t)> string {[&lexer](size_t it) { return lexer.offset_to_line_string(it); }};
+  std::function<std::pair<std::size_t, std::size_t>(std::size_t)> line_col {[&lexer](std::size_t it) { return lexer.offset_to_line_col(it); }};
+  std::function<std::string_view(std::size_t)> string {[&lexer](std::size_t it) { return lexer.offset_to_line_string(it); }};
   for (const auto& err : component.get_diagnostics())
     err.print(line_col, string, module_name);
 

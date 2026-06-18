@@ -1,10 +1,9 @@
-#include <fstream>
-#include <sstream>
 #include <gtest/gtest.h>
 
 #include "common.h"
 #include "parser.h"
 
+import std;
 import lexer;
 
 static Token scan_single(const std::string& src) {

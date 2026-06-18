@@ -6,15 +6,12 @@
 
 #pragma once
 
-#include <memory>
-#include <string>
-#include <unordered_map>
-
 #include "analyzer-host.h"
 #include "analyzer.h"
 #include "core.fl.h"
 #include "parser.h"
 
+import std;
 import lexer;
 
 enum ModuleStatus { MODULE_COMPILED, MODULE_COMPILE_ERROR, MODULE_RUNTIME_ERROR };

@@ -6,7 +6,7 @@
 
 #include "analyzer.h"
 
-#include <iostream>
+import std;
 
 #define VISIT accept(*this)
 

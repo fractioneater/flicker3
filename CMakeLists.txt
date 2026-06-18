@@ -2,12 +2,13 @@ cmake_minimum_required(VERSION 4.0)
 
 # Enable experimental `import std` support. This gate, along with CMAKE_CXX_MODULE_STD, must be set BEFORE the first project() call that enables the CXX
 # language. The UUID is version-specific; this value is valid for CMake 3.31.11 .. 4.2.x (see Help/dev/experimental.rst in the CMake source).
-# set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "d0edc3af-4c50-42ea-a356-e2862fe7a444")
+set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-# set(CMAKE_CXX_MODULE_STD 1)
+set(CMAKE_CXX_MODULE_STD 1)
 
 project(flicker_3 LANGUAGES CXX)
 
@@ -16,7 +17,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
 # Files are organized as a library so my code is only compiled once and flags can be applied specifically to it.
 add_library(flicker_lib)
-
 target_sources(flicker_lib
 	PRIVATE
 	src/analyzer.cpp
@@ -29,6 +29,7 @@ target_sources(flicker_lib
 	src/lexer.cppm
 )
 
+set_target_properties(flicker_lib PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CMAKE_CXX_MODULE_STD 1 CMAKE_CXX_EXTENSIONS OFF)
 target_compile_options(flicker_lib PRIVATE -Wall -Werror)
 target_include_directories(flicker_lib PUBLIC h)
 

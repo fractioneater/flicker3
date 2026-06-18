@@ -1,10 +1,10 @@
 #include "parser.h"
 
-#include <fstream>
 #include <gtest/gtest.h>
 
 #include "vm.h"
 
+import std;
 import lexer;
 
 TEST(GeneralParsing, BasicVariableDeclaration) {

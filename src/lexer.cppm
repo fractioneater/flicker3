@@ -5,22 +5,11 @@
  */
 
 module;
-#include <algorithm>
-#include <any>
-#include <array>
-#include <format>
-#include <iostream>
-#include <optional>
-#include <string>
-#include <unordered_map>
-#include <utility>
-#include <vector>
-#include <bits/stdint-uintn.h>
-
 #include "common.h"
 
 export module lexer;
 
+import std;
 import diagnostic;
 
 export enum TokenType {
@@ -124,13 +113,13 @@ namespace Helpers {
 
 export struct Token {
   TokenType type {TOKEN_EOF};
-  size_t start_offset {};
-  size_t length {};                  // Number of chars that belong to this token.
+  std::size_t start_offset {};
+  std::size_t length {};             // Number of chars that belong to this token.
   const std::string_view src_string; // String viewing the lexer's source at this token's position.
 
   std::any value {};
 
-  Token(TokenType type, size_t start, size_t length, const std::string_view src) : type {type}, start_offset {start}, length {length},
+  Token(TokenType type, std::size_t start, std::size_t length, const std::string_view src) : type {type}, start_offset {start}, length {length},
     src_string {length == 0 ? "" : src.substr(start, length)} {}
 };
 
@@ -139,9 +128,9 @@ export class Lexer {
   const std::string_view src_view_ {};
   const long src_length_ {};
 
-  size_t start_offset_ {};               // Current token's start position — char index in src.
-  size_t offset_ {};                     // Current position — char index in src.
-  std::vector<size_t> line_offsets_ {0}; // Positions of the first character in each line.
+  std::size_t start_offset_ {};               // Current token's start position — char index in src.
+  std::size_t offset_ {};                     // Current position — char index in src.
+  std::vector<std::size_t> line_offsets_ {0}; // Positions of the first character in each line.
 
   TokenType prev_type_ {TOKEN_EOF}; // I feel like this may come in handy. EDIT: And when I needed to emit newlines after dedents, it did!
 
@@ -223,7 +212,7 @@ export class Lexer {
    * @param error_offset Char pos (offset) of the error
    * @param severity Diagnostic severity (NOTE, WARN, or ERROR)
    */
-  void report_error(std::string&& message, size_t error_offset, Diagnostic::Severity severity = Diagnostic::ERROR) {
+  void report_error(std::string&& message, std::size_t error_offset, Diagnostic::Severity severity = Diagnostic::ERROR) {
     diagnostics_.emplace_back(std::move(message), error_offset, severity);
   }
 
@@ -232,7 +221,7 @@ export class Lexer {
    * @return A newline if there is one somewhere in the comment, otherwise nothing
    */
   std::optional<Token> block_comment() {
-    const size_t start_offset {offset_ - 1};
+    const std::size_t start_offset {offset_ - 1};
     // Keep consuming until the closing comment or EOF.
     char prev {};
     for (int nest_depth {1}; nest_depth > 0; prev = advance()) {
@@ -325,7 +314,7 @@ export class Lexer {
    * @param length The number of hexadecimal digits to read
    * @return A 32-bit unsigned integer computed from the hexadecimal digits
    */
-  [[nodiscard]] uint32_t read_hex(int length) {
+  [[nodiscard]] std::uint32_t read_hex(int length) {
     std::uint32_t value {0};
     for (int i {0}; i < length; ++i) {
       if (at_eof()) {
@@ -353,7 +342,7 @@ export class Lexer {
    *                   Must be a valid code point in the Unicode range (0x0 to 0x10FFFF) and not a surrogate (0xD800 to 0xDFFF)
    * @param sequence_start_offset Char index in the source file where the sequence starts, for error reporting
    */
-  void append_utf8(std::string& buffer, uint32_t code_point, size_t sequence_start_offset) {
+  void append_utf8(std::string& buffer, std::uint32_t code_point, std::size_t sequence_start_offset) {
     if (code_point > 0x10FFFFu) {
       report_error("Invalid Unicode code point", sequence_start_offset);
       return;
@@ -454,13 +443,13 @@ export class Lexer {
         case 'r': buffer.push_back('\r'); break;
         case 't': buffer.push_back('\t'); break;
         case 'u': {
-          const size_t sequence_start_offset {offset_};
+          const std::size_t sequence_start_offset {offset_};
           const std::uint32_t code_point {read_hex(4)};
           append_utf8(buffer, code_point, sequence_start_offset);
           break;
         }
         case 'U': {
-          const size_t sequence_start_offset {offset_};
+          const std::size_t sequence_start_offset {offset_};
           const std::uint32_t code_point {read_hex(8)};
           append_utf8(buffer, code_point, sequence_start_offset);
           break;
@@ -524,7 +513,7 @@ export class Lexer {
     // @formatter:on
 
     if (!match('\'')) {
-      const size_t possible_end_offset {offset_ - 1}; // To check if a backslash was accidentally escaped.
+      const std::size_t possible_end_offset {offset_ - 1}; // To check if a backslash was accidentally escaped.
 
       while (!at_eof() && peek() != '\'' && peek() != '\n') { advance(); }
       if (at_eof() || peek() == '\n') {
@@ -872,15 +861,15 @@ export class Lexer {
   /**
    * @return A vector of the starting char indices of each line in the source file
    */
-  [[nodiscard]] const std::vector<size_t>& get_line_offsets() const { return line_offsets_; }
+  [[nodiscard]] const std::vector<std::size_t>& get_line_offsets() const { return line_offsets_; }
 
   /**
    * Returns the human-readable position in code of a character index in the source file.
    * @param offset Char index to convert to line and column
    * @return A pair of [line, col], 1-based indexing, from the offset given
    */
-  [[nodiscard]] std::pair<size_t, size_t> offset_to_line_col(size_t offset) const {
-    const auto subrange {std::ranges::find_last_if(line_offsets_, [offset](size_t it) { return it <= offset; })};
+  [[nodiscard]] std::pair<std::size_t, std::size_t> offset_to_line_col(std::size_t offset) const {
+    const auto subrange {std::ranges::find_last_if(line_offsets_, [offset](std::size_t it) { return it <= offset; })};
 
     if (subrange.begin() == subrange.end())
       return {0, 0};
@@ -899,21 +888,21 @@ export class Lexer {
    * @param offset Beginning of the range, as a char index in the source file
    * @return A string_view WITHOUT a trailing newline, viewing the source
    */
-  [[nodiscard]] std::string_view offset_to_line_string(size_t offset) const {
+  [[nodiscard]] std::string_view offset_to_line_string(std::size_t offset) const {
     if (line_offsets_.empty()) return ""; // Shouldn't happen; line_offsets_ is initialized with 0.
 
     // Find the first line whose start offset is > start, then step back one.
     const auto upper {std::ranges::upper_bound(line_offsets_, offset)};
     const auto line_index {static_cast<int>(std::distance(line_offsets_.begin(), upper)) - 1};
 
-    const size_t line_start {line_offsets_[line_index]};
-    const size_t next_start {
+    const std::size_t line_start {line_offsets_[line_index]};
+    const std::size_t next_start {
       upper == line_offsets_.end()
       ? src_length_
       : line_offsets_[line_index + 1] - 1
     };
 
-    const size_t len {next_start - line_start};
+    const std::size_t len {next_start - line_start};
     return src_view_.substr(line_start, len);
   }
 

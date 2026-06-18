@@ -5,13 +5,12 @@
  */
 
 module;
-#include <sstream>
-#include <vector>
-
 #include "ast.h"
 #include "parser.h"
 
 export module dotprinter;
+
+import std;
 
 class DotTreeWalker {
   int id_counter_ {};
@@ -271,7 +270,7 @@ class DotTreeWalker {
       }
       // Params.
       blah += "(";
-      for (size_t i {0}; i < stmt.params.size(); ++i) {
+      for (std::size_t i {0}; i < stmt.params.size(); ++i) {
         if (i > 0) blah += ", ";
         blah += stmt.params[i].identifier->src_string;
       }
@@ -286,7 +285,7 @@ class DotTreeWalker {
     std::string visit_initializer_stmt(const Statements::Initializer& stmt) override {
       std::string blah {"init "};
       blah += "(";
-      for (size_t i {0}; i < stmt.params.size(); ++i) {
+      for (std::size_t i {0}; i < stmt.params.size(); ++i) {
         if (i > 0) blah += ", ";
         blah += stmt.params[i].identifier->src_string;
       }
@@ -300,7 +299,7 @@ class DotTreeWalker {
       blah += stmt.identifier->src_string;
       // Params.
       blah += "(";
-      for (size_t i {0}; i < stmt.params.size(); ++i) {
+      for (std::size_t i {0}; i < stmt.params.size(); ++i) {
         if (i > 0) blah += ", ";
         blah += stmt.params[i].identifier->src_string;
       }
@@ -337,7 +336,7 @@ class DotTreeWalker {
       std::string blah {"import " + stmt.path};
       if (!stmt.imports.empty()) {
         blah += " for ";
-        for (size_t i {0}; i < stmt.imports.size(); ++i) {
+        for (std::size_t i {0}; i < stmt.imports.size(); ++i) {
           if (i > 0) blah += ", ";
           blah += stmt.imports[i]->src_string;
         }
@@ -478,7 +477,7 @@ class DotTreeWalker {
     std::string visit_lambda_expr(const Expressions::Lambda& expr) override {
       std::string blah {"lambda ("};
       if (!expr.params.empty()) {
-        for (size_t i {0}; i < expr.params.size(); ++i) {
+        for (std::size_t i {0}; i < expr.params.size(); ++i) {
           if (i > 0) blah += ", ";
           blah += expr.params[i].identifier->src_string;
         }
@@ -493,7 +492,7 @@ class DotTreeWalker {
 
     std::string visit_map_expr(const Expressions::Map& expr) override {
       std::string blah {"["};
-      for (size_t i {0}; i < expr.keys.size(); ++i) {
+      for (std::size_t i {0}; i < expr.keys.size(); ++i) {
         blah += expr.keys[i] + " -> ...";
         if (i + 1 < expr.keys.size())
           blah += ", ";

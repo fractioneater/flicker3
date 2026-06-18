@@ -6,13 +6,10 @@
 
 #pragma once
 
-#include <format>
-#include <unordered_map>
-#include <vector>
-
 #include "analyzer-host.h"
 #include "ast.h"
 
+import std;
 import diagnostic;
 
 struct ScopeFrame {

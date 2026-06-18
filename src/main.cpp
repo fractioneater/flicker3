@@ -6,11 +6,9 @@
 
 #include "vm.h"
 
-#include <filesystem>
-#include <fstream>
-#include <iostream>
-
 #include "module.h"
+
+import std;
 
 void repl(ModuleLoader& ml) {
   ml.run_repl();

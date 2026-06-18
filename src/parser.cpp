@@ -6,13 +6,9 @@
 
 #include "parser.h"
 
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <utility>
-
 #include "common.h"
 
+import std;
 import dotprinter;
 
 // Declarations --------------------------------------------------

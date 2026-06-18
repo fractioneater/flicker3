@@ -6,12 +6,11 @@
 
 #pragma once
 
-#include <functional>
-
 #include "ast.h"
 #include "param.h"
 #include "type.h"
 
+import std;
 import diagnostic;
 
 enum class Precedence {

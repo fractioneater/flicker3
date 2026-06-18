@@ -5,20 +5,11 @@
  */
 
 module;
-
-#include <algorithm>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <memory>
-#include <optional>
-#include <string>
-#include <string_view>
-#include <utility>
-
 #include "common.h"
 
 export module diagnostic;
+
+import std;
 
 export class Diagnostic {
   public:
@@ -30,7 +21,7 @@ export class Diagnostic {
   std::string message_ {};
   std::unique_ptr<Diagnostic> context_ {};
   bool has_position_ {true};
-  size_t offset_ {};
+  std::size_t offset_ {};
   Severity severity_ {ERROR};
 
   void formatting() const {
@@ -64,7 +55,7 @@ export class Diagnostic {
     return ctx ? std::make_unique<Diagnostic>(*ctx) : nullptr;
   }
 
-  Diagnostic(std::optional<size_t> pos, std::string message, Severity severity, const Diagnostic* ctx) :
+  Diagnostic(std::optional<std::size_t> pos, std::string message, Severity severity, const Diagnostic* ctx) :
     message_ {std::move(message)},
     context_ {clone_context(ctx)},
     has_position_ {pos.has_value()},
@@ -91,7 +82,7 @@ export class Diagnostic {
   }
 
   // This should be plenty. It's sad tokens had to leave.
-  Diagnostic(std::string message, size_t offset, Severity severity = ERROR, const Diagnostic* context = nullptr)
+  Diagnostic(std::string message, std::size_t offset, Severity severity = ERROR, const Diagnostic* context = nullptr)
     : Diagnostic {offset, std::move(message), severity, context} {}
 
   explicit Diagnostic(std::string message, Severity severity = ERROR, const Diagnostic* context = nullptr)
@@ -105,7 +96,7 @@ export class Diagnostic {
   }
 
   void print(
-    std::function<std::pair<size_t, size_t>(size_t)>& offset_to_line_col, std::function<std::string_view(size_t)>& line_string, std::string_view module_name
+    std::function<std::pair<std::size_t, std::size_t>(std::size_t)>& offset_to_line_col, std::function<std::string_view(std::size_t)>& line_string, std::string_view module_name
   ) const {
     // moduleName@39:14 Block comment is missing closing '-#'
     //    39 │ print 0xABCD #- unclosed!

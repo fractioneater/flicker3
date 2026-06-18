@@ -6,16 +6,7 @@
 
 #pragma once
 
-#include <algorithm>
-#include <limits>
-#include <memory>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
-#include <variant>
-#include <vector>
-
+import std;
 import lexer;
 
 // There are two types of types: the parser's types, and the analyzer's types. Look for a comment above each category for an explanation of the structure.
@@ -89,7 +80,7 @@ struct FunctionType final : SyntacticType {
  * SEMANTIC (ANALYZER) TYPES --------------------------------------------------
  *
  * After parsing, the analyzer converts syntactic types into semantic ones to determine the validity of names, members, and such. This system uses interning
- * to possibly increase performance—each type seen in code is assigned a TypeId (uint32_t wrapper), so equality is just integer comparison.
+ * to possibly increase performance—each type seen in code is assigned a TypeId (std::uint32_t wrapper), so equality is just integer comparison.
  *
  * Unlike the shared_ptr weirdness of SyntacticType, SemanticType is a variant of Named, TypeParam, Optional, Function, and Applied. Most of these classes are
  * exactly the same as their syntactic counterparts, but instead of storing a SyntacticTypePtr, they store a TypeId.
@@ -101,19 +92,19 @@ struct FunctionType final : SyntacticType {
  */
 
 struct TypeId {
-  uint32_t value {};
+  std::uint32_t value {};
 
-  static constexpr uint32_t INVALID {std::numeric_limits<uint32_t>::max()};
+  static constexpr std::uint32_t INVALID {std::numeric_limits<std::uint32_t>::max()};
 
   constexpr TypeId() : value {INVALID} {}
-  constexpr explicit TypeId(uint32_t value) : value {value} {}
+  constexpr explicit TypeId(std::uint32_t value) : value {value} {}
 
   constexpr bool operator==(const TypeId& other) const { return value == other.value; }
   constexpr bool operator!=(const TypeId& other) const { return value != other.value; }
   constexpr explicit operator bool() const { return value != INVALID; }
 };
 
-using TypeDefId = uint32_t;
+using TypeDefId = std::uint32_t;
 
 struct Named {
   std::string name {}; // For hashing and error messages.
@@ -166,71 +157,71 @@ using SemanticType = std::variant<Named, TypeParam, Optional, Function, Overload
 // Hashing functions for SemanticType
 template <>
 struct std::hash<TypeId> {
-  size_t operator()(const TypeId& id) const noexcept {
-    return std::hash<uint32_t> {}(id.value);
+  std::size_t operator()(const TypeId& id) const noexcept {
+    return std::hash<std::uint32_t> {}(id.value);
   }
 };
 
 namespace TypeHash {
-  inline void hash_combine(size_t& seed, size_t h) noexcept {
+  inline void hash_combine(std::size_t& seed, std::size_t h) noexcept {
     seed ^= h + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
   }
 
   template <class T>
-  void hash_combine(size_t& seed, const T& v) noexcept {
+  void hash_combine(std::size_t& seed, const T& v) noexcept {
     hash_combine(seed, std::hash<T> {}(v));
   }
 
   template <class T>
-  size_t hash_vec(const std::vector<T>& v) noexcept {
-    size_t seed {0};
+  std::size_t hash_vec(const std::vector<T>& v) noexcept {
+    std::size_t seed {0};
     hash_combine(seed, v.size());
     for (auto& x : v) hash_combine(seed, x);
     return seed;
   }
 
-  inline size_t hash_named(const Named& t) noexcept {
-    size_t seed {0};
+  inline std::size_t hash_named(const Named& t) noexcept {
+    std::size_t seed {0};
     hash_combine(seed, 1u);
     hash_combine(seed, t.name);
-    hash_combine(seed, t.definition.value_or(std::numeric_limits<uint32_t>::max()));
+    hash_combine(seed, t.definition.value_or(std::numeric_limits<std::uint32_t>::max()));
     hash_combine(seed, t.arity);
     return seed;
   }
 
-  inline size_t hash_typeparam(const TypeParam& t) noexcept {
-    size_t seed {0};
+  inline std::size_t hash_typeparam(const TypeParam& t) noexcept {
+    std::size_t seed {0};
     hash_combine(seed, 2u);
     hash_combine(seed, t.index);
     hash_combine(seed, t.host_name);
     return seed;
   }
 
-  inline size_t hash_optional(const Optional& t) noexcept {
-    size_t seed {0};
+  inline std::size_t hash_optional(const Optional& t) noexcept {
+    std::size_t seed {0};
     hash_combine(seed, 3u);
     hash_combine(seed, t.inner);
     return seed;
   }
 
-  inline size_t hash_function(const Function& t) noexcept {
-    size_t seed {0};
+  inline std::size_t hash_function(const Function& t) noexcept {
+    std::size_t seed {0};
     hash_combine(seed, 4u);
     hash_combine(seed, hash_vec(t.params));
     hash_combine(seed, t.return_type);
     return seed;
   }
 
-  inline size_t hash_overload_set(const OverloadSet& t) noexcept {
-    size_t seed {0};
+  inline std::size_t hash_overload_set(const OverloadSet& t) noexcept {
+    std::size_t seed {0};
     hash_combine(seed, 5u);
     hash_combine(seed, t.name);
     hash_combine(seed, hash_vec(t.overloads));
     return seed;
   }
 
-  inline size_t hash_applied(const Applied& t) noexcept {
-    size_t seed {0};
+  inline std::size_t hash_applied(const Applied& t) noexcept {
+    std::size_t seed {0};
     hash_combine(seed, 6u);
     hash_combine(seed, t.base);
     hash_combine(seed, hash_vec(t.args));
@@ -238,9 +229,9 @@ namespace TypeHash {
   }
 }
 
-inline size_t hash_semantic_type(const SemanticType& t) noexcept {
+inline std::size_t hash_semantic_type(const SemanticType& t) noexcept {
   return std::visit(
-    []<typename T>(T&& k) -> size_t {
+    []<typename T>(T&& k) -> std::size_t {
       using A = std::decay_t<T>;
       if constexpr (std::is_same_v<A, Named>) return TypeHash::hash_named(k);
       else if constexpr (std::is_same_v<A, TypeParam>) return TypeHash::hash_typeparam(k);
@@ -262,8 +253,8 @@ struct ArenaTypeHash {
   using is_transparent = void;
   const std::vector<SemanticType>* types {};
 
-  size_t operator()(const TypeId id) const noexcept { return hash_semantic_type((*types)[id.value]); }
-  size_t operator()(const SemanticType& t) const noexcept { return hash_semantic_type(t); }
+  std::size_t operator()(const TypeId id) const noexcept { return hash_semantic_type((*types)[id.value]); }
+  std::size_t operator()(const SemanticType& t) const noexcept { return hash_semantic_type(t); }
 };
 
 struct ArenaTypeEq {
@@ -295,7 +286,7 @@ struct TypeDefinition {
  * and an unordered_set for interning, so type equality can be determined cheaply by ID.
  *
  * Because the data type for storage is a vector, references and pointers are not stable (all will be invalidated on resize),
- * so access is done with a TypeId (AKA uint32_t).
+ * so access is done with a TypeId (AKA std::uint32_t).
  */
 class TypeArena {
   std::vector<SemanticType> types_ {};
@@ -330,7 +321,7 @@ class TypeArena {
 
   TypeId new_named(std::string&& name, int arity) {
     definitions_.emplace_back();
-    const TypeDefId definition {static_cast<uint32_t>(definitions_.size() - 1)};
+    const TypeDefId definition {static_cast<std::uint32_t>(definitions_.size() - 1)};
 
     return add(Named {std::move(name), definition, arity});
   }
@@ -341,7 +332,7 @@ class TypeArena {
 
     // Not interned, so put it in the vector and intern the index.
     types_.emplace_back(std::move(t));
-    const TypeId id {static_cast<uint32_t>(types_.size() - 1)};
+    const TypeId id {static_cast<std::uint32_t>(types_.size() - 1)};
     interned_.insert(id);
     return id;
   }
@@ -395,7 +386,7 @@ class TypeArena {
         else if constexpr (std::is_same_v<A, Optional>) return std::string {to_string(t.inner) + "?"};
         else if constexpr (std::is_same_v<A, Function>) {
           std::string result {"("};
-          for (size_t i {0}; i < t.params.size(); ++i) {
+          for (std::size_t i {0}; i < t.params.size(); ++i) {
             if (i > 0) result += ", ";
             result += to_string(t.params[i]);
           }
@@ -403,14 +394,14 @@ class TypeArena {
           return result;
         } else if constexpr (std::is_same_v<A, OverloadSet>) {
           std::string result {"<fn " + t.name + ", overloading [ "};
-          for (size_t i {0}; i < t.overloads.size(); ++i) {
+          for (std::size_t i {0}; i < t.overloads.size(); ++i) {
             if (i > 0) result += "; ";
             result += to_string(t.overloads[i]);
           }
           return result + " ]>";
         } else if constexpr (std::is_same_v<A, Applied>) {
           std::string result {to_string(t.base) + " of"};
-          for (size_t i {0}; i < t.args.size(); ++i) {
+          for (std::size_t i {0}; i < t.args.size(); ++i) {
             result += " ";
             result += to_string(t.args[i]);
           }
