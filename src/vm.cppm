@@ -4,10 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#include "vm.h"
-
+module;
 #include "common.h"
+
+export module vm;
 
 import std;
 
-// Well, there's nothing here for now.
+// Nothing for now.

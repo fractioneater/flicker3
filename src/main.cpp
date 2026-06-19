@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#include "vm.h"
-
-#include "module.h"
-
+import module_;
 import std;
 
 void repl(ModuleLoader& ml) {

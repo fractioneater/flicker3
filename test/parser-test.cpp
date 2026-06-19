@@ -1,11 +1,9 @@
-#include "parser.h"
-
 #include <gtest/gtest.h>
 
-#include "vm.h"
-
-import std;
 import lexer;
+import parser;
+import std;
+import vm;
 
 TEST(GeneralParsing, BasicVariableDeclaration) {
   const std::string src {"var x = 42\n"};

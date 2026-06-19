@@ -6,11 +6,11 @@
 
 #pragma once
 
-#include "analyzer-host.h"
 #include "ast.h"
 
-import std;
+import analyzer_host;
 import diagnostic;
+import std;
 
 struct ScopeFrame {
   std::unordered_map<std::string, ObjectSymbol> objects {};
@@ -41,6 +41,7 @@ struct ClassFrame {
    * The class's type. This should never be invalid.
    */
   TypeId id;
+
   /**
    * Superclass type ID. Will be nullopt if the class doesn't give a superclass, and invalid if a nonexistent type name is provided.
    */

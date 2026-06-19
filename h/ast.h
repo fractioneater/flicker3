@@ -8,11 +8,10 @@
 
 #pragma once
 
-#include "param.h"
-#include "type.h"
-
-import std;
 import lexer;
+import param;
+import std;
+import type;
 
 namespace Statements {
   class Program;

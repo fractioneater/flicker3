@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#pragma once
+export module type;
 
 import std;
 import lexer;
@@ -30,7 +30,7 @@ import lexer;
  *   Function: Callable type.                                                  (String, String) -> String
  */
 
-enum class TypeKind {
+export enum class TypeKind {
   NAMED,
   APPLIED,
   OPTIONAL,
@@ -43,9 +43,9 @@ class SyntacticType {
   [[nodiscard]] virtual TypeKind kind() const = 0;
 };
 
-using SyntacticTypePtr = std::shared_ptr<SyntacticType>;
+export using SyntacticTypePtr = std::shared_ptr<SyntacticType>;
 
-struct NamedType final : SyntacticType {
+export struct NamedType final : SyntacticType {
   std::string name {};
   const Token* identifier {};
 
@@ -53,7 +53,7 @@ struct NamedType final : SyntacticType {
   [[nodiscard]] TypeKind kind() const override { return TypeKind::NAMED; }
 };
 
-struct AppliedType final : SyntacticType {
+export struct AppliedType final : SyntacticType {
   SyntacticTypePtr constructor {};
   std::vector<SyntacticTypePtr> args {};
 
@@ -61,14 +61,14 @@ struct AppliedType final : SyntacticType {
   [[nodiscard]] TypeKind kind() const override { return TypeKind::APPLIED; }
 };
 
-struct OptionalType final : SyntacticType {
+export struct OptionalType final : SyntacticType {
   SyntacticTypePtr inner {};
 
   explicit OptionalType(SyntacticTypePtr inner) : inner {std::move(inner)} {}
   [[nodiscard]] TypeKind kind() const override { return TypeKind::OPTIONAL; }
 };
 
-struct FunctionType final : SyntacticType {
+export struct FunctionType final : SyntacticType {
   std::vector<SyntacticTypePtr> params {};
   SyntacticTypePtr result {};
 
@@ -91,7 +91,7 @@ struct FunctionType final : SyntacticType {
  * and is never copied for interning.
  */
 
-struct TypeId {
+export struct TypeId {
   std::uint32_t value {};
 
   static constexpr std::uint32_t INVALID {std::numeric_limits<std::uint32_t>::max()};
@@ -106,31 +106,31 @@ struct TypeId {
 
 using TypeDefId = std::uint32_t;
 
-struct Named {
+export struct Named {
   std::string name {}; // For hashing and error messages.
   std::optional<TypeDefId> definition {};
   int arity {0}; // In case this is a template type.
   bool operator==(const Named& other) const = default;
 };
 
-struct TypeParam {
+export struct TypeParam {
   int index {};
   std::string host_name {}; // Just for hashing.
   bool operator==(const TypeParam& other) const = default;
 };
 
-struct Optional {
+export struct Optional {
   TypeId inner;
   bool operator==(const Optional& other) const = default;
 };
 
-struct Function {
-  std::vector<TypeId> params;
+export struct Function {
+  std::vector<TypeId> params {};
   TypeId return_type;
   bool operator==(const Function& other) const = default;
 };
 
-struct OverloadSet {
+export struct OverloadSet {
   std::string name {};              // For hashing.
   std::vector<TypeId> overloads {}; // Should only hold Function TypeIds. DO NOT MUTATE! It would throw off interning.
 
@@ -146,13 +146,13 @@ struct OverloadSet {
   bool operator==(const OverloadSet& other) const = default;
 };
 
-struct Applied {
+export struct Applied {
   TypeId base;
-  std::vector<TypeId> args;
+  std::vector<TypeId> args {};
   bool operator==(const Applied& other) const = default;
 };
 
-using SemanticType = std::variant<Named, TypeParam, Optional, Function, OverloadSet, Applied>;
+export using SemanticType = std::variant<Named, TypeParam, Optional, Function, OverloadSet, Applied>;
 
 // Hashing functions for SemanticType
 template <>
@@ -271,7 +271,7 @@ struct ArenaTypeEq {
  * An lvalue. Stores a bool is_mutable and a TypeId declared_type.
  * Its type may be INVALID if an error occurs in the user's code (or Flicker's code, but... you know what I mean).
  */
-struct ObjectSymbol {
+export struct ObjectSymbol {
   bool is_mutable {false};
   TypeId declared_type {};
 };
@@ -288,7 +288,7 @@ struct TypeDefinition {
  * Because the data type for storage is a vector, references and pointers are not stable (all will be invalidated on resize),
  * so access is done with a TypeId (AKA std::uint32_t).
  */
-class TypeArena {
+export class TypeArena {
   std::vector<SemanticType> types_ {};
   std::unordered_set<TypeId, ArenaTypeHash, ArenaTypeEq> interned_;
 
@@ -376,7 +376,7 @@ class TypeArena {
     return nullptr;
   }
 
-  std::string to_string(TypeId id) const {
+  [[nodiscard]] std::string to_string(TypeId id) const {
     if (!id) throw std::runtime_error("Invalid type ID in to_string()");
     return std::visit(
       [*this]<typename T>(const T& t) -> std::string {

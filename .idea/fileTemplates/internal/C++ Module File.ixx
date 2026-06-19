@@ -4,4 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+module;
+#[[#include]]# "common.h"
+
 export module ${NAME};
+
+import std;
+
+// ...

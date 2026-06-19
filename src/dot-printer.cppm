@@ -6,7 +6,6 @@
 
 module;
 #include "ast.h"
-#include "parser.h"
 
 export module dotprinter;
 

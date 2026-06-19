@@ -4,16 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#pragma once
+export module analyzer_host;
 
-#include "type.h"
+import std;
+import type;
 
-struct ModuleExports {
+export struct ModuleExports {
   std::unordered_map<std::string, ObjectSymbol> objects {};
   std::unordered_map<std::string, TypeId> types {};
 };
 
-struct CoreTypes {
+export struct CoreTypes {
   TypeId any_t {};
   TypeId bool_t {};
   TypeId char_t {};
@@ -35,7 +36,7 @@ struct CoreTypes {
 // - Core type access
 // - TypeArena access
 // - And maybe more...
-class AnalyzerHost {
+export class AnalyzerHost {
   public:
   virtual ~AnalyzerHost() = default;
 

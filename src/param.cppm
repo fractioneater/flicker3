@@ -4,4 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#pragma once
+export module param;
+
+import lexer;
+import type;
+
+export struct Param {
+  enum Modifier {
+    NONE, VAL, VAR
+  };
+
+  Token* identifier {};
+  SyntacticTypePtr type {};
+  Modifier mod {NONE};
+};

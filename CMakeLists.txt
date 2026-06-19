@@ -18,20 +18,27 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 # Files are organized as a library so my code is only compiled once and flags can be applied specifically to it.
 add_library(flicker_lib)
 target_sources(flicker_lib
+	PUBLIC FILE_SET HEADERS
+	BASE_DIRS src
+	FILES src/common.h
+
 	PRIVATE
 	src/analyzer.cpp
-	src/module.cpp
-	src/parser.cpp
-	src/vm.cpp
 	PUBLIC FILE_SET CXX_MODULES FILES
+	src/analyzer-host.cppm
 	src/diagnostic.cppm
 	src/dot-printer.cppm
 	src/lexer.cppm
+	src/module.cppm
+	src/param.cppm
+	src/parser.cppm
+	src/type.cppm
+	src/vm.cppm
 )
 
 set_target_properties(flicker_lib PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CMAKE_CXX_MODULE_STD 1 CMAKE_CXX_EXTENSIONS OFF)
 target_compile_options(flicker_lib PRIVATE -Wall -Werror)
-target_include_directories(flicker_lib PUBLIC h)
+target_include_directories(flicker_lib PUBLIC h) #- REMOVE
 
 # Flicker 3
 add_executable(flicker_3 src/main.cpp)

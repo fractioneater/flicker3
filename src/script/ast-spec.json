@@ -1,6 +1,6 @@
 {
-	"includes": ["<any>", "<memory>", "\"param.h\"", "\"type.h\""],
-	"imports": ["lexer"],
+	"includes": [],
+	"imports": ["lexer", "param", "std", "type"],
 	"aliases": [
 		"using StmtNode = std::shared_ptr<Stmt>;",
 		"using ExprNode = std::shared_ptr<Expr>;"
