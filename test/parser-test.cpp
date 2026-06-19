@@ -2,8 +2,9 @@
 
 import lexer;
 import parser;
-import std;
 import vm;
+
+import std;
 
 TEST(GeneralParsing, BasicVariableDeclaration) {
   const std::string src {"var x = 42\n"};

@@ -4,10 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-module;
-#include "ast.h"
-
 export module dotprinter;
+
+import ast;
+import type;
 
 import std;
 

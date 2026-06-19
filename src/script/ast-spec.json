@@ -1,9 +1,9 @@
 {
 	"includes": [],
-	"imports": ["lexer", "param", "std", "type"],
+	"imports": ["lexer", "param", "type", "std"],
 	"aliases": [
-		"using StmtNode = std::shared_ptr<Stmt>;",
-		"using ExprNode = std::shared_ptr<Expr>;"
+		"export using StmtNode = std::shared_ptr<Stmt>;",
+		"export using ExprNode = std::shared_ptr<Expr>;"
 	],
 	"namespaces": {
 		"statements": "Statements", "expressions": "Expressions"

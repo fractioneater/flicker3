@@ -22,10 +22,11 @@ target_sources(flicker_lib
 	BASE_DIRS src
 	FILES src/common.h
 
-	PRIVATE
-	src/analyzer.cpp
 	PUBLIC FILE_SET CXX_MODULES FILES
+	src/analyzer.cppm
 	src/analyzer-host.cppm
+	src/ast.cppm
+	src/core.fl.cppm
 	src/diagnostic.cppm
 	src/dot-printer.cppm
 	src/lexer.cppm
@@ -38,7 +39,6 @@ target_sources(flicker_lib
 
 set_target_properties(flicker_lib PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CMAKE_CXX_MODULE_STD 1 CMAKE_CXX_EXTENSIONS OFF)
 target_compile_options(flicker_lib PRIVATE -Wall -Werror)
-target_include_directories(flicker_lib PUBLIC h) #- REMOVE
 
 # Flicker 3
 add_executable(flicker_3 src/main.cpp)

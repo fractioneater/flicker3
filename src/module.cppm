@@ -4,15 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-module;
-#include "analyzer.h"
-#include "core.fl.h"
-
 export module module_;
 
+import analyzer;
 import analyzer_host;
+import core;
 import lexer;
 import parser;
+import type;
+
 import std;
 
 std::string read_entire_file(const std::string& path) {

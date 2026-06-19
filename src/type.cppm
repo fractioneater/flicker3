@@ -6,8 +6,9 @@
 
 export module type;
 
-import std;
 import lexer;
+
+import std;
 
 // There are two types of types: the parser's types, and the analyzer's types. Look for a comment above each category for an explanation of the structure.
 

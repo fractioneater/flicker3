@@ -6,8 +6,9 @@
 
 export module analyzer_host;
 
-import std;
 import type;
+
+import std;
 
 export struct ModuleExports {
   std::unordered_map<std::string, ObjectSymbol> objects {};

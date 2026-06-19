@@ -2,9 +2,10 @@
 
 #include "common.h"
 
-import std;
 import lexer;
 import parser;
+
+import std;
 
 static Token scan_single(const std::string& src) {
   Lexer lexer {src};

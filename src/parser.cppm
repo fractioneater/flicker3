@@ -5,16 +5,18 @@
  */
 
 module;
-#include "ast.h"
 #include "common.h"
 
 export module parser;
 
+import ast;
 import diagnostic;
 import dotprinter;
+import lexer;
 import param;
-import std;
 import type;
+
+import std;
 
 enum class Precedence {
   NONE,           // so the compiler doesn't destroy itself trying to call the infix rule of a prefix-only token

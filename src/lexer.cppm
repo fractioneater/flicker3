@@ -9,8 +9,9 @@ module;
 
 export module lexer;
 
-import std;
 import diagnostic;
+
+import std;
 
 export enum TokenType {
   // Single-character tokens (0 - 8)

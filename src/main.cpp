@@ -5,6 +5,7 @@
  */
 
 import module_;
+
 import std;
 
 void repl(ModuleLoader& ml) {
