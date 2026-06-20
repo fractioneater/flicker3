@@ -32,7 +32,7 @@ TEST(GeneralParsing, BlockWithIndentation) {
 
 TEST(GeneralParsing, ComplexFunction) {
   const std::string src {
-    "fun add(a: Int, b: Int) -> Int\n"
+    "fun add(a: Number, b: Number) -> Number\n"
     "  return a + b\n"
   };
   Lexer lexer {src};

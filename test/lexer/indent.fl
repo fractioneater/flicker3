@@ -16,8 +16,8 @@ fun () do pass
 fun (j: C) = 3 + j
 fun (a: B) do print a
 
-fun (b: Int) do
-  print (fun (g: Int) do return 4)(b)
+fun (b: Number) do
+  print (fun (g: Number) do return 4)(b)
 fun ()
   return 30
 
@@ -29,7 +29,7 @@ fun { ()
 
 fun { (a: B, b: C, c: D) -> pass; }
 fun { print -1; print 0; print 1; }
-funcWithLambdaArg { (x: Int) -> x ** 2; }
-funcWithLambdaArg { (y: Int) = y + y + y }
-funcWithLambdaArg { (y: Int) = y + y + y; }
+funcWithLambdaArg { (x: Number) -> x ** 2; }
+funcWithLambdaArg { (y: Number) = y + y + y }
+funcWithLambdaArg { (y: Number) = y + y + y; }
 fun {= "boom"}

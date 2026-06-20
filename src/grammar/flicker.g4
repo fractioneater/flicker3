@@ -50,7 +50,7 @@ newline : LINE+ ; // This one is just a plain newline.
 codeItem : statement | expression ;
 
 type : IDENTIFIER QUEST? ((OF | FOR) IDENTIFIER QUEST?)? ;
-// List of Int, Bagel?, List? of Bagel?, FunctionWrapper? for SpecialFunction
+// List of Number, Bagel?, List? of Bagel?, FunctionWrapper? for SpecialFunction
 
 // Statement ------------------------------
 

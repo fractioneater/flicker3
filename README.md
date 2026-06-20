@@ -35,9 +35,9 @@ variable ?: ""            # Nil coalescing operator (Elvis)
 variable?.type            # Safe member access
 
 # And when expressions get boring, you can have fun with functions:
-fun double(num: Int) -> Int = num * 2
+fun double(num: Number) -> Number = num * 2
 
-fun doubleAndPrint(num: Int) -> Int
+fun doubleAndPrint(num: Number) -> Number
   val doubled = num * 2
   print "=(num) doubled is =(doubled)"
   return doubled
@@ -96,9 +96,9 @@ using StringList = List of String  # 2: Type aliases
 #   fun/class for T     OR      fun/class of T
 # For and of can be used interchangeably. For multiple type params, DO NOT use a comma: class Thing for T U.
 # You might be thinking, wouldn't this cause some problems with nesting generics?
-#   Pair of List of String Int
+#   Pair of List of String Number
 # Yes, that's weird. However, the parser won't let you write it. You'll have to do this instead:
-#   Pair of StringList Int
+#   Pair of StringList Number
 # The parser is looking out for you. Keep your code readable, folks.
 
 ```

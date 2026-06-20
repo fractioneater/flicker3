@@ -207,11 +207,11 @@ List of String   # There is a list with strings
 List? of String  # If there is a list, it has non-optional strings
 List of String?  # There is a list, but it has optional strings
 List? of String? # There may be a list, and it may have strings or Nil
-Pair of Int, Int
+Pair of Number, Number
 ```
 
 ```
-var a: Int?
+var a: Number?
 val b: Banana    # Errors because vals need an initializer
 val c = 32
 ```
@@ -232,10 +232,10 @@ Day 6: lambdas, which I've been dreading, but were actually really simple
 
 To implement functions more nicely, I'm making a few changes to syntax and restrictions for generic types.
 
-`Pair of String, Int` is now becoming `Pair of String Int`; functions will be declared like `fun a for X Y`, and so on. The only difference: commas are gone.
+`Pair of String, Number` is now becoming `Pair of String Number`; functions will be declared like `fun a for X Y`, and so on. The only difference: commas are gone.
 And why, do you ask?
 
-To make this situation possible: `(Pair of X Y, Int) -> X`.
+To make this situation possible: `(Pair of X Y, Number) -> X`.
 
 Yes, I'm allowing applied types (generics) inside function types. Each "level" of Type can now contain any type less complex than itself. Function types can't
 contain function types, but they _can_ contain applied types; Applied types can't contain applied types, but they can contain optionals. And optionals, as it
