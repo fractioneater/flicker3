@@ -341,6 +341,7 @@ export class Parser {
     std::vector<StmtNode> namespace_items {};
     if (match(TOKEN_NAMESPACE))
       namespace_items = parse_block<StmtNode>(true, "class namespace", [this] { return declaration_in_namespace(); });
+    match_line();
 
     std::vector<StmtNode> declarations {};
     std::vector<StmtNode> initializers {};
@@ -429,8 +430,19 @@ export class Parser {
     };
     expect(TOKEN_RIGHT_PAREN, "Expecting ')' after parameter list");
 
+    // Initializers can do so much in the parameters that they often don't need a body:
+    // init(val x: Number)
+    bool no_body {false};
+
     if (match(TOKEN_EQ)) report_error("Cannot return from initializer", previous_);
-    StmtNode body {block_or_statement()};
+    else if (check(TOKEN_LINE)) {
+      // Look ahead to see if there is a body.
+      const Token* lookahead {current_};
+      while (lookahead->type == TOKEN_LINE) ++lookahead;
+      if (lookahead->type != TOKEN_INDENT && lookahead->type != TOKEN_DO)
+        no_body = true;
+    }
+    StmtNode body {no_body ? std::make_shared<Statements::Pass>() : block_or_statement()};
 
     return std::make_shared<Statements::Initializer>(params, body);
   }
@@ -952,8 +964,10 @@ export class Parser {
 
   ExprNode list(ExprNode first_item) {
     std::vector items {std::move(first_item)};
-    std::vector other {parse_list<ExprNode>(TOKEN_RIGHT_BRACKET, [this] { return parse_expression(); })};
-    items.insert(items.end(), other.begin(), other.end());
+    if (match(TOKEN_COMMA)) {
+      std::vector other {parse_list<ExprNode>(TOKEN_RIGHT_BRACKET, [this] { return parse_expression(); })};
+      items.insert(items.end(), other.begin(), other.end());
+    }
     expect(TOKEN_RIGHT_BRACKET, "Expecting ']' after list");
 
     return std::make_shared<Expressions::List>(items);
@@ -997,11 +1011,13 @@ export class Parser {
     values.emplace_back(parse_expression());
 
     // Parse the rest of the map.
-    while (!check(TOKEN_RIGHT_BRACKET)) {
-      validate_key(parse_expression());
-      expect(TOKEN_RIGHT_ARROW, "Expecting '->' after map key");
-      values.emplace_back(parse_expression());
-      if (!match(TOKEN_COMMA)) break;
+    if (match(TOKEN_COMMA)) {
+      while (!check(TOKEN_RIGHT_BRACKET)) {
+        validate_key(parse_expression());
+        expect(TOKEN_RIGHT_ARROW, "Expecting '->' after map key");
+        values.emplace_back(parse_expression());
+        if (!match(TOKEN_COMMA)) break;
+      }
     }
 
     expect(TOKEN_RIGHT_BRACKET, "Expecting ']' after map");
@@ -1109,7 +1125,7 @@ export class Parser {
     /* TOKEN_TILDE         */ PREFIX_RULE(unary, "~"),
     /* TOKEN_STAR          */ INFIX_RULE(binary, "*", FACTOR),
     /* TOKEN_STAR_STAR     */ INFIX_RULE(binary_right_assoc, "**", EXPONENT),
-    /* TOKEN_STAR_EQ       */ UNUSED,
+    /* TOKEN_STAR_EQ       */ UNUSED, // TODO: These things (+=, *=, /=, etc).
     /* TOKEN_STAR_STAR_EQ  */ UNUSED,
     /* TOKEN_MINUS         */ BOTH(unary, binary, "-", TERM),
     /* TOKEN_MINUS_MINUS   */ BOTH(unary, postfix_inc_dec, "--", POSTFIX),

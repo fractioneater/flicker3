@@ -146,7 +146,7 @@ export class Lexer {
 
   std::vector<Diagnostic> diagnostics_ {};
 
-  [[nodiscard]] bool at_eof() const { return offset_ >= src_length_; }
+  [[nodiscard]] inline bool at_eof() const { return offset_ >= src_length_; }
 
   [[nodiscard]] char peek() const {
     if (at_eof()) return '\0';
@@ -164,11 +164,12 @@ export class Lexer {
    */
   char advance() {
     ++offset_;
-    if (src_[offset_ - 1] == '\n') {
+    const char c {src_[offset_ - 1]};
+    if (c == '\n')
       // Hopefully, when this is called, we shouldn't be at the point where we need to check for indentation again.
       line_offsets_.emplace_back(offset_);
-    }
-    return src_[offset_ - 1];
+
+    return c;
   }
 
   /**
