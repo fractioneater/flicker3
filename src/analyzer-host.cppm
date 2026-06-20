@@ -10,9 +10,12 @@ import type;
 
 import std;
 
+export using Namespace = std::unordered_map<std::string, ObjectSymbol>;
+
 export struct ModuleExports {
   std::unordered_map<std::string, ObjectSymbol> objects {};
   std::unordered_map<std::string, TypeId> types {};
+  std::unordered_map<std::string, Namespace> namespaces {};
 };
 
 export struct CoreTypes {

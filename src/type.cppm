@@ -278,7 +278,6 @@ export struct ObjectSymbol {
 };
 
 struct TypeDefinition {
-  std::unordered_map<std::string, ObjectSymbol> namespace_symbols {};
   std::unordered_map<std::string, ObjectSymbol> symbols {};
 };
 
@@ -299,7 +298,7 @@ export class TypeArena {
     return types_[id.value];
   }
 
-  std::optional<TypeDefId> definition_of(TypeId id) const {
+  [[nodiscard]] std::optional<TypeDefId> definition_of(TypeId id) const {
     const SemanticType& t {at(id)};
     return std::visit(
       [*this]<typename T>(T&& k) -> std::optional<TypeDefId> {
@@ -363,18 +362,23 @@ export class TypeArena {
     return {};
   }
 
-  [[nodiscard]] const std::unordered_map<std::string, ObjectSymbol>* members_of(TypeId id) const {
-    // TODO NEXT: Instead of accessing whole member lists, create funcs for adding and searching type of members.
-    if (const std::optional def {definition_of(id)})
-      return &definitions_[*def].symbols;
-    return nullptr;
+  // Invalid return means an error has already been handled, std::nullopt means it has yet to be.
+  [[nodiscard]] std::optional<TypeId> member_type(TypeId id, const std::string& member_name) const {
+    if (const std::optional def {definition_of(id)}) {
+      const auto symbols {definitions_[*def].symbols};
+      const auto it {symbols.find(member_name)};
+      if (it == symbols.end()) return std::nullopt;
+      return it->second.declared_type;
+    }
+
+    return std::nullopt;
   }
 
-  [[nodiscard]] const std::unordered_map<std::string, ObjectSymbol>* namespace_members_of(TypeId id) const {
-    // TODO NEXT: Instead of accessing whole member lists, create funcs for adding and searching type of members.
-    if (const std::optional def {definition_of(id)})
-      return &definitions_[*def].namespace_symbols;
-    return nullptr;
+  void add_members(TypeId id, std::unordered_map<std::string, ObjectSymbol>&& members) {
+    if (const std::optional def {definition_of(id)}) {
+      auto& symbols {definitions_[*def].symbols};
+      symbols.insert(std::begin(members), std::end(members));
+    } else throw std::runtime_error("Can't add members to a type without a definition");
   }
 
   [[nodiscard]] std::string to_string(TypeId id) const {

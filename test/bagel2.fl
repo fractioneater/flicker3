@@ -1,3 +1,6 @@
-using "test/bagel.fl" for Cat
+namespace Fruitful
+  var t = 0.223
 
-using Bool = Cat
+  class ExampleBecauseWhyNot
+    init(val im: String)
+      print im

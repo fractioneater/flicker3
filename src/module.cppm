@@ -4,6 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+module;
+#include "common.h"
+
 export module module_;
 
 import analyzer;
@@ -174,11 +177,13 @@ struct StandardModule : Module {
 
   StandardModule(AnalyzerHost& host, Analyzer& parent, const std::string& name, std::string src) : Module {host, parent} {
     compile(name, std::move(src));
-    const auto& [o, t, o_i, t_i] {analyzer.global_scope()};
+    const auto& [o, t, n, o_i, t_i, n_i] {analyzer.global_scope()};
     for (const auto& [object_name, symbol] : o)
       exports.objects.try_emplace(object_name, symbol);
     for (const auto& [type_name, id] : t)
       exports.types.try_emplace(type_name, id);
+    for (const auto& [namespace_name, ns] : n)
+      exports.namespaces.try_emplace(namespace_name, ns);
   }
 };
 

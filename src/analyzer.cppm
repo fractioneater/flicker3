@@ -20,9 +20,11 @@ import std;
 struct ScopeFrame {
   std::unordered_map<std::string, ObjectSymbol> objects {};
   std::unordered_map<std::string, TypeId> types {};
+  std::unordered_map<std::string, Namespace> namespaces {};
 
   std::unordered_map<std::string, ObjectSymbol> object_imports {};
   std::unordered_map<std::string, TypeId> type_imports {};
+  std::unordered_map<std::string, Namespace> namespace_imports {};
 };
 
 struct LoopFrame {
@@ -192,7 +194,7 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
       } else {
         // If it's defined as something other than an overload, give an error just like add_object_safe would.
         try {
-          check_duplicate_name(false, name);
+          check_duplicate_name(SymbolKind::OBJECT, name);
         } catch (AnalyzerException& e) {
           if (e.kind == ExceptionKind::REDECLARED_NAME)
             report_error("Name has already been declared in this scope", stmt.identifier, Diagnostic::ERROR);
@@ -218,10 +220,10 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   void visit_method_stmt(const Statements::Method& stmt) override {}           // NOT IMPLEMENTED
   void visit_class_stmt(const Statements::Class& stmt) override {
     // Define class early so we can use it inside itself.
-    const TypeId t {host_.type_arena().new_named(static_cast<std::string>(stmt.identifier->src_string), static_cast<int>(stmt.type_params.size()))};
+    const TypeId t {host_.type_arena().new_named(std::string {stmt.identifier->src_string}, static_cast<int>(stmt.type_params.size()))};
     add_type_safe(stmt.identifier, t);
 
-    // Define type params
+    // Define type params.
     begin_scope();
     for (auto param_iter {std::begin(stmt.type_params)}; param_iter != std::end(stmt.type_params); ++param_iter) {
       add_type_safe(
@@ -242,20 +244,26 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     classes_.emplace_back(t, super);
 
     // Visit namespace items.
-    begin_scope();
-    for (const auto& it : stmt.namespace_items) it->VISIT;
-    // TODO: Before everything goes away, store it in the class somewhere.
-    end_scope();
+    if (!stmt.namespace_items.empty()) {
+      begin_scope();
+      for (const auto& it : stmt.namespace_items) it->VISIT;
+      store_scope_as_namespace(stmt.identifier);
+      // TODO: Also put the items in the outer scope for in-class access.
+    }
+
+    // Visit declarations before initializers to avoid "this" prefix.
+    for (const auto& it : stmt.declarations) it->VISIT;
 
     // Visit initializers.
-    for (const auto& it : stmt.initializers) it->VISIT;
-    // TODO: Everything with scoping is going wrong.
-    // Visit declarations.
-    // TODO.
+    if (!stmt.initializers.empty()) {
+      begin_scope();
+      for (const auto& it : stmt.initializers) it->VISIT;
+      end_scope(); // But store in class... TODO.
+    }
 
     // Leave scopes.
     classes_.pop_back();
-    end_scope();
+    store_scope_as_members(t);
   }
 
   void visit_namespace_stmt(const Statements::Namespace& stmt) override {} // NOT IMPLEMENTED
@@ -263,11 +271,13 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   void visit_import_stmt(const Statements::Import& stmt) override {
     std::unordered_map<std::string, ObjectSymbol> object_exports {};
     std::unordered_map<std::string, TypeId> type_exports {};
+    std::unordered_map<std::string, Namespace> namespace_exports {};
     try {
       // Calling exports() will load the file, analyze it, and return its exports. It does all the work.
-      const auto& [objects, types] {host_.exports(stmt.path)};
-      object_exports = objects;
-      type_exports   = types;
+      const auto& [objects, types, namespaces] {host_.exports(stmt.path)};
+      object_exports    = objects;
+      type_exports      = types;
+      namespace_exports = namespaces;
     } catch (std::runtime_error& _) {
       report_error(std::format("Failed to load '{}'", stmt.path), nullptr); // TODO: Where?
       return;
@@ -285,17 +295,32 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
         import_object_safe(stmt.imports.front(), name, symbol);
       for (const auto& [name, type] : type_exports)
         import_type_safe(stmt.imports.front(), name, type);
+      for (const auto& [name, ns] : namespace_exports)
+        import_namespace_safe(stmt.imports.front(), name, ns);
     } else {
       // Use the explicit imports list.
       for (const Token* identifier : stmt.imports) {
         const std::string name {identifier->src_string};
         const auto o {object_exports.find(name)};
         const auto t {type_exports.find(name)};
+        const auto n {namespace_exports.find(name)};
 
-        if (o != std::end(object_exports))
+        bool success {false};
+        if (o != std::end(object_exports)) {
           import_object_safe(identifier, name, o->second);
-        if (t != std::end(type_exports))
+          success = true;
+        }
+        if (t != std::end(type_exports)) {
           import_type_safe(identifier, name, t->second);
+          success = true;
+        }
+        if (n != std::end(namespace_exports)) {
+          import_namespace_safe(identifier, name, n->second);
+          success = true;
+        }
+
+        if (!success)
+          report_error(std::format("Module '{}' does not export '{}'", stmt.path, name), identifier);
       }
     }
   }
@@ -408,11 +433,31 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     }
   }
 
-  void visit_assignment_expr(const Expressions::Assignment& expr) override {}            // NOT IMPLEMENTED
-  void visit_call_expr(const Expressions::Call& expr) override {}                        // NOT IMPLEMENTED
-  void visit_subscript_expr(const Expressions::Subscript& expr) override {}              // NOT IMPLEMENTED
-  void visit_member_expr(const Expressions::Member& expr) override {}                    // NOT IMPLEMENTED
-  void visit_namespace_member_expr(const Expressions::NamespaceMember& expr) override {} // NOT IMPLEMENTED
+  void visit_assignment_expr(const Expressions::Assignment& expr) override {} // NOT IMPLEMENTED
+  void visit_call_expr(const Expressions::Call& expr) override {}             // NOT IMPLEMENTED
+  void visit_subscript_expr(const Expressions::Subscript& expr) override {}   // NOT IMPLEMENTED
+
+  void visit_member_expr(const Expressions::Member& expr) override {
+    expr.object->VISIT;
+    const std::string member_name {expr.member->src_string};
+    if (!expr.object->type) return;
+    const std::optional type {host_.type_arena().member_type(expr.object->type, member_name)};
+    if (!type)
+      report_error(
+        std::format("'{}' does not have member '{}'", host_.type_arena().to_string(expr.object->type), member_name), nullptr
+      ); // TODO: Where?
+    expr.type = type.value_or(TypeId {});
+  }
+
+  void visit_namespace_member_expr(const Expressions::NamespaceMember& expr) override {
+    const std::string namespace_name {expr.namespace_id->src_string};
+    const std::string member_name {expr.member->src_string};
+    // TODO:
+    // First, check with find_type() for a class with the namespace.
+    // Second, find a way to store namespaces created not inside a class. Check there too.
+
+    // const std::optional type {host_.type_arena().namespace_member_type(find_type(namespace_name), member_name)};
+  }
 
   void visit_unary_expr(const Expressions::Unary& expr) override {
     expr.expr->VISIT;
@@ -547,7 +592,6 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     }
   }
 
-  // Functions that look nicer when you write them like this:
   void begin_scope() {
     scopes_.emplace_back();
   }
@@ -557,13 +601,53 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   }
 
   /**
+   * Move the current scope's objects to the member table of a class, and end the scope.
+   * @param t Named class TypeId to add object symbol table to
+   */
+  void store_scope_as_members(TypeId t) {
+    host_.type_arena().add_members(t, std::move(scopes_.back().objects));
+    end_scope();
+  }
+
+  /**
+   * Move the current scope's objects to a namespace, and end the scope.
+   * @param name Namespace identifier token
+   */
+  void store_scope_as_namespace(const Token* const name) {
+    auto&& temp {std::move(scopes_.back().objects)};
+    end_scope();
+    add_namespace_safe(name, std::move(temp));
+  }
+
+  enum class SymbolKind { OBJECT, TYPE, NAMESPACE };
+
+  /**
    * Makes sure a name isn't already declared.
-   * @param is_type Which symbol table to scan (true for type, false for object)
+   * @param location Which symbol table to scan (type, object, or namespace)
    * @param name Name of the symbol in question
    */
-  void check_duplicate_name(bool is_type, const std::string& name) {
+  void check_duplicate_name(SymbolKind location, const std::string& name) {
+    std::function<bool(std::vector<ScopeFrame>::iterator)> contains {};
+    switch (location) {
+      case SymbolKind::OBJECT:
+        contains = [&name](std::vector<ScopeFrame>::iterator it) {
+          return it->objects.contains(name) || it->object_imports.contains(name);
+        };
+        break;
+      case SymbolKind::TYPE:
+        contains = [&name](std::vector<ScopeFrame>::iterator it) {
+          return it->types.contains(name) || it->type_imports.contains(name);
+        };
+        break;
+      case SymbolKind::NAMESPACE:
+        contains = [&name](std::vector<ScopeFrame>::iterator it) {
+          return it->namespaces.contains(name) || it->namespace_imports.contains(name);
+        };
+        break;
+    }
+
     for (auto iter {std::begin(scopes_)}; iter != std::end(scopes_); ++iter) {
-      if (is_type ? (iter->types.contains(name) || iter->type_imports.contains(name)) : (iter->objects.contains(name) || iter->object_imports.contains(name))) {
+      if (contains(iter)) {
         if (std::next(iter) == scopes_.end())
           throw AnalyzerException {ExceptionKind::REDECLARED_NAME};
         throw AnalyzerException {ExceptionKind::SHADOWED_NAME};
@@ -579,11 +663,11 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   void add_object_safe(const Token* const token, ObjectSymbol symbol) noexcept {
     const std::string name {token->src_string};
     try {
-      check_duplicate_name(false, name);
+      check_duplicate_name(SymbolKind::OBJECT, name);
       scopes_.back().objects.emplace(name, symbol);
     } catch (AnalyzerException& e) {
       if (e.kind == ExceptionKind::REDECLARED_NAME)
-        report_error("Name has already been declared in this scope", token, Diagnostic::ERROR);
+        report_error("An object with this name has already been declared in this scope", token, Diagnostic::ERROR);
       else if (e.kind == ExceptionKind::SHADOWED_NAME)
         report_error("Name shadows a declaration from another scope", token, Diagnostic::WARNING);
     }
@@ -597,13 +681,31 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   void add_type_safe(const Token* const token, TypeId t) noexcept {
     const std::string name {token->src_string};
     try {
-      check_duplicate_name(true, name);
+      check_duplicate_name(SymbolKind::TYPE, name);
       scopes_.back().types.emplace(name, t);
     } catch (AnalyzerException& e) {
       if (e.kind == ExceptionKind::REDECLARED_NAME)
-        report_error("Type name has already been declared in this scope", token, Diagnostic::ERROR);
+        report_error("A type with this name has already been declared in this scope", token, Diagnostic::ERROR);
       else if (e.kind == ExceptionKind::SHADOWED_NAME)
         report_error("Type name shadows a declaration from another scope", token, Diagnostic::WARNING);
+    }
+  }
+
+  /**
+   * Adds a namespace to the symbol table and reports duplicate names.
+   * @param token Identifier token for symbol name and error positioning
+   * @param ns Namespace object to add to symbol table
+   */
+  void add_namespace_safe(const Token* const token, const Namespace& ns) noexcept {
+    const std::string name {token->src_string};
+    try {
+      check_duplicate_name(SymbolKind::NAMESPACE, name);
+      scopes_.back().namespaces.emplace(name, ns);
+    } catch (AnalyzerException& e) {
+      if (e.kind == ExceptionKind::REDECLARED_NAME)
+        report_error("A namespace with this name has already been declared in this scope", token, Diagnostic::ERROR);
+      else if (e.kind == ExceptionKind::SHADOWED_NAME)
+        report_error("Namespace shadows a declaration from another scope", token, Diagnostic::WARNING);
     }
   }
 
@@ -613,16 +715,16 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
    * @param name String for symbol's name
    * @param symbol Symbol to add to the scope's object table
    */
-  void import_object_safe(const Token* where, const std::string& name, ObjectSymbol symbol) {
+  void import_object_safe(const Token* where, const std::string& name, ObjectSymbol symbol) noexcept {
     try {
-      check_duplicate_name(false, name);
+      check_duplicate_name(SymbolKind::OBJECT, name);
       scopes_.back().object_imports.emplace(name, symbol);
     } catch (AnalyzerException& e) {
-      Diagnostic tip {"Use '->' to create an import alias: using \"...\" for a -> b", Diagnostic::NOTE};
+      const Diagnostic tip {"Use '->' to create an import alias: using \"...\" for a -> b", Diagnostic::NOTE};
       if (e.kind == ExceptionKind::REDECLARED_NAME)
-        report_error(std::format("Import '{}' conflicts with a declaration in this scope", name), where, Diagnostic::ERROR, &tip);
+        report_error(std::format("Import '{}' conflicts with an object declaration in this scope", name), where, Diagnostic::ERROR, &tip);
       else if (e.kind == ExceptionKind::SHADOWED_NAME)
-        report_error(std::format("Import '{}' shadows a declaration from another scope", name), where, Diagnostic::WARNING, &tip);
+        report_error(std::format("Import '{}' shadows an object declaration from another scope", name), where, Diagnostic::WARNING, &tip);
     }
   }
 
@@ -632,16 +734,35 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
    * @param name String for the type's name
    * @param t TypeId to add to the scope's type table
    */
-  void import_type_safe(const Token* where, const std::string& name, TypeId t) {
+  void import_type_safe(const Token* where, const std::string& name, TypeId t) noexcept {
     try {
-      check_duplicate_name(true, name);
+      check_duplicate_name(SymbolKind::TYPE, name);
       scopes_.back().type_imports.emplace(name, t);
     } catch (AnalyzerException& e) {
-      Diagnostic tip {"Use '->' to create an import alias: using \"...\" for a -> b", Diagnostic::NOTE};
+      const Diagnostic tip {"Use '->' to create an import alias: using \"...\" for a -> b", Diagnostic::NOTE};
       if (e.kind == ExceptionKind::REDECLARED_NAME)
-        report_error(std::format("Import '{}' conflicts with a declaration in this scope", name), where, Diagnostic::ERROR, &tip);
+        report_error(std::format("Import '{}' conflicts with a type declaration in this scope", name), where, Diagnostic::ERROR, &tip);
       else if (e.kind == ExceptionKind::SHADOWED_NAME)
-        report_error(std::format("Import '{}' shadows a declaration from another scope", name), where, Diagnostic::WARNING, &tip);
+        report_error(std::format("Import '{}' shadows a type declaration from another scope", name), where, Diagnostic::WARNING, &tip);
+    }
+  }
+
+  /**
+   * Adds a namespace to the scope's import list and reports duplicate names.
+   * @param where Identifier token for error positioning (could be '.' or '*')
+   * @param name String for the namespace's name
+   * @param ns Namespace object
+   */
+  void import_namespace_safe(const Token* where, const std::string& name, const Namespace& ns) noexcept {
+    try {
+      check_duplicate_name(SymbolKind::NAMESPACE, name);
+      scopes_.back().namespaces.emplace(name, ns);
+    } catch (AnalyzerException& e) {
+      const Diagnostic tip {"Use '->' to create an import alias: using \"...\" for a -> b", Diagnostic::NOTE};
+      if (e.kind == ExceptionKind::REDECLARED_NAME)
+        report_error(std::format("Import '{}' conflicts with a namespace declaration in this scope", name), where, Diagnostic::ERROR, &tip);
+      else if (e.kind == ExceptionKind::SHADOWED_NAME)
+        report_error(std::format("Import '{}' shadows a namespace declaration from another scope", name), where, Diagnostic::WARNING, &tip);
     }
   }
 
@@ -664,10 +785,11 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   explicit Analyzer(AnalyzerHost& host) : host_ {host} {}
 
   explicit Analyzer(AnalyzerHost& host, Analyzer& parent) : host_ {host} {
-    const auto& [o , t , o_i, t_i] {parent.global_scope()};
+    const auto& [o, t, n, o_i, t_i, n_i] {parent.global_scope()};
     // Copy all of parent's top-level declarations into this analyzer's imports.
-    scopes_.back().object_imports = o;
-    scopes_.back().type_imports   = t;
+    scopes_.back().object_imports    = o;
+    scopes_.back().type_imports      = t;
+    scopes_.back().namespace_imports = n;
   }
 
   [[nodiscard]] const std::vector<Diagnostic>& get_diagnostics() const { return diagnostics_; }
