@@ -1,4 +1,7 @@
 namespace Fruitful
+  namespace Inner
+    val g = 202
+
   var t = 0.223
 
   class ExampleBecauseWhyNot

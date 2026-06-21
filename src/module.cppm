@@ -168,7 +168,7 @@ struct Module {
 struct StandardModule : Module {
   std::string name {};
 
-  ModuleExports exports {};
+  SymbolTable exports {};
 
   bool run() override {
     if (status != MODULE_COMPILED) return false;
@@ -177,7 +177,7 @@ struct StandardModule : Module {
 
   StandardModule(AnalyzerHost& host, Analyzer& parent, const std::string& name, std::string src) : Module {host, parent} {
     compile(name, std::move(src));
-    const auto& [o, t, n, o_i, t_i, n_i] {analyzer.global_scope()};
+    const auto& [o, t, n] {analyzer.global_scope().locals};
     for (const auto& [object_name, symbol] : o)
       exports.objects.try_emplace(object_name, symbol);
     for (const auto& [type_name, id] : t)
@@ -214,15 +214,15 @@ struct CoreModule : Module {
 
     // Initialized all at once to ensure everything is present.
     types = {
-      analyzer.find_type("Any"),
-      analyzer.find_type("Bool"),
-      analyzer.find_type("Char"),
-      analyzer.find_type("List"),
-      analyzer.find_type("Map"),
-      analyzer.find_type("Nothing"),
-      analyzer.find_type("Number"),
-      analyzer.find_type("String"),
-      analyzer.find_type("Unit")
+      *analyzer.find_type("Any"),
+      *analyzer.find_type("Bool"),
+      *analyzer.find_type("Char"),
+      *analyzer.find_type("List"),
+      *analyzer.find_type("Map"),
+      *analyzer.find_type("Nothing"),
+      *analyzer.find_type("Number"),
+      *analyzer.find_type("String"),
+      *analyzer.find_type("Unit")
     };
   }
 };
@@ -263,7 +263,7 @@ export class ModuleLoader : public AnalyzerHost {
 
   public:
   // AnalyzerHost interface methods
-  [[nodiscard]] const ModuleExports& exports(const std::string& path) override {
+  [[nodiscard]] const SymbolTable& exports(const std::string& path) override {
     const auto module {load_by_path(path).first};
     if (module == loaded_.end()) throw std::runtime_error("Module not found");
     return module->second.exports;

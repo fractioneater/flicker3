@@ -333,6 +333,7 @@ export class Parser {
 
     // Property 3: Superclass
     const Token* superclass {match(TOKEN_IS) ? expect(TOKEN_IDENTIFIER, "Expecting a superclass name") : nullptr};
+    // TODO: Allow multiple inheritance.
 
     // Properties 4, 5 & 6: Contents
     match_line();
@@ -354,6 +355,7 @@ export class Parser {
       else if (match(TOKEN_FUN)) declarations.emplace_back(method());
       else if (check(TOKEN_IDENTIFIER) && current_->src_string == "init")
         initializers.emplace_back(initializer());
+      else if (check(TOKEN_CLASS)) {} // TODO: Allow nested classes, imports, and aliases. Not namespaces, though. There can only be one of those, and it's special.
 
       else if (unexpected_indent()) continue;
       else if (match(TOKEN_NAMESPACE)) {
@@ -520,6 +522,17 @@ export class Parser {
     // Hacky, but I think it's okay... ish.
     const std::string name {expect(TOKEN_IDENTIFIER, "Expecting " + thing_to_look_for)->src_string};
     SyntacticTypePtr type {std::make_shared<NamedType>(name, previous_)};
+
+    if (match(TOKEN_COLON_COLON)) {
+      const Token* start {previous_ - 1};
+      std::vector path {name};
+      do {
+        if (const auto id {expect(TOKEN_IDENTIFIER, "Expecting an identifier after '::'")})
+          path.emplace_back(id->src_string);
+      } while (match(TOKEN_COLON_COLON));
+      type = std::make_shared<NamespacedType>(path, path.back(), start);
+      path.pop_back();
+    }
 
     const bool is_optional {match(TOKEN_QUEST)};
 
@@ -817,11 +830,20 @@ export class Parser {
   }
 
   ExprNode namespace_member(const ExprNode& expr) {
+    // Read the whole chain, similar to how standard_type() does it, but storing tokens.
     if (const auto var_expr {std::dynamic_pointer_cast<Expressions::Variable>(expr)}) {
-      return std::make_shared<Expressions::NamespaceMember>(var_expr->identifier, expect(TOKEN_IDENTIFIER, "Expecting a namespace member"));
+      std::vector path {var_expr->identifier};
+      do {
+        path.emplace_back(expect(TOKEN_IDENTIFIER, "Expecting a namespace member"));
+      } while (match(TOKEN_COLON_COLON));
+      // The back item is the name, which shouldn't be part of the namespace path.
+      const auto name {path.back()};
+      path.pop_back();
+      return std::make_shared<Expressions::NamespaceMember>(path, name);
     }
-    report_error("'::' (namespace access) only works for namespaces", previous_);
-    return std::make_shared<Expressions::Nil>();
+
+    report_error("'::' (namespace access) only works on namespaces", previous_);
+    return nullptr;
   }
 
   // Prefix

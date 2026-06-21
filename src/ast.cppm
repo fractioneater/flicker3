@@ -876,7 +876,7 @@ export class Expressions::Member : public Expr {
 
 export class Expressions::NamespaceMember : public Expr {
   public:
-  NamespaceMember(const Token* namespace_id, const Token* member) : namespace_id {namespace_id}, member {member} {}
+  NamespaceMember(std::vector<const Token*> namespace_ids, const Token* member) : namespace_ids {std::move(namespace_ids)}, member {member} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_namespace_member_expr_any(*this);
@@ -886,7 +886,7 @@ export class Expressions::NamespaceMember : public Expr {
     visitor.visit_namespace_member_expr(*this);
   }
 
-  const Token* namespace_id {};
+  const std::vector<const Token*> namespace_ids {};
   const Token* member {};
 };
 

@@ -36,6 +36,7 @@ export enum class TypeKind {
   APPLIED,
   OPTIONAL,
   FUNCTION,
+  NAMESPACED,
 };
 
 class SyntacticType {
@@ -71,10 +72,21 @@ export struct OptionalType final : SyntacticType {
 
 export struct FunctionType final : SyntacticType {
   std::vector<SyntacticTypePtr> params {};
-  SyntacticTypePtr result {};
+  SyntacticTypePtr return_type {};
 
-  FunctionType(std::vector<SyntacticTypePtr> params, SyntacticTypePtr result) : params {std::move(params)}, result {std::move(result)} {}
+  FunctionType(std::vector<SyntacticTypePtr> params, SyntacticTypePtr return_type) : params {std::move(params)}, return_type {std::move(return_type)} {}
   [[nodiscard]] TypeKind kind() const override { return TypeKind::FUNCTION; }
+};
+
+export struct NamespacedType final : SyntacticType {
+  std::vector<std::string> namespace_path {};
+  std::string name {};
+  const Token* where {};
+
+  NamespacedType(std::vector<std::string> namespace_path, std::string name, const Token* token)
+    : namespace_path {std::move(namespace_path)}, name {std::move(name)}, where {token} {}
+
+  [[nodiscard]] TypeKind kind() const override { return TypeKind::NAMESPACED; }
 };
 
 /**
@@ -277,8 +289,45 @@ export struct ObjectSymbol {
   TypeId declared_type {};
 };
 
+export struct SymbolTable;
+
+export class Searchable {
+  public:
+  virtual ~Searchable() = default;
+
+  [[nodiscard]] virtual std::optional<TypeId> find_type(const std::string& name) const = 0;
+  [[nodiscard]] virtual std::optional<ObjectSymbol> find_object(const std::string& name) const = 0;
+  [[nodiscard]] virtual std::optional<std::shared_ptr<SymbolTable>> find_namespace(const std::string& name) const = 0;
+};
+
+export struct SymbolTable : Searchable {
+  std::unordered_map<std::string, ObjectSymbol> objects {};
+  std::unordered_map<std::string, TypeId> types {};
+  std::unordered_map<std::string, std::shared_ptr<SymbolTable>> namespaces {};
+
+  [[nodiscard]] std::optional<ObjectSymbol> find_object(const std::string& name) const override {
+    const auto it {objects.find(name)};
+    if (it != objects.end()) return it->second;
+    return std::nullopt;
+  }
+
+  [[nodiscard]] std::optional<TypeId> find_type(const std::string& name) const override {
+    const auto it {types.find(name)};
+    if (it != types.end()) return it->second;
+    return std::nullopt;
+  }
+
+  [[nodiscard]] std::optional<std::shared_ptr<SymbolTable>> find_namespace(const std::string& name) const override {
+    const auto it {namespaces.find(name)};
+    if (it != namespaces.end()) return it->second;
+    return std::nullopt;
+  }
+};
+
+export using Namespace = std::shared_ptr<SymbolTable>;
+
 struct TypeDefinition {
-  std::unordered_map<std::string, ObjectSymbol> symbols {};
+  SymbolTable symbols {};
 };
 
 /**
@@ -346,9 +395,9 @@ export class TypeArena {
   [[nodiscard]] TypeId method_return_type(TypeId id, const std::string& method_name, const std::vector<TypeId>& params) const {
     if (const std::optional def {definition_of(id)}) {
       const auto symbols {definitions_[*def].symbols};
-      const auto it {symbols.find(method_name)};
-      if (it == symbols.end()) return {};
-      const SemanticType& symbol {at(it->second.declared_type)};
+      const auto it {symbols.find_object(method_name)};
+      if (!it) return {};
+      const SemanticType& symbol {at(it->declared_type)};
 
       // Check if it's an overload set.
       if (!std::holds_alternative<OverloadSet>(symbol)) return {};
@@ -366,18 +415,19 @@ export class TypeArena {
   [[nodiscard]] std::optional<TypeId> member_type(TypeId id, const std::string& member_name) const {
     if (const std::optional def {definition_of(id)}) {
       const auto symbols {definitions_[*def].symbols};
-      const auto it {symbols.find(member_name)};
-      if (it == symbols.end()) return std::nullopt;
-      return it->second.declared_type;
+      const auto it {symbols.find_object(member_name)};
+      if (!it) return std::nullopt;
+      return it->declared_type;
     }
 
     return std::nullopt;
   }
 
-  void add_members(TypeId id, std::unordered_map<std::string, ObjectSymbol>&& members) {
+  void add_members(TypeId id, std::unordered_map<std::string, ObjectSymbol>&& objects, std::unordered_map<std::string, TypeId>&& types) {
     if (const std::optional def {definition_of(id)}) {
       auto& symbols {definitions_[*def].symbols};
-      symbols.insert(std::begin(members), std::end(members));
+      symbols.objects.insert(std::begin(objects), std::end(objects));
+      symbols.types.insert(std::begin(types), std::end(types));
     } else throw std::runtime_error("Can't add members to a type without a definition");
   }
 

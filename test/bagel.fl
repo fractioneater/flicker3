@@ -9,3 +9,4 @@ var x: ColorHSL = ColorHSL(50, 90, 0.52)
 x.name
 
 print Fruitful::t
+print Fruitful::Inner::g

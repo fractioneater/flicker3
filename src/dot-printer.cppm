@@ -459,7 +459,10 @@ class DotTreeWalker {
     }
 
     std::string visit_namespace_member_expr(const Expressions::NamespaceMember& expr) override {
-      return std::string {expr.namespace_id->src_string} + "::" + std::string {expr.member->src_string};
+      std::string blah {};
+      for (const auto& name : expr.namespace_ids)
+        blah += std::string {name->src_string} + "::";
+      return blah + std::string {expr.member->src_string};
     }
 
     std::string visit_unary_expr(const Expressions::Unary& expr) override { return "unary " + std::string {expr.fn_name}; }
@@ -567,6 +570,15 @@ class DotTreeWalker {
         break;
       case TypeKind::FUNCTION: label = "function (...+) -> ...";
         break;
+      case TypeKind::NAMESPACED: {
+        const auto namespaced {std::dynamic_pointer_cast<NamespacedType>(type)};
+        for (const auto& path_name : namespaced->namespace_path) {
+          label += path_name;
+          label += "::";
+        }
+        label += namespaced->name;
+        break;
+      }
     }
 
     out_ << "  n" << my_id << " [label=\"" << label << "\", shape=box, color=plum4, fontcolor=rebeccapurple];\n";
@@ -579,7 +591,7 @@ class DotTreeWalker {
       walk(optional->inner, my_id);
     } else if (const auto fn {std::dynamic_pointer_cast<FunctionType>(type)}) {
       for (const auto& param : fn->params) walk(param, my_id);
-      walk(fn->result, my_id);
+      walk(fn->return_type, my_id);
     }
   }
 

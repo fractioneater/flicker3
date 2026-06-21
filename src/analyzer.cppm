@@ -18,13 +18,8 @@ import std;
 #define VISIT accept(*this)
 
 struct ScopeFrame {
-  std::unordered_map<std::string, ObjectSymbol> objects {};
-  std::unordered_map<std::string, TypeId> types {};
-  std::unordered_map<std::string, Namespace> namespaces {};
-
-  std::unordered_map<std::string, ObjectSymbol> object_imports {};
-  std::unordered_map<std::string, TypeId> type_imports {};
-  std::unordered_map<std::string, Namespace> namespace_imports {};
+  SymbolTable locals {};
+  SymbolTable imports {};
 };
 
 struct LoopFrame {
@@ -58,14 +53,14 @@ struct ClassFrame {
 };
 
 // Tiny interface for some fun exceptions.
-enum class ExceptionKind { REDECLARED_NAME, SHADOWED_NAME, SYMBOL_NOT_FOUND };
+enum class ExceptionKind { REDECLARED_NAME, SHADOWED_NAME };
 
 struct AnalyzerException : std::exception {
   ExceptionKind kind;
   explicit AnalyzerException(ExceptionKind k) : kind {k} {}
 };
 
-export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
+export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchable {
   // Interface to connect the Analyzer to the ModuleLoader that created it.
   AnalyzerHost& host_;
 
@@ -125,7 +120,7 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
       }
     }
 
-    if (const TypeId type = stmt.type ? resolve_syntactic_type(stmt.type) : stmt.initializer->type)
+    if (const TypeId type {declared_type.value_or(stmt.initializer->type)})
       add_object_safe(stmt.identifier, {stmt.is_mutable, type});
   }
 
@@ -175,45 +170,40 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
 
     // Lots of work just for a little overloading.
     const std::string name {stmt.identifier->src_string};
-    try {
-      const TypeId type {find_object(name)->declared_type};
-      if (!type) throw AnalyzerException {ExceptionKind::SYMBOL_NOT_FOUND};
-      const SemanticType& it {host_.type_arena().at(type)};
-      if (std::holds_alternative<OverloadSet>(it)) {
-        // Symbol found and is an overload.
-        const OverloadSet& current {std::get<OverloadSet>(it)};
-        if (current.has(sig_id)) {
-          report_error("A function with this signature has already been declared in this scope", stmt.identifier);
+    if (const std::optional obj {find_object(name)}) { // If there's an object with this name...
+      if (const TypeId type {obj->declared_type}) {    // And its type is valid...
+        const SemanticType& it {host_.type_arena().at(type)};
+        if (std::holds_alternative<OverloadSet>(it)) {
+          // Symbol found and is an overload.
+          const OverloadSet& current {std::get<OverloadSet>(it)};
+          if (current.has(sig_id)) {
+            report_error("A function with this signature has already been declared in this scope", stmt.identifier);
+          } else {
+            OverloadSet updated {current};
+            updated.add(sig_id);
+            const TypeId new_set {host_.type_arena().add(std::move(updated))};
+            if (!rebind_object(name, new_set))
+              report_error("Cannot overload imported function", stmt.identifier);
+          }
         } else {
-          OverloadSet updated {current};
-          updated.add(sig_id);
-          const TypeId new_set {host_.type_arena().add(std::move(updated))};
-          if (!rebind_object(name, new_set))
-            report_error("Cannot overload imported function", stmt.identifier);
+          // If it's defined as something other than an overload, give an error just like add_object_safe would.
+          try {
+            check_duplicate_name(SymbolKind::OBJECT, name);
+          } catch (AnalyzerException& e) {
+            if (e.kind == ExceptionKind::REDECLARED_NAME)
+              report_error("Name has already been declared in this scope", stmt.identifier, Diagnostic::ERROR);
+            else if (e.kind == ExceptionKind::SHADOWED_NAME)
+              report_error("Name shadows a declaration from another scope", stmt.identifier, Diagnostic::WARNING);
+          }
         }
-      } else {
-        // If it's defined as something other than an overload, give an error just like add_object_safe would.
-        try {
-          check_duplicate_name(SymbolKind::OBJECT, name);
-        } catch (AnalyzerException& e) {
-          if (e.kind == ExceptionKind::REDECLARED_NAME)
-            report_error("Name has already been declared in this scope", stmt.identifier, Diagnostic::ERROR);
-          else if (e.kind == ExceptionKind::SHADOWED_NAME)
-            report_error("Name shadows a declaration from another scope", stmt.identifier, Diagnostic::WARNING);
-        }
+        return;
       }
-    } catch (AnalyzerException& _) {
-      // Symbol doesn't exist; create a new overload set.
-      add_object_safe(
-        stmt.identifier,
-        {
-          false,
-          host_.type_arena().add(
-            OverloadSet {name, {sig_id}}
-          )
-        }
-      );
     }
+    // Symbol does not exist; create a new overload set.
+    add_object_safe(
+      stmt.identifier,
+      {false, host_.type_arena().add(OverloadSet {name, {sig_id}})}
+    );
   }
 
   void visit_initializer_stmt(const Statements::Initializer& stmt) override {} // NOT IMPLEMENTED
@@ -235,11 +225,8 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     // Find superclass.
     std::optional<TypeId> super {};
     if (stmt.superclass) {
-      try {
-        super = find_type(std::string {stmt.superclass->src_string});
-      } catch (AnalyzerException& _) {
-        report_error(std::format("Unresolved reference to type '{}'", stmt.superclass->src_string), stmt.superclass);
-      }
+      super = find_type(std::string {stmt.superclass->src_string});
+      if (!super) report_error(std::format("Unresolved reference to type '{}'", stmt.superclass->src_string), stmt.superclass);
     }
     classes_.emplace_back(t, super);
 
@@ -266,18 +253,17 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     store_scope_as_members(t);
   }
 
-  void visit_namespace_stmt(const Statements::Namespace& stmt) override {} // NOT IMPLEMENTED
+  void visit_namespace_stmt(const Statements::Namespace& stmt) override {
+    begin_scope();
+    for (const auto& it : stmt.declarations) it->VISIT;
+    store_scope_as_namespace(stmt.identifier);
+  }
 
   void visit_import_stmt(const Statements::Import& stmt) override {
-    std::unordered_map<std::string, ObjectSymbol> object_exports {};
-    std::unordered_map<std::string, TypeId> type_exports {};
-    std::unordered_map<std::string, Namespace> namespace_exports {};
+    SymbolTable exports {};
     try {
       // Calling exports() will load the file, analyze it, and return its exports. It does all the work.
-      const auto& [objects, types, namespaces] {host_.exports(stmt.path)};
-      object_exports    = objects;
-      type_exports      = types;
-      namespace_exports = namespaces;
+      exports = host_.exports(stmt.path);
     } catch (std::runtime_error& _) {
       report_error(std::format("Failed to load '{}'", stmt.path), nullptr); // TODO: Where?
       return;
@@ -285,42 +271,40 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
 
     if (stmt.imports.empty()) {
       // Import all as a namespace.
-      // TODO.
-      // ReSharper disable once CppDFAConstantConditions :(
+      const auto& [objects, types, namespaces] {host_.exports(stmt.path)};
+      begin_scope();
+      for (const auto& [name, symbol] : objects)
+        import_object_safe(stmt.imports.front(), name, symbol);
+      for (const auto& [name, type] : types)
+        import_type_safe(stmt.imports.front(), name, type);
+      for (const auto& [name, ns] : namespaces)
+        import_namespace_safe(stmt.imports.front(), name, ns);
+      // TODO NEXT: Get module name from host, store this scope as a namespace before it ends, error if a namespace already exists with module name.
+      end_scope();
     } else if (stmt.import_all) {
       // Import all by name.
       // The first (and only) token in stmt.imports is the '.' or '*' character.
-      // ReSharper disable once CppDFAUnreachableCode :(
-      for (const auto& [name, symbol] : object_exports)
+      const auto& [objects, types, namespaces] {host_.exports(stmt.path)};
+      for (const auto& [name, symbol] : objects)
         import_object_safe(stmt.imports.front(), name, symbol);
-      for (const auto& [name, type] : type_exports)
+      for (const auto& [name, type] : types)
         import_type_safe(stmt.imports.front(), name, type);
-      for (const auto& [name, ns] : namespace_exports)
+      for (const auto& [name, ns] : namespaces)
         import_namespace_safe(stmt.imports.front(), name, ns);
     } else {
       // Use the explicit imports list.
       for (const Token* identifier : stmt.imports) {
         const std::string name {identifier->src_string};
-        const auto o {object_exports.find(name)};
-        const auto t {type_exports.find(name)};
-        const auto n {namespace_exports.find(name)};
 
-        bool success {false};
-        if (o != std::end(object_exports)) {
-          import_object_safe(identifier, name, o->second);
-          success = true;
-        }
-        if (t != std::end(type_exports)) {
-          import_type_safe(identifier, name, t->second);
-          success = true;
-        }
-        if (n != std::end(namespace_exports)) {
-          import_namespace_safe(identifier, name, n->second);
-          success = true;
-        }
+        const auto o {exports.find_object(name)};
+        const auto t {exports.find_type(name)};
+        const auto n {exports.find_namespace(name)};
 
-        if (!success)
-          report_error(std::format("Module '{}' does not export '{}'", stmt.path, name), identifier);
+        if (o) import_object_safe(identifier, name, *o);
+        if (t) import_type_safe(identifier, name, *t);
+        if (n) import_namespace_safe(identifier, name, *n);
+
+        if (!(o || t || n)) report_error(std::format("Module '{}' does not export '{}'", stmt.path, name), identifier);
       }
     }
   }
@@ -450,13 +434,26 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   }
 
   void visit_namespace_member_expr(const Expressions::NamespaceMember& expr) override {
-    const std::string namespace_name {expr.namespace_id->src_string};
-    const std::string member_name {expr.member->src_string};
-    // TODO:
-    // First, check with find_type() for a class with the namespace.
-    // Second, find a way to store namespaces created not inside a class. Check there too.
+    const Searchable* search_scope {this};
+    std::string outer_name {"Scope"};
+    for (const auto& ns : expr.namespace_ids) {
+      const std::string ns_name {ns->src_string};
+      const std::optional found {search_scope->find_namespace(ns_name)};
+      if (!found) {
+        report_error(std::format("{} does not contain namespace '{}'", outer_name, ns_name), ns);
+        return;
+      }
+      search_scope = found.value().get(); // Looks better than &**found.
+      outer_name   = "Namespace '" + ns_name + "'";
+    }
 
-    // const std::optional type {host_.type_arena().namespace_member_type(find_type(namespace_name), member_name)};
+    const std::string member_name {expr.member->src_string};
+    const auto found {search_scope->find_object(member_name)};
+    if (!found) {
+      report_error(std::format("{} does not contain member '{}'", outer_name, member_name), expr.member);
+      return;
+    }
+    expr.type = found->declared_type;
   }
 
   void visit_unary_expr(const Expressions::Unary& expr) override {
@@ -506,10 +503,9 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
 
   void visit_variable_expr(const Expressions::Variable& expr) override {
     const std::string name {expr.identifier->src_string};
-    std::optional<ObjectSymbol> symbol {};
-    try {
-      symbol = find_object(name);
-    } catch (AnalyzerException& _) {
+    const std::optional symbol {find_object(name)};
+    if (!symbol) {
+      report_error(std::format("Undefined variable '{}'", name), expr.identifier);
       return;
     }
 
@@ -563,12 +559,9 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
       case TypeKind::NAMED: {
         const auto named {std::dynamic_pointer_cast<NamedType>(type)};
         // If the type being used already exists, this should never add a type to the arena. We get it instead from the scopes.
-        try {
-          return find_type(named->name);
-        } catch (AnalyzerException& _) {
-          report_error(std::format("Unresolved reference to type '{}'", named->name), named->identifier); // TODO: Where?
-          return TypeId {};
-        }
+        if (const auto found {find_type(named->name)}) return *found;
+        report_error(std::format("Unresolved reference to type '{}'", named->name), named->identifier); // TODO: Where?
+        return TypeId {};
       }
       case TypeKind::APPLIED: {
         const auto applied {std::dynamic_pointer_cast<AppliedType>(type)};
@@ -585,7 +578,26 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
         const auto function {std::dynamic_pointer_cast<FunctionType>(type)};
         std::vector<TypeId> params {};
         for (const auto& param : function->params) params.emplace_back(resolve_syntactic_type(param));
-        return host_.type_arena().add(Function {params, resolve_syntactic_type(function->result)});
+        return host_.type_arena().add(Function {params, resolve_syntactic_type(function->return_type)});
+      }
+      case TypeKind::NAMESPACED: {
+        const auto namespaced {std::dynamic_pointer_cast<NamespacedType>(type)};
+        std::string outer_name {"Scope"};
+        const Searchable* search_scope {this};
+        for (auto iter {std::begin(namespaced->namespace_path)}; iter != std::end(namespaced->namespace_path); ++iter) {
+          std::optional found {search_scope->find_namespace(*iter)};
+          if (!found) {
+            // Error for when an inner namespace doesn't exist.
+            report_error(std::format("{} does not contain namespace '{}'", outer_name, *iter), namespaced->where);
+            return TypeId {};
+          }
+          search_scope = found.value().get();
+          outer_name   = "Namespace '" + *iter + "'";
+        }
+        if (const auto found {search_scope->find_type(namespaced->name)}) return *found;
+        // Error for when the type doesn't exist in the final namespace.
+        report_error(std::format("Namespace '{}' does not contain type '{}'", namespaced->namespace_path.back(), namespaced->name), namespaced->where);
+        return TypeId {};
       }
       default:
         throw std::runtime_error("Unhandled type kind");
@@ -601,22 +613,22 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   }
 
   /**
-   * Move the current scope's objects to the member table of a class, and end the scope.
+   * Moves the current scope's objects and types to the member table of a class, and ends the scope.
    * @param t Named class TypeId to add object symbol table to
    */
   void store_scope_as_members(TypeId t) {
-    host_.type_arena().add_members(t, std::move(scopes_.back().objects));
+    host_.type_arena().add_members(t, std::move(scopes_.back().locals.objects), std::move(scopes_.back().locals.types));
     end_scope();
   }
 
   /**
-   * Move the current scope's objects to a namespace, and end the scope.
+   * Moves the current scope's objects to a namespace, and ends the scope.
    * @param name Namespace identifier token
    */
   void store_scope_as_namespace(const Token* const name) {
-    auto&& temp {std::move(scopes_.back().objects)};
+    const auto temp {std::make_shared<SymbolTable>(scopes_.back().locals)};
     end_scope();
-    add_namespace_safe(name, std::move(temp));
+    add_namespace_safe(name, temp);
   }
 
   enum class SymbolKind { OBJECT, TYPE, NAMESPACE };
@@ -631,17 +643,17 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     switch (location) {
       case SymbolKind::OBJECT:
         contains = [&name](std::vector<ScopeFrame>::iterator it) {
-          return it->objects.contains(name) || it->object_imports.contains(name);
+          return it->locals.objects.contains(name) || it->imports.objects.contains(name);
         };
         break;
       case SymbolKind::TYPE:
         contains = [&name](std::vector<ScopeFrame>::iterator it) {
-          return it->types.contains(name) || it->type_imports.contains(name);
+          return it->locals.types.contains(name) || it->imports.types.contains(name);
         };
         break;
       case SymbolKind::NAMESPACE:
         contains = [&name](std::vector<ScopeFrame>::iterator it) {
-          return it->namespaces.contains(name) || it->namespace_imports.contains(name);
+          return it->locals.namespaces.contains(name) || it->imports.namespaces.contains(name);
         };
         break;
     }
@@ -664,7 +676,7 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     const std::string name {token->src_string};
     try {
       check_duplicate_name(SymbolKind::OBJECT, name);
-      scopes_.back().objects.emplace(name, symbol);
+      scopes_.back().locals.objects.try_emplace(name, symbol);
     } catch (AnalyzerException& e) {
       if (e.kind == ExceptionKind::REDECLARED_NAME)
         report_error("An object with this name has already been declared in this scope", token, Diagnostic::ERROR);
@@ -682,7 +694,7 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
     const std::string name {token->src_string};
     try {
       check_duplicate_name(SymbolKind::TYPE, name);
-      scopes_.back().types.emplace(name, t);
+      scopes_.back().locals.types.try_emplace(name, t);
     } catch (AnalyzerException& e) {
       if (e.kind == ExceptionKind::REDECLARED_NAME)
         report_error("A type with this name has already been declared in this scope", token, Diagnostic::ERROR);
@@ -696,11 +708,11 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
    * @param token Identifier token for symbol name and error positioning
    * @param ns Namespace object to add to symbol table
    */
-  void add_namespace_safe(const Token* const token, const Namespace& ns) noexcept {
+  void add_namespace_safe(const Token* const token, Namespace ns) noexcept {
     const std::string name {token->src_string};
     try {
       check_duplicate_name(SymbolKind::NAMESPACE, name);
-      scopes_.back().namespaces.emplace(name, ns);
+      scopes_.back().locals.namespaces.try_emplace(name, std::move(ns));
     } catch (AnalyzerException& e) {
       if (e.kind == ExceptionKind::REDECLARED_NAME)
         report_error("A namespace with this name has already been declared in this scope", token, Diagnostic::ERROR);
@@ -718,7 +730,7 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   void import_object_safe(const Token* where, const std::string& name, ObjectSymbol symbol) noexcept {
     try {
       check_duplicate_name(SymbolKind::OBJECT, name);
-      scopes_.back().object_imports.emplace(name, symbol);
+      scopes_.back().imports.objects.try_emplace(name, symbol);
     } catch (AnalyzerException& e) {
       const Diagnostic tip {"Use '->' to create an import alias: using \"...\" for a -> b", Diagnostic::NOTE};
       if (e.kind == ExceptionKind::REDECLARED_NAME)
@@ -737,7 +749,7 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   void import_type_safe(const Token* where, const std::string& name, TypeId t) noexcept {
     try {
       check_duplicate_name(SymbolKind::TYPE, name);
-      scopes_.back().type_imports.emplace(name, t);
+      scopes_.back().imports.types.try_emplace(name, t);
     } catch (AnalyzerException& e) {
       const Diagnostic tip {"Use '->' to create an import alias: using \"...\" for a -> b", Diagnostic::NOTE};
       if (e.kind == ExceptionKind::REDECLARED_NAME)
@@ -753,10 +765,10 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
    * @param name String for the namespace's name
    * @param ns Namespace object
    */
-  void import_namespace_safe(const Token* where, const std::string& name, const Namespace& ns) noexcept {
+  void import_namespace_safe(const Token* where, const std::string& name, Namespace ns) noexcept {
     try {
       check_duplicate_name(SymbolKind::NAMESPACE, name);
-      scopes_.back().namespaces.emplace(name, ns);
+      scopes_.back().locals.namespaces.try_emplace(name, std::move(ns));
     } catch (AnalyzerException& e) {
       const Diagnostic tip {"Use '->' to create an import alias: using \"...\" for a -> b", Diagnostic::NOTE};
       if (e.kind == ExceptionKind::REDECLARED_NAME)
@@ -773,7 +785,7 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
    */
   bool rebind_object(const std::string& name, TypeId t) {
     for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope) {
-      if (auto e {scope->objects.find(name)}; e != scope->objects.end()) {
+      if (auto e {scope->locals.objects.find(name)}; e != scope->locals.objects.end()) {
         e->second.declared_type = t; // Keep is_mutable.
         return true;
       }
@@ -785,11 +797,11 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   explicit Analyzer(AnalyzerHost& host) : host_ {host} {}
 
   explicit Analyzer(AnalyzerHost& host, Analyzer& parent) : host_ {host} {
-    const auto& [o, t, n, o_i, t_i, n_i] {parent.global_scope()};
+    const auto& [o, t, n] {parent.global_scope().locals};
     // Copy all of parent's top-level declarations into this analyzer's imports.
-    scopes_.back().object_imports    = o;
-    scopes_.back().type_imports      = t;
-    scopes_.back().namespace_imports = n;
+    scopes_.back().imports.objects    = o;
+    scopes_.back().imports.types      = t;
+    scopes_.back().imports.namespaces = n;
   }
 
   [[nodiscard]] const std::vector<Diagnostic>& get_diagnostics() const { return diagnostics_; }
@@ -799,33 +811,45 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid {
   ScopeFrame& global_scope() { return scopes_.front(); }
 
   /**
-   * IMPORTANT: Can throw AnalyzerException {SYMBOL_NOT_FOUND}; use in try block.
    * @param name Symbol name
    * @return Imported or declared-in-module type with the specified name
    */
-  TypeId find_type(const std::string& name) {
+  std::optional<TypeId> find_type(const std::string& name) const override {
     for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope) {
-      if (scope->types.contains(name))
-        return scope->types.at(name);
-      if (scope->type_imports.contains(name))
-        return scope->type_imports.at(name);
+      if (scope->locals.types.contains(name))
+        return scope->locals.types.at(name);
+      if (scope->imports.types.contains(name))
+        return scope->imports.types.at(name);
     }
-    throw AnalyzerException {ExceptionKind::SYMBOL_NOT_FOUND};
+    return std::nullopt;
   }
 
   /**
-   * IMPORTANT: Can throw AnalyzerException {SYMBOL_NOT_FOUND}; use in try block.
    * @param name Symbol name
    * @return Imported or declared-in-module object with the specified name
    */
-  std::optional<ObjectSymbol> find_object(const std::string& name) {
+  std::optional<ObjectSymbol> find_object(const std::string& name) const override {
     for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope) {
-      if (scope->objects.contains(name))
-        return scope->objects.at(name);
-      if (scope->object_imports.contains(name))
-        return scope->object_imports.at(name);
+      if (scope->locals.objects.contains(name))
+        return scope->locals.objects.at(name);
+      if (scope->imports.objects.contains(name))
+        return scope->imports.objects.at(name);
     }
-    throw AnalyzerException {ExceptionKind::SYMBOL_NOT_FOUND};
+    return std::nullopt;
+  }
+
+  /**
+   * @param name Symbol name
+   * @return Imported or declared-in-module namespace with the specified name
+   */
+  std::optional<Namespace> find_namespace(const std::string& name) const override {
+    for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope) {
+      if (scope->locals.namespaces.contains(name))
+        return scope->locals.namespaces.at(name);
+      if (scope->imports.namespaces.contains(name))
+        return scope->imports.namespaces.at(name);
+    }
+    return std::nullopt;
   }
 
   [[nodiscard]] bool encountered_halt() const {

@@ -10,14 +10,6 @@ import type;
 
 import std;
 
-export using Namespace = std::unordered_map<std::string, ObjectSymbol>;
-
-export struct ModuleExports {
-  std::unordered_map<std::string, ObjectSymbol> objects {};
-  std::unordered_map<std::string, TypeId> types {};
-  std::unordered_map<std::string, Namespace> namespaces {};
-};
-
 export struct CoreTypes {
   TypeId any_t {};
   TypeId bool_t {};
@@ -49,7 +41,7 @@ export class AnalyzerHost {
    * @param path Path of the module to load.
    * @return The module's top-level variables by name (exports).
    */
-  [[nodiscard]] virtual const ModuleExports& exports(const std::string& path) = 0;
+  [[nodiscard]] virtual const SymbolTable& exports(const std::string& path) = 0;
 
   [[nodiscard]] virtual const CoreTypes& core_types() const = 0;
 
