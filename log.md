@@ -6,12 +6,12 @@ I began to plan what my end goal would be.
 ## July – November 2025
 
 I'd decided that although C is nice, I didn't want to use it for Flicker 3.
-So I learned C++, using the wonderful tutorials on [learncpp].
+So I learned C++, using the wonderful tutorials on [learncpp](https://learncpp.com).
 My plan was to finish before the beginning of December to do the Advent of Code in C++ then begin working on Flicker in the spring.
 
 ## December 2025
 
-I was not done with the [learncpp] tutorials. But I knew enough to do Advent of Code anyway.
+I was not done with the [learncpp](https://learncpp.com) tutorials. But I knew enough to do Advent of Code anyway.
 Because there were only 12 days of AoC, I had more time at the end of the month.
 I did the occasional C++ lesson but still made little progress.
 
@@ -56,7 +56,7 @@ Note that ANTLR is only temporary. It (and all the AI-written code accompanying 
 The day I created this log file. You can see I've switched to present tense.
 
 For the past couple of days, I've been modifying Flicker's grammar. Today I wrote the outline for classes.
-I still haven't finished the [learncpp] tutorials, by the way.
+I still haven't finished the [learncpp](https://learncpp.com) tutorials, by the way.
 
 ## February 9, 2026
 
@@ -232,7 +232,8 @@ Day 6: lambdas, which I've been dreading, but were actually really simple
 
 To implement functions more nicely, I'm making a few changes to syntax and restrictions for generic types.
 
-`Pair of String, Number` is now becoming `Pair of String Number`; functions will be declared like `fun a for X Y`, and so on. The only difference: commas are gone.
+`Pair of String, Number` is now becoming `Pair of String Number`; functions will be declared like `fun a for X Y`, and so on. The only difference: commas are
+gone.
 And why, do you ask?
 
 To make this situation possible: `(Pair of X Y, Number) -> X`.
@@ -322,10 +323,79 @@ using SemanticType = std::variant<Named, TypeParam, Optional, Function, Applied>
 ```
 
 There's a whole type arena to store everything that's been created and used—but don't confuse this with the scopes' symbol tables. To intern types (and make
-type equality simpler by turning it into integer equality), they're hashed using a seemingly random function that AI said is "good enough." For more information, look at the comments in `type.h`.
+type equality simpler by turning it into integer equality), they're hashed using a seemingly random function that AI said is "good enough." For more
+information, look at the comments in `type.h`.
 
 Also, in doing this, I've completely gotten rid of two `SyntacticType`s that had no use at all: `OverloadSet` and `TypeVar`.
 
-[learncpp]: https://learncpp.com
+## May 25, 2026
 
-[thing]: https://github.com/
+I feel stuck on a type system. Let's see if the nice people of r/programminglanguages can help.
+
+## May 27 – June 3, 2026
+
+One good way to get unstuck is to work on something interesting. In this case, a restructuring of the files. It's time to get a real module loading system,
+because before I can do anything else, I'll need to define the core types.
+
+I've created a `ModuleLoader` class, an interface for it to pass information to the analyzer (`AnalyzerHost`).
+
+By the end of the day on June 3rd, the core library imports are working.
+
+## June 5 and 6, 2026
+
+Looking back on this, I cannot understand what I was doing on these two days. It's a lot of random stuff, but some key highlights are:
+
+* Method lookup (which was probably implemented badly, according to the commit message)
+* More expression analyzing
+
+## June 16, 2026
+
+No longer are functions stored and overwritten. `OverloadSet`s, a new kind of type, are the compiler's interface for dealing with overloading.
+
+## June 17, 2026
+
+TypeKeys are now obsolete. I'm taking advantage of new C++ features like `is_transparent` in an `unordered_set` to do this. Now every type is only present in
+one place, owned by the arena's vector.
+
+## June 17 – 19, 2026
+
+Yet another not-actually-making-progress set of changes. However, this one I think will be one of my greatest decisions.
+
+C++20 modules may not be fully accepted by the community, but it's been six years, so they'd better be working, and it's time to give them a go. I've heard
+they'll cut build times, make standard library imports easy (`import std;`) and polish up my interface. Plus, the one thing I'm horrible at is file management.
+I don't mind headers, but they throw me off.
+
+And now everything is in modules. `import std` is as good as it sounded, and my build times are... not much different. I had to do some detangling to get rid of
+circular dependencies, but I should've done that anyway long ago. Modules forced me to go for it. I do love the intentionality of the `export` keyword.
+
+## June 21 and 21, 2026
+
+Symbol tables need a bit of work.
+
+Classes should be able to hold:
+
+- types (aliases and nested classes)
+- objects (fields and methods)
+
+Scopes should be able to hold:
+
+- types (aliases and classes)
+- objects (vars and functions)
+- namespaces
+
+Namespaces should be able to hold:
+
+- types
+- objects
+- namespaces
+
+Modules should export:
+
+- types
+- objects
+- namespaces
+
+Let's condense that all into a `SymbolTable` struct. Done. A scope has two `SymbolTable`s—for locals and imports.
+
+There's also a nice `Searchable` interface with three virtual functions, `find_type()`, `find_object()`, and `find_namespace()`, that currently only helps me out in namespace chaining. Did I mention namespace chaining? Because namespaces should
+be able to hold namespaces, I need to handle `A::B::C`. Also done.

@@ -118,11 +118,11 @@ To _test_ flicker:
 4. **One-time setup:** run `cmake -S . -B build` to configure CMake's build directory.
 5. Run `cmake --build --target flicker_3 --preset release` (use `--preset debug` if you prefer).
 6. The executable will be in `build/flicker_3`. Give it execute permissions if necessary, then run it by itself for a REPL, or with a file path as an argument.
-7. Chances are, you'll want to mess around with debug flags in `h/common.h`. For example, if you'd rather just print tokens instead of exporting as a DOT
-   tree for GraphViz. Change whatever, but remember to rebuild.
+7. Chances are, you'll want to mess around with debug flags in `src/common.h`. For example, if you'd rather just print tokens or export your code as a DOT tree
+   for GraphViz instead of run it. Change whatever, but remember to rebuild.
 
-Of course, you can build with `clang++` or `g++` if you prefer.
-CMake can make your life easier, but it can also be bothersome to set up.
+Of course, you can build with plain `clang++` or `g++` if you prefer.
+Do consider though, that whatever setup CMake requires, it's still the simpler path.
 
 ## FAQ
 
@@ -140,5 +140,19 @@ few circulating fan theories (it is important that I clarify **these are only ru
 3. The Developer chose a random two-syllable word that was not taken.
 4. A flicker is a bird (_Colaptes auratus_). The Developer has been documented reading _Crafting Interpreters_ by Bob Nystrom. Bob Nystrom occasionally names
    his programming languages after birds (Wren, Magpie, Finch, and Lark). Okay, I admit this is a stretch.
+
+### What's the Developer's progress right now?
+
+Read the commit messages maybe.
+
+For a more detailed log of what's happening, check out `log.md`. This file, written by the Developer, is not intended to be a public changelog, however; more so
+a memoir in case he ever needs to create a presentation on this project...
+
+And, if neither of those options satisfy you:  
+At the moment, he's taking on the burden of **the analyzer**. This is the system that resolves all names (of which there are three types: objects, types, and
+namespaces), checks objects with their types, handles state for functions, classes, loops, and such, and reports most of the compile-time errors. Eventually, it
+will handle type inference. Its implementation is probably a little more than half complete (though once it nears completion, the standard for "completion" will
+retreat further into the distance). One remark he passed on to me: "it's not quite as satisfying as the parser to see that a new feature works, but in terms of
+implementation, this is where the fun is at."
 
 [Flicker 2]: https://github.com/fractioneater/flicker
