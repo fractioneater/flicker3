@@ -589,7 +589,7 @@ export class Statements::Namespace : public Stmt {
 
 export class Statements::Import : public Stmt {
   public:
-  Import(std::string path, std::vector<Token*> imports, bool import_all) : path {std::move(path)}, imports {std::move(imports)}, import_all {import_all} {}
+  Import(const Token* path, std::vector<Token*> imports, bool import_all) : path {path}, imports {std::move(imports)}, import_all {import_all} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_import_stmt_any(*this);
@@ -599,7 +599,7 @@ export class Statements::Import : public Stmt {
     visitor.visit_import_stmt(*this);
   }
 
-  const std::string path {};
+  const Token* path {};
   const std::vector<Token*> imports {};
   const bool import_all {};
 };
@@ -761,7 +761,7 @@ export class Statements::Pass : public Stmt {
 // Expressions --------------------------------------------------
 export class Expressions::Binary : public Expr {
   public:
-  Binary(std::string fn_name, ExprNode left, ExprNode right) : fn_name {std::move(fn_name)}, left {std::move(left)}, right {std::move(right)} {}
+  Binary(std::string fn_name, const Token* op, ExprNode left, ExprNode right) : fn_name {std::move(fn_name)}, op {op}, left {std::move(left)}, right {std::move(right)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_binary_expr_any(*this);
@@ -772,6 +772,7 @@ export class Expressions::Binary : public Expr {
   }
 
   const std::string fn_name {};
+  const Token* op {};
   const ExprNode left {};
   const ExprNode right {};
 };
@@ -892,7 +893,7 @@ export class Expressions::NamespaceMember : public Expr {
 
 export class Expressions::Unary : public Expr {
   public:
-  Unary(std::string fn_name, ExprNode expr) : fn_name {std::move(fn_name)}, expr {std::move(expr)} {}
+  Unary(std::string fn_name, const Token* op, ExprNode expr) : fn_name {std::move(fn_name)}, op {op}, expr {std::move(expr)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_unary_expr_any(*this);
@@ -903,6 +904,7 @@ export class Expressions::Unary : public Expr {
   }
 
   const std::string fn_name {};
+  const Token* op {};
   const ExprNode expr {};
 };
 

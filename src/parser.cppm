@@ -355,7 +355,8 @@ export class Parser {
       else if (match(TOKEN_FUN)) declarations.emplace_back(method());
       else if (check(TOKEN_IDENTIFIER) && current_->src_string == "init")
         initializers.emplace_back(initializer());
-      else if (check(TOKEN_CLASS)) {} // TODO: Allow nested classes, imports, and aliases. Not namespaces, though. There can only be one of those, and it's special.
+      else if (match(TOKEN_CLASS)) declarations.emplace_back(class_declaration());
+      else if (match(TOKEN_USING)) declarations.emplace_back(using_declaration());
 
       else if (unexpected_indent()) continue;
       else if (match(TOKEN_NAMESPACE)) {
@@ -386,7 +387,7 @@ export class Parser {
   StmtNode using_declaration() {
     // 'using' for import.
     if (match(TOKEN_STRING)) {
-      const auto path {std::any_cast<std::string>(previous_->value)};
+      const Token* path {previous_};
       std::vector<Token*> imports {};
       bool import_all {false};
 
@@ -747,25 +748,29 @@ export class Parser {
   // Infix
   ExprNode binary_right_assoc(const ExprNode& left) {
     const Precedence prec {static_cast<int>(RULES[previous_->type].prec)};
-    return std::make_shared<Expressions::Binary>(RULES[previous_->type].fn_name, left, parse_expression(prec));
+    const Token* op {previous_};
+    return std::make_shared<Expressions::Binary>(RULES[previous_->type].fn_name, op, left, parse_expression(prec));
   }
 
   ExprNode binary(const ExprNode& left) {
-    const Precedence prec {static_cast<int>(RULES[previous_->type].prec) + 1};
-    return std::make_shared<Expressions::Binary>(RULES[previous_->type].fn_name, left, parse_expression(prec));
+    const Precedence prec {static_cast<int>(RULES[previous_->type].prec) + 1}; // Note the +1 in a left-associative operator.
+    const Token* op {previous_};
+    return std::make_shared<Expressions::Binary>(RULES[previous_->type].fn_name, op, left, parse_expression(prec));
   }
 
   ExprNode infix_not(const ExprNode& left) {
+    const Token* op {previous_};
     expect(TOKEN_IN, "Cannot use 'not' as an infix operator by itself; try 'not in' or 'is not'", previous_);
     constexpr Precedence prec {static_cast<int>(Precedence::IN) + 1};
-    return std::make_shared<Expressions::Binary>("not_in", left, parse_expression(prec));
+    return std::make_shared<Expressions::Binary>("not_in", op, left, parse_expression(prec));
   }
 
   ExprNode binary_is(const ExprNode& left) {
     constexpr Precedence prec {static_cast<int>(Precedence::IS) + 1};
+    const Token* op {previous_};
     if (match(TOKEN_NOT))
-      return std::make_shared<Expressions::Binary>("is_not", left, parse_expression(prec));
-    return std::make_shared<Expressions::Binary>("is", left, parse_expression(prec));
+      return std::make_shared<Expressions::Binary>("is_not", op, left, parse_expression(prec));
+    return std::make_shared<Expressions::Binary>("is", op, left, parse_expression(prec));
   }
 
   ExprNode comparison(const ExprNode& left) {
@@ -796,12 +801,13 @@ export class Parser {
 
   // Postfix (treated as InfixFn)
   ExprNode postfix_inc_dec(const ExprNode& expr) {
+    const Token* op {previous_};
     diagnostics_.emplace_back(
       diagnostic_from_token(
-        "Postfix increment and decrement operators behave as their prefix equivalent; prefer the prefix version", previous_, Diagnostic::WARNING
+        "Postfix increment and decrement operators behave as their prefix equivalent; prefer the prefix version", op, Diagnostic::WARNING
       )
     );
-    return std::make_shared<Expressions::Unary>(RULES[previous_->type].fn_name, expr);
+    return std::make_shared<Expressions::Unary>(RULES[previous_->type].fn_name, op, expr);
   }
 
   ExprNode call(const ExprNode& expr) {
@@ -848,11 +854,13 @@ export class Parser {
 
   // Prefix
   ExprNode unary() {
-    return std::make_shared<Expressions::Unary>(RULES[previous_->type].fn_name, parse_expression(Precedence::PREFIX));
+    const Token* op {previous_};
+    return std::make_shared<Expressions::Unary>(RULES[previous_->type].fn_name, op, parse_expression(Precedence::PREFIX));
   }
 
   ExprNode prefix_not() {
-    return std::make_shared<Expressions::Unary>("!", parse_expression(Precedence::NOT));
+    const Token* op {previous_};
+    return std::make_shared<Expressions::Unary>("!", op, parse_expression(Precedence::NOT));
   }
 
   ExprNode print() {

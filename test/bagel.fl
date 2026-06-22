@@ -1,4 +1,4 @@
-using "test/bagel2.fl" for Fruitful
+using "test/bagel2.fl"
 
 class ColorHSL
   init(var h: Number, var s: Number, var l: Number)
@@ -8,5 +8,7 @@ class ColorHSL
 var x: ColorHSL = ColorHSL(50, 90, 0.52)
 x.name
 
-print Fruitful::t
-print Fruitful::Inner::g
+using "test/bagel.fl"
+
+print bagel2::Fruitful::t
+print bagel2::Fruitful::Inner::g + 3

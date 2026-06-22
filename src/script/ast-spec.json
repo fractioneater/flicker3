@@ -61,7 +61,7 @@
 			]
 		}, {
 			"name": "Import", "fields": [
-				{"type": "std::string", "name": "path", "move": true},
+				{"type": "Token*", "name": "path"},
 				{"type": "std::vector<Token*>", "name": "imports", "move": true},
 				{"type": "bool", "name": "import_all"}
 			]
@@ -125,6 +125,7 @@
 			"name": "Binary",
 			"fields": [
 				{"type": "std::string", "name": "fn_name", "move": true},
+				{"type": "Token*", "name": "op"},
 				{"type": "ExprNode", "name": "left", "move": true},
 				{"type": "ExprNode", "name": "right", "move": true}
 			]
@@ -168,6 +169,7 @@
 		}, {
 			"name": "Unary", "fields": [
 				{"type": "std::string", "name": "fn_name", "move": true},
+				{"type": "Token*", "name": "op"},
 				{"type": "ExprNode", "name": "expr", "move": true}
 			]
 		}, {

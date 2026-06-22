@@ -332,7 +332,7 @@ class DotTreeWalker {
     std::string visit_namespace_stmt(const Statements::Namespace& stmt) override { return "namespace " + std::string {stmt.identifier->src_string}; }
 
     std::string visit_import_stmt(const Statements::Import& stmt) override {
-      std::string blah {"import " + stmt.path};
+      std::string blah {"import " + std::string {stmt.path->src_string}};
       if (!stmt.imports.empty()) {
         blah += " for ";
         for (std::size_t i {0}; i < stmt.imports.size(); ++i) {

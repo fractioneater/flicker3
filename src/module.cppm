@@ -107,10 +107,10 @@ bool print_errors(const T& component, const Lexer& lexer, std::string_view modul
   return false;
 }
 
-export enum ModuleStatus { MODULE_COMPILED, MODULE_COMPILE_ERROR, MODULE_RUNTIME_ERROR };
+export enum ModuleStatus { MODULE_CREATED, MODULE_COMPILED, MODULE_COMPILE_ERROR, MODULE_RUNTIME_ERROR };
 
 struct Module {
-  ModuleStatus status {};
+  ModuleStatus status {MODULE_CREATED};
 
   std::unique_ptr<Lexer> lexer {};
   std::unique_ptr<Parser> parser {};
@@ -167,6 +167,7 @@ struct Module {
 
 struct StandardModule : Module {
   std::string name {};
+  std::string src {}; // Do not attempt to use. The value is moved out as soon as it is placed in here.
 
   SymbolTable exports {};
 
@@ -175,8 +176,12 @@ struct StandardModule : Module {
     return true;
   }
 
-  StandardModule(AnalyzerHost& host, Analyzer& parent, const std::string& name, std::string src) : Module {host, parent} {
-    compile(name, std::move(src));
+  StandardModule(AnalyzerHost& host, Analyzer& parent, const std::string& name_tmp, std::string src) : Module {host, parent}, name {name_tmp},
+    src {std::move(src)} {}
+
+  void compile() {
+    Module::compile(name, std::move(src));
+    if (status != MODULE_COMPILED) return;
     const auto& [o, t, n] {analyzer.global_scope().locals};
     for (const auto& [object_name, symbol] : o)
       exports.objects.try_emplace(object_name, symbol);
@@ -263,10 +268,10 @@ export class ModuleLoader : public AnalyzerHost {
 
   public:
   // AnalyzerHost interface methods
-  [[nodiscard]] const SymbolTable& exports(const std::string& path) override {
-    const auto module {load_by_path(path).first};
-    if (module == loaded_.end()) throw std::runtime_error("Module not found");
-    return module->second.exports;
+  [[nodiscard]] const std::optional<ModuleExports> exports(const std::string& path) override {
+    const auto iter {load_by_path(path).first};
+    if (iter == loaded_.end() || iter->second.status != MODULE_COMPILED) return std::nullopt;
+    return ModuleExports {iter->second.name, iter->second.exports};
   }
 
   [[nodiscard]] const CoreTypes& core_types() const override { return core_->types; }
@@ -287,6 +292,8 @@ export class ModuleLoader : public AnalyzerHost {
     // If the module is already loaded, try_emplace shouldn't overwrite it.
     // The first param is the map key, the next few are for StandardModule constructor.
     const auto result {loaded_.try_emplace(name, *this, core_->analyzer, name, read_entire_file(path))};
+
+    if (result.second) result.first->second.compile();
 
     return result;
   }

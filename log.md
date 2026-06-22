@@ -376,6 +376,7 @@ Classes should be able to hold:
 
 - types (aliases and nested classes)
 - objects (fields and methods)
+- initializers
 
 Scopes should be able to hold:
 

@@ -10,6 +10,11 @@ import type;
 
 import std;
 
+export struct ModuleExports {
+  std::string name {};
+  SymbolTable& symbols;
+};
+
 export struct CoreTypes {
   TypeId any_t {};
   TypeId bool_t {};
@@ -39,9 +44,9 @@ export class AnalyzerHost {
   /**
    * Make sure a module exists (attempt to load it if it doesn't) and get its exports.
    * @param path Path of the module to load.
-   * @return The module's top-level variables by name (exports).
+   * @return The module's top-level variables by name (exports) and name.
    */
-  [[nodiscard]] virtual const SymbolTable& exports(const std::string& path) = 0;
+  [[nodiscard]] virtual const std::optional<ModuleExports> exports(const std::string& path) = 0;
 
   [[nodiscard]] virtual const CoreTypes& core_types() const = 0;
 

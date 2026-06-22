@@ -260,31 +260,32 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
   }
 
   void visit_import_stmt(const Statements::Import& stmt) override {
-    SymbolTable exports {};
-    try {
-      // Calling exports() will load the file, analyze it, and return its exports. It does all the work.
-      exports = host_.exports(stmt.path);
-    } catch (std::runtime_error& _) {
-      report_error(std::format("Failed to load '{}'", stmt.path), nullptr); // TODO: Where?
+    const std::string pathname {std::any_cast<std::string>(stmt.path->value)};
+    // Calling exports() will load the file, analyze it, and return its exports. It does all the work.
+    const auto module {host_.exports(std::string {pathname})};
+    if (!module) {
+      const Diagnostic context {"Ensure module is not trying to import itself", Diagnostic::NOTE};
+      report_error(std::format("Failed to load '{}'", pathname), stmt.path, Diagnostic::ERROR, &context);
       return;
     }
 
+    const auto& [name, exports] {*module};
+
     if (stmt.imports.empty()) {
       // Import all as a namespace.
-      const auto& [objects, types, namespaces] {host_.exports(stmt.path)};
+      const auto& [objects, types, namespaces] {exports};
       begin_scope();
       for (const auto& [name, symbol] : objects)
-        import_object_safe(stmt.imports.front(), name, symbol);
+        import_object_safe(stmt.path, name, symbol);
       for (const auto& [name, type] : types)
-        import_type_safe(stmt.imports.front(), name, type);
+        import_type_safe(stmt.path, name, type);
       for (const auto& [name, ns] : namespaces)
-        import_namespace_safe(stmt.imports.front(), name, ns);
-      // TODO NEXT: Get module name from host, store this scope as a namespace before it ends, error if a namespace already exists with module name.
-      end_scope();
+        import_namespace_safe(stmt.path, name, ns);
+      store_scope_as_namespace(stmt.path, name);
     } else if (stmt.import_all) {
       // Import all by name.
       // The first (and only) token in stmt.imports is the '.' or '*' character.
-      const auto& [objects, types, namespaces] {host_.exports(stmt.path)};
+      const auto& [objects, types, namespaces] {exports};
       for (const auto& [name, symbol] : objects)
         import_object_safe(stmt.imports.front(), name, symbol);
       for (const auto& [name, type] : types)
@@ -294,17 +295,17 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
     } else {
       // Use the explicit imports list.
       for (const Token* identifier : stmt.imports) {
-        const std::string name {identifier->src_string};
+        const std::string import_name {identifier->src_string};
 
-        const auto o {exports.find_object(name)};
-        const auto t {exports.find_type(name)};
-        const auto n {exports.find_namespace(name)};
+        const auto o {exports.find_object(import_name)};
+        const auto t {exports.find_type(import_name)};
+        const auto n {exports.find_namespace(import_name)};
 
-        if (o) import_object_safe(identifier, name, *o);
-        if (t) import_type_safe(identifier, name, *t);
-        if (n) import_namespace_safe(identifier, name, *n);
+        if (o) import_object_safe(identifier, import_name, *o);
+        if (t) import_type_safe(identifier, import_name, *t);
+        if (n) import_namespace_safe(identifier, import_name, *n);
 
-        if (!(o || t || n)) report_error(std::format("Module '{}' does not export '{}'", stmt.path, name), identifier);
+        if (!(o || t || n)) report_error(std::format("Module '{}' does not export '{}'", name, import_name), identifier);
       }
     }
   }
@@ -396,8 +397,8 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
       expr.type = return_type;
       if (!return_type)
         report_error(
-          std::format("'{}' does not implement '{}'", host_.type_arena().to_string(expr.left->type), expr.fn_name), nullptr
-        ); // TODO: Where?
+          std::format("'{}' does not implement '{}'", host_.type_arena().to_string(expr.left->type), expr.fn_name), expr.op
+        );
     }
   }
 
@@ -428,8 +429,8 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
     const std::optional type {host_.type_arena().member_type(expr.object->type, member_name)};
     if (!type)
       report_error(
-        std::format("'{}' does not have member '{}'", host_.type_arena().to_string(expr.object->type), member_name), nullptr
-      ); // TODO: Where?
+        std::format("'{}' does not have member '{}'", host_.type_arena().to_string(expr.object->type), member_name), expr.member
+      );
     expr.type = type.value_or(TypeId {});
   }
 
@@ -463,8 +464,8 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
       expr.type = return_type;
       if (!return_type)
         report_error(
-          std::format("'{}' does not implement '{}'", host_.type_arena().to_string(expr.expr->type), expr.fn_name), nullptr
-        ); // TODO: Where?
+          std::format("'{}' does not implement '{}'", host_.type_arena().to_string(expr.expr->type), expr.fn_name), expr.op
+        );
     }
   }
 
@@ -560,7 +561,7 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
         const auto named {std::dynamic_pointer_cast<NamedType>(type)};
         // If the type being used already exists, this should never add a type to the arena. We get it instead from the scopes.
         if (const auto found {find_type(named->name)}) return *found;
-        report_error(std::format("Unresolved reference to type '{}'", named->name), named->identifier); // TODO: Where?
+        report_error(std::format("Unresolved reference to type '{}'", named->name), named->identifier);
         return TypeId {};
       }
       case TypeKind::APPLIED: {
@@ -623,12 +624,13 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
 
   /**
    * Moves the current scope's objects to a namespace, and ends the scope.
-   * @param name Namespace identifier token
+   * @param token Identifier token for error reporting
+   * @param name Optional name if different from error reporting token
    */
-  void store_scope_as_namespace(const Token* const name) {
+  void store_scope_as_namespace(const Token* const token, const std::optional<std::string>& name = std::nullopt) {
     const auto temp {std::make_shared<SymbolTable>(scopes_.back().locals)};
     end_scope();
-    add_namespace_safe(name, temp);
+    add_namespace_safe(token, temp, name);
   }
 
   enum class SymbolKind { OBJECT, TYPE, NAMESPACE };
@@ -707,9 +709,10 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
    * Adds a namespace to the symbol table and reports duplicate names.
    * @param token Identifier token for symbol name and error positioning
    * @param ns Namespace object to add to symbol table
+   * @param real_name In case the token's src_string isn't the correct name
    */
-  void add_namespace_safe(const Token* const token, Namespace ns) noexcept {
-    const std::string name {token->src_string};
+  void add_namespace_safe(const Token* const token, Namespace ns, const std::optional<std::string>& real_name = std::nullopt) noexcept {
+    const std::string name {real_name.value_or(std::string {token->src_string})};
     try {
       check_duplicate_name(SymbolKind::NAMESPACE, name);
       scopes_.back().locals.namespaces.try_emplace(name, std::move(ns));
