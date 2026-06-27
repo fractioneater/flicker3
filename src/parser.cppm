@@ -883,7 +883,7 @@ export class Parser {
   }
 
   ExprNode print() {
-    return std::make_shared<Expressions::Print>(RULES[previous_->type].fn_name, parse_expression(Precedence::PRINT));
+    return std::make_shared<Expressions::Print>(previous_, previous_->type == TOKEN_PRINT_ERROR, parse_expression(Precedence::PRINT));
   }
 
   ExprNode collection() {
@@ -1242,8 +1242,8 @@ export class Parser {
     /* TOKEN_OR             */ INFIX_RULE(binary_or, OR),
     /* TOKEN_OVERRIDE       */ UNUSED,
     /* TOKEN_PASS           */ UNUSED,
-    /* TOKEN_PRINT          */ PREFIX_METHOD(print, "print"),
-    /* TOKEN_PRINT_ERROR    */ PREFIX_METHOD(print, "print_err"),
+    /* TOKEN_PRINT          */ PREFIX_RULE(print),
+    /* TOKEN_PRINT_ERROR    */ PREFIX_RULE(print),
     /* TOKEN_PRIVATE        */ UNUSED,
     /* TOKEN_RETURN         */ UNUSED,
     /* TOKEN_STATIC         */ UNUSED,

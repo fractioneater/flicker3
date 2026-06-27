@@ -225,7 +225,8 @@
 			"name": "Super", "fields": [{"type": "Token*", "name": "identifier"}]
 		}, {
 			"name": "Print", "fields": [
-				{"type": "std::string", "name": "fn_name", "move": true},
+				{"type": "Token*", "name": "token", "move": true},
+				{"type": "bool", "name": "is_error"},
 				{"type": "ExprNode", "name": "expr", "move": true}
 			]
 		}

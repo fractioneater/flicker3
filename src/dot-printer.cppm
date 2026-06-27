@@ -523,7 +523,7 @@ class DotTreeWalker {
     std::string visit_this_expr(const Expressions::This& expr) override { return "this"; }
     std::string visit_super_expr(const Expressions::Super& expr) override { return "super"; }
 
-    std::string visit_print_expr(const Expressions::Print& expr) override { return std::string {expr.fn_name}; }
+    std::string visit_print_expr(const Expressions::Print& expr) override { return expr.is_error ? "print error" : "print"; }
   };
 
   StmtChildrenVisitor stmt_children_visitor_ {*this};

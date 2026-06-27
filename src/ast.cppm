@@ -1133,7 +1133,7 @@ export class Expressions::Super : public Expr {
 
 export class Expressions::Print : public Expr {
   public:
-  Print(std::string fn_name, ExprNode expr) : fn_name {std::move(fn_name)}, expr {std::move(expr)} {}
+  Print(const Token* token, bool is_error, ExprNode expr) : token {std::move(token)}, is_error {is_error}, expr {std::move(expr)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_print_expr_any(*this);
@@ -1143,6 +1143,7 @@ export class Expressions::Print : public Expr {
     visitor.visit_print_expr(*this);
   }
 
-  const std::string fn_name {};
+  const Token* token {};
+  const bool is_error {};
   const ExprNode expr {};
 };
