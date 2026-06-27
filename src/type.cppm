@@ -59,14 +59,14 @@ export struct AppliedType final : SyntacticType {
   SyntacticTypePtr constructor {};
   std::vector<SyntacticTypePtr> args {};
 
-  AppliedType(SyntacticTypePtr constructor, std::vector<SyntacticTypePtr> args) : constructor {std::move(constructor)}, args {std::move(args)} {}
+  AppliedType(const SyntacticTypePtr& constructor, std::vector<SyntacticTypePtr> args) : constructor {std::move(constructor)}, args {std::move(args)} {}
   [[nodiscard]] TypeKind kind() const override { return TypeKind::APPLIED; }
 };
 
 export struct OptionalType final : SyntacticType {
   SyntacticTypePtr inner {};
 
-  explicit OptionalType(SyntacticTypePtr inner) : inner {std::move(inner)} {}
+  explicit OptionalType(const SyntacticTypePtr& inner) : inner {std::move(inner)} {}
   [[nodiscard]] TypeKind kind() const override { return TypeKind::OPTIONAL; }
 };
 
@@ -74,7 +74,7 @@ export struct FunctionType final : SyntacticType {
   std::vector<SyntacticTypePtr> params {};
   SyntacticTypePtr return_type {};
 
-  FunctionType(std::vector<SyntacticTypePtr> params, SyntacticTypePtr return_type) : params {std::move(params)}, return_type {std::move(return_type)} {}
+  FunctionType(std::vector<SyntacticTypePtr> params, const SyntacticTypePtr& return_type) : params {std::move(params)}, return_type {std::move(return_type)} {}
   [[nodiscard]] TypeKind kind() const override { return TypeKind::FUNCTION; }
 };
 
@@ -121,8 +121,7 @@ using TypeDefId = std::uint32_t;
 
 export struct Named {
   std::string name {}; // For hashing and error messages.
-  std::optional<TypeDefId> definition {};
-  int arity {0}; // In case this is a template type.
+  int arity {0};       // In case this is a template type.
   bool operator==(const Named& other) const = default;
 };
 
@@ -197,7 +196,6 @@ namespace TypeHash {
     std::size_t seed {0};
     hash_combine(seed, 1u);
     hash_combine(seed, t.name);
-    hash_combine(seed, t.definition.value_or(std::numeric_limits<std::uint32_t>::max()));
     hash_combine(seed, t.arity);
     return seed;
   }
@@ -328,6 +326,7 @@ export using Namespace = std::shared_ptr<SymbolTable>;
 
 struct TypeDefinition {
   SymbolTable symbols {};
+  std::vector<TypeId> supertypes {};
 };
 
 /**
@@ -347,32 +346,14 @@ export class TypeArena {
     return types_[id.value];
   }
 
-  [[nodiscard]] std::optional<TypeDefId> definition_of(TypeId id) const {
-    const SemanticType& t {at(id)};
-    return std::visit(
-      [*this]<typename T>(T&& k) -> std::optional<TypeDefId> {
-        using A = std::decay_t<T>;
-        if constexpr (std::is_same_v<A, Named>) {
-          if (!k.definition) throw std::runtime_error("Named type '" + k.name + "' doesn't have a definition");
-          return k.definition.value();
-        } else if constexpr (std::is_same_v<A, Applied>) {
-          return definition_of(k.base);
-        } else return std::nullopt;
-      },
-      t
-    );
-  }
-
   public:
   TypeArena() : interned_(TYPE_ARENA_RESERVE_SIZE, ArenaTypeHash {&types_}, ArenaTypeEq {&types_}) {
     types_.reserve(TYPE_ARENA_RESERVE_SIZE);
+    definitions_.reserve(TYPE_ARENA_RESERVE_SIZE);
   }
 
   TypeId new_named(std::string&& name, int arity) {
-    definitions_.emplace_back();
-    const TypeDefId definition {static_cast<std::uint32_t>(definitions_.size() - 1)};
-
-    return add(Named {std::move(name), definition, arity});
+    return add(Named {std::move(name), arity});
   }
 
   TypeId add(SemanticType&& t) {
@@ -383,6 +364,9 @@ export class TypeArena {
     types_.emplace_back(std::move(t));
     const TypeId id {static_cast<std::uint32_t>(types_.size() - 1)};
     interned_.insert(id);
+
+    // And finally, create its definition.
+    definitions_.emplace_back();
     return id;
   }
 
@@ -393,42 +377,57 @@ export class TypeArena {
 
   // May return TypeId::INVALID, which needs to be handled.
   [[nodiscard]] TypeId method_return_type(TypeId id, const std::string& method_name, const std::vector<TypeId>& params) const {
-    if (const std::optional def {definition_of(id)}) {
-      const auto symbols {definitions_[*def].symbols};
-      const auto it {symbols.find_object(method_name)};
-      if (!it) return {};
-      const SemanticType& symbol {at(it->declared_type)};
+    if (!id) return {};
+    const auto symbols {definitions_[id.value].symbols};
+    const auto it {symbols.find_object(method_name)};
+    if (!it) return {};
+    const SemanticType& symbol {at(it->declared_type)};
 
-      // Check if it's an overload set.
-      if (!std::holds_alternative<OverloadSet>(symbol)) return {};
+    // Check if it's an overload set.
+    if (!std::holds_alternative<OverloadSet>(symbol)) return {};
 
-      for (const TypeId overload : std::get<OverloadSet>(symbol).overloads) {
-        const auto& [overload_params, return_type] {std::get<Function>(at(overload))};
-        if (overload_params == params) return return_type;
-      }
+    for (const TypeId overload : std::get<OverloadSet>(symbol).overloads) {
+      const auto& [overload_params, return_type] {std::get<Function>(at(overload))};
+      if (overload_params == params) return return_type;
     }
-
     return {};
   }
 
   // Invalid return means an error has already been handled, std::nullopt means it has yet to be.
   [[nodiscard]] std::optional<TypeId> member_type(TypeId id, const std::string& member_name) const {
-    if (const std::optional def {definition_of(id)}) {
-      const auto symbols {definitions_[*def].symbols};
-      const auto it {symbols.find_object(member_name)};
-      if (!it) return std::nullopt;
-      return it->declared_type;
-    }
+    if (!id) return std::nullopt;
+    const auto symbols {definitions_[id.value].symbols};
+    const auto it {symbols.find_object(member_name)};
+    if (!it) return std::nullopt;
+    return it->declared_type;
+  }
 
-    return std::nullopt;
+  /**
+   * Defines supertypes for a type definition.
+   * Why do we call it inheritance in programming? You're only supposed to inherit things when the ancestor dies in real life. I don't get it.
+   * As the usage of the word "define" suggests, this should only be called once per type, because it overwrites the supertype vector.
+   * @param id TypeId to add supertypes to
+   * @param supertypes Supertypes to add to the definition
+   */
+  void define_supertypes(TypeId id, std::vector<TypeId>&& supertypes) {
+    if (id) definitions_[id.value].supertypes = std::move(supertypes);
+  }
+
+  [[nodiscard]] bool is_supertype(TypeId test, TypeId possible_supertype) const {
+    if (!test || !possible_supertype) return false;
+    if (test == possible_supertype) return true;
+    for (const TypeId super : definitions_[test.value].supertypes)
+      // A little recursion never hurt anyone. I'm dreading how slow this may end up being, though. Well, no. Multiple inheritance won't be too common.
+      if (is_supertype(super, possible_supertype)) return true;
+
+    return false;
   }
 
   void add_members(TypeId id, std::unordered_map<std::string, ObjectSymbol>&& objects, std::unordered_map<std::string, TypeId>&& types) {
-    if (const std::optional def {definition_of(id)}) {
-      auto& symbols {definitions_[*def].symbols};
-      symbols.objects.insert(std::begin(objects), std::end(objects));
-      symbols.types.insert(std::begin(types), std::end(types));
-    } else throw std::runtime_error("Can't add members to a type without a definition");
+    if (!id) throw std::runtime_error("Can't add members to a type without a definition");
+    auto& symbols {definitions_[id.value].symbols};
+    symbols.objects.insert(std::begin(objects), std::end(objects));
+    symbols.types.insert(std::begin(types), std::end(types));
   }
 
   [[nodiscard]] std::string to_string(TypeId id) const {

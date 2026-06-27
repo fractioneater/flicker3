@@ -209,27 +209,16 @@ struct CoreModule : Module {
     return true;
   }
 
-  explicit CoreModule(AnalyzerHost& host) : Module {host} {
-    compile(CORE_NAME, std::string {Core::SRC}, 2);
+  void compile() {
+    Module::compile(CORE_NAME, std::string {Core::SRC}, 2);
     if (status != MODULE_COMPILED) {
-      std::cerr << "This is a core library compilation error---it's not your fault. Submit an issue on Codeberg or communicate this to me however possible.\n";
+      std::cerr << "This is a core library compilation error---it's not your fault. Submit an issue on Codeberg or communicate this to me however possible." << std::endl;
       // Exit code 70: internal software error (core library error, my fault).
       throw std::system_error(70, std::generic_category());
     }
-
-    // Initialized all at once to ensure everything is present.
-    types = {
-      *analyzer.find_type("Any"),
-      *analyzer.find_type("Bool"),
-      *analyzer.find_type("Char"),
-      *analyzer.find_type("List"),
-      *analyzer.find_type("Map"),
-      *analyzer.find_type("Nothing"),
-      *analyzer.find_type("Number"),
-      *analyzer.find_type("String"),
-      *analyzer.find_type("Unit")
-    };
   }
+
+  explicit CoreModule(AnalyzerHost& host) : Module {host} {}
 };
 
 /**
@@ -260,10 +249,35 @@ export class ModuleLoader : public AnalyzerHost {
 
   TypeArena types_ {};
 
+  TypeId define_core_class(const std::string& name, int arity, std::vector<TypeId>&& supertypes) {
+    // Add to type arena.
+    const TypeId id {types_.new_named(std::string {name}, arity)};
+    types_.define_supertypes(id, std::move(supertypes));
+    // Add to symbol table.
+    core_->analyzer.define_core_class(name, id);
+    return id;
+  }
+
   void load_core() {
     if (core_ != nullptr) return;
     core_ = std::make_unique<CoreModule>(*this);
-    // TODO: initialize natives.
+
+    // Initialize types
+    const TypeId any_t {define_core_class("Any", 0, {})};
+
+    core_->compile();
+
+    const TypeId bool_t {*core_->analyzer.find_type("Bool")};
+    const TypeId char_t {*core_->analyzer.find_type("Char")};
+    const TypeId list_t {*core_->analyzer.find_type("List")};
+    const TypeId map_t {*core_->analyzer.find_type("Map")};
+    const TypeId nothing_t {*core_->analyzer.find_type("Nothing")};
+    const TypeId number_t {*core_->analyzer.find_type("Number")};
+    const TypeId sequence_t {*core_->analyzer.find_type("Sequence")};
+    const TypeId string_t {*core_->analyzer.find_type("String")};
+    const TypeId unit_t {*core_->analyzer.find_type("Unit")};
+
+    core_->types = CoreTypes {any_t, bool_t, char_t, list_t, map_t, nothing_t, number_t, sequence_t, string_t, unit_t};
   }
 
   public:

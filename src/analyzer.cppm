@@ -44,12 +44,7 @@ struct ClassFrame {
    */
   TypeId id;
 
-  /**
-   * Superclass type ID. Will be nullopt if the class doesn't give a superclass, and invalid if a nonexistent type name is provided.
-   */
-  std::optional<TypeId> superclass;
-
-  explicit ClassFrame(TypeId this_id, std::optional<TypeId> super_id) : id {this_id}, superclass {super_id} {}
+  explicit ClassFrame(TypeId this_id) : id {this_id} {}
 };
 
 // Tiny interface for some fun exceptions.
@@ -213,6 +208,17 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
     const TypeId t {host_.type_arena().new_named(std::string {stmt.identifier->src_string}, static_cast<int>(stmt.type_params.size()))};
     add_type_safe(stmt.identifier, t);
 
+    // Find supertypes.
+    std::vector<TypeId> supertypes {};
+    for (const auto super : stmt.superclasses) {
+      if (const auto type {find_type(std::string {super->src_string})})
+        supertypes.emplace_back(*type);
+      else report_error(std::format("Unresolved reference to type '{}'", super->src_string), super);
+    }
+    // And if it doesn't have something else to link it to Any, we'll fix that.
+    if (supertypes.empty() && t != host_.core_types().any_t) supertypes.emplace_back(host_.core_types().any_t);
+    host_.type_arena().define_supertypes(t, std::move(supertypes));
+
     // Define type params.
     begin_scope();
     for (auto param_iter {std::begin(stmt.type_params)}; param_iter != std::end(stmt.type_params); ++param_iter) {
@@ -222,13 +228,7 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
       );
     }
 
-    // Find superclass.
-    std::optional<TypeId> super {};
-    if (stmt.superclass) {
-      super = find_type(std::string {stmt.superclass->src_string});
-      if (!super) report_error(std::format("Unresolved reference to type '{}'", stmt.superclass->src_string), stmt.superclass);
-    }
-    classes_.emplace_back(t, super);
+    classes_.emplace_back(t); // This marks the start of the region where 'this' is allowed.
 
     // Visit namespace items.
     if (!stmt.namespace_items.empty()) {
@@ -340,8 +340,10 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
       report_error("A loop with this label already exists", stmt.label, Diagnostic::WARNING);
     loops_.emplace_back(stmt.label);
 
-    // TODO: Check for Sequence
     stmt.iterator->VISIT;
+    if (stmt.iterator->type && !host_.type_arena().is_supertype(stmt.iterator->type, host_.core_types().sequence_t))
+      report_error(std::format("'{}' is not iterable (is not a subtype of Sequence)", host_.type_arena().to_string(stmt.iterator->type)), stmt.iter_var);
+    else return;
 
     add_object_safe(stmt.iter_var, {false, TypeId {}}); // TODO: Type of the iter var is the type param of iterator.
     if (stmt.index_var) add_object_safe(stmt.index_var, {false, host_.core_types().number_t});
@@ -402,7 +404,36 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
     }
   }
 
-  void visit_comparison_expr(const Expressions::Comparison& expr) override {} // NOT IMPLEMENTED
+  void visit_logical_expr(const Expressions::Logical& expr) override {
+    expr.left->VISIT;
+    expr.right->VISIT;
+    expr.type = host_.core_types().bool_t;
+  }
+
+  void visit_comparison_expr(const Expressions::Comparison& expr) override {
+    for (const auto& term : expr.expressions) term->VISIT;
+
+    std::vector<TypeId> return_types {};
+    for (int i {0}; i < expr.fn_names.size(); ++i) {
+      const ExprNode left {expr.expressions[i]};
+      const ExprNode right {expr.expressions[i + 1]};
+      const auto& [where, fn] {expr.fn_names[i]};
+      if (left->type) {
+        if (const TypeId return_type {host_.type_arena().method_return_type(left->type, fn, {right->type})}) {
+          if (return_type != host_.core_types().bool_t)
+            report_error(
+              std::format("'{}' comparison operator '{}' does not return a boolean", host_.type_arena().to_string(left->type), fn), where
+            ); // TODO: Report the error when the method is created, ignore it silently here.
+          return_types.emplace_back(return_type);
+        } else
+          report_error(
+            std::format("'{}' does not implement '{}'", host_.type_arena().to_string(left->type), fn), where
+          );
+      }
+    }
+
+    expr.type = host_.core_types().bool_t;
+  }
 
   void visit_if_expr(const Expressions::If& expr) override {
     // They're in this order (___ if ___ else ___).
@@ -813,11 +844,15 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
 
   ScopeFrame& global_scope() { return scopes_.front(); }
 
+  void define_core_class(const std::string& name, TypeId t) {
+    scopes_.front().locals.types.try_emplace(name, t);
+  }
+
   /**
    * @param name Symbol name
    * @return Imported or declared-in-module type with the specified name
    */
-  std::optional<TypeId> find_type(const std::string& name) const override {
+  [[nodiscard]] std::optional<TypeId> find_type(const std::string& name) const override {
     for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope) {
       if (scope->locals.types.contains(name))
         return scope->locals.types.at(name);
@@ -831,7 +866,7 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
    * @param name Symbol name
    * @return Imported or declared-in-module object with the specified name
    */
-  std::optional<ObjectSymbol> find_object(const std::string& name) const override {
+  [[nodiscard]] std::optional<ObjectSymbol> find_object(const std::string& name) const override {
     for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope) {
       if (scope->locals.objects.contains(name))
         return scope->locals.objects.at(name);
@@ -845,7 +880,7 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
    * @param name Symbol name
    * @return Imported or declared-in-module namespace with the specified name
    */
-  std::optional<Namespace> find_namespace(const std::string& name) const override {
+  [[nodiscard]] std::optional<Namespace> find_namespace(const std::string& name) const override {
     for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope) {
       if (scope->locals.namespaces.contains(name))
         return scope->locals.namespaces.at(name);

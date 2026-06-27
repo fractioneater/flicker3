@@ -152,6 +152,12 @@ class DotTreeWalker {
       owner_.walk(expr.right, parent_id);
     }
 
+    void visit_logical_expr(const Expressions::Logical& expr) override {
+      const int parent_id {owner_.current_parent_id_};
+      owner_.walk(expr.left, parent_id);
+      owner_.walk(expr.right, parent_id);
+    }
+
     void visit_comparison_expr(const Expressions::Comparison& expr) override {
       const int parent_id {owner_.current_parent_id_};
       for (const auto& operand : expr.expressions) {
@@ -321,10 +327,13 @@ class DotTreeWalker {
           blah += param->src_string;
         }
       }
-      // Superclass.
-      if (stmt.superclass) {
+      // Superclasses.
+      if (!stmt.superclasses.empty()) {
         blah += " is ";
-        blah += stmt.superclass->src_string;
+        for (int i {0}; i < stmt.superclasses.size(); ++i) {
+          if (i > 0) blah += ", ";
+          blah += stmt.superclasses[i]->src_string;
+        }
       }
       return blah;
     }
@@ -434,10 +443,11 @@ class DotTreeWalker {
     explicit ExprNameVisitor(DotTreeWalker& owner) : owner_ {owner} {}
 
     std::string visit_binary_expr(const Expressions::Binary& expr) override { return "binary " + std::string {expr.fn_name}; }
+    std::string visit_logical_expr(const Expressions::Logical& expr) override { return std::string {expr.op->src_string}; }
 
     std::string visit_comparison_expr(const Expressions::Comparison& expr) override {
       std::string blah {"..."};
-      for (const auto& comparison : expr.fn_names) {
+      for (const auto& [_, comparison] : expr.fn_names) {
         blah += " ";
         blah += comparison;
         blah += " ...";

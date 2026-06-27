@@ -16,6 +16,7 @@ export struct ModuleExports {
 };
 
 export struct CoreTypes {
+  // Keep this list in alphabetical order.
   TypeId any_t {};
   TypeId bool_t {};
   TypeId char_t {};
@@ -23,13 +24,16 @@ export struct CoreTypes {
   TypeId map_t {};
   TypeId nothing_t {};
   TypeId number_t {};
+  TypeId sequence_t {};
   TypeId string_t {};
   TypeId unit_t {};
 
   CoreTypes() = default;
 
-  CoreTypes(TypeId any, TypeId bool_, TypeId char_, TypeId list, TypeId map, TypeId nothing, TypeId number, TypeId string, TypeId unit) :
-    any_t {any}, bool_t {bool_}, char_t {char_}, list_t {list}, map_t {map}, nothing_t {nothing}, number_t {number}, string_t {string}, unit_t {unit} {}
+  // This should be alphabetical too. Add an underscore suffix for conflicting C++ types.
+  CoreTypes(TypeId any, TypeId bool_, TypeId char_, TypeId list, TypeId map, TypeId nothing, TypeId number, TypeId sequence, TypeId string, TypeId unit) :
+    any_t {any}, bool_t {bool_}, char_t {char_}, list_t {list}, map_t {map}, nothing_t {nothing}, number_t {number}, sequence_t {sequence}, string_t {string},
+    unit_t {unit} {}
 };
 
 // The interface containing everything a ModuleLoader needs to expose to an Analyzer. This involves:

@@ -49,7 +49,7 @@
 			"name": "Class", "fields": [
 				{"type": "Token*", "name": "identifier"},
 				{"type": "std::vector<Token*>", "name": "type_params", "move": true},
-				{"type": "Token*", "name": "superclass"},
+				{"type": "std::vector<Token*>", "name": "superclasses", "move": true},
 				{"type": "std::vector<StmtNode>", "name": "namespace_items", "move": true},
 				{"type": "std::vector<StmtNode>", "name": "initializers", "move": true},
 				{"type": "std::vector<StmtNode>", "name": "declarations", "move": true}
@@ -130,8 +130,15 @@
 				{"type": "ExprNode", "name": "right", "move": true}
 			]
 		}, {
+			"name": "Logical",
+			"fields": [
+				{"type": "Token*", "name": "op"},
+				{"type": "ExprNode", "name": "left", "move": true},
+				{"type": "ExprNode", "name": "right", "move": true}
+			]
+		}, {
 			"name": "Comparison", "fields": [
-				{"type": "std::vector<std::string>", "name": "fn_names", "move": true},
+				{"type": "std::vector<std::pair<const Token*, std::string>>", "name": "fn_names", "move": true},
 				{"type": "std::vector<ExprNode>", "name": "expressions", "move": true}
 			]
 		}, {

@@ -332,8 +332,12 @@ export class Parser {
     }
 
     // Property 3: Superclass
-    const Token* superclass {match(TOKEN_IS) ? expect(TOKEN_IDENTIFIER, "Expecting a superclass name") : nullptr};
-    // TODO: Allow multiple inheritance.
+    std::vector<Token*> superclasses {};
+    if (match(TOKEN_IS)) {
+      do {
+        superclasses.emplace_back(expect(TOKEN_IDENTIFIER, "Expecting a superclass name"));
+      } while (match(TOKEN_COMMA));
+    }
 
     // Properties 4, 5 & 6: Contents
     match_line();
@@ -376,7 +380,7 @@ export class Parser {
     }
     advance(); // Match the dedent we've already checked for.
 
-    return std::make_shared<Statements::Class>(name, type_params, superclass, namespace_items, initializers, declarations);
+    return std::make_shared<Statements::Class>(name, type_params, superclasses, namespace_items, initializers, declarations);
   }
 
   StmtNode namespace_declaration() {
@@ -451,8 +455,10 @@ export class Parser {
   }
 
   StmtNode method() {
-    // Essentially just a function without type parameters.
-    const Token* identifier {expect(TOKEN_IDENTIFIER, "Expecting a method name")};
+    // Essentially just a function without type parameters, and it can have a weirder name.
+    if (RULES[current_->type].is_method) advance();
+    else report_error("Expecting a method name", current_);
+    const Token* identifier {previous_};
 
     const std::vector params {param_list()};
 
@@ -625,7 +631,7 @@ export class Parser {
   }
 
   StmtNode for_statement() {
-    Token* for_token {previous_};
+    const Token* for_token {previous_};
     Token* label {loop_label()};
 
     // Either a variable declaration or an expression is acceptable (or nothing, of course).
@@ -758,6 +764,18 @@ export class Parser {
     return std::make_shared<Expressions::Binary>(RULES[previous_->type].fn_name, op, left, parse_expression(prec));
   }
 
+  ExprNode binary_and(const ExprNode& left) {
+    constexpr Precedence prec {static_cast<int>(Precedence::AND) + 1};
+    const Token* op {previous_};
+    return std::make_shared<Expressions::Logical>(op, left, parse_expression(prec));
+  }
+
+  ExprNode binary_or(const ExprNode& left) {
+    constexpr Precedence prec {static_cast<int>(Precedence::OR) + 1};
+    const Token* op {previous_};
+    return std::make_shared<Expressions::Logical>(op, left, parse_expression(prec));
+  }
+
   ExprNode infix_not(const ExprNode& left) {
     const Token* op {previous_};
     expect(TOKEN_IN, "Cannot use 'not' as an infix operator by itself; try 'not in' or 'is not'", previous_);
@@ -776,11 +794,12 @@ export class Parser {
   ExprNode comparison(const ExprNode& left) {
     // Like in Python, comparisons can be chained: 2 < x < 44 does what a mathematician would expect it to.
     constexpr Precedence prec {static_cast<int>(Precedence::COMPARISON) + 1};
-    std::vector<std::string> comparison_funcs {};
+    std::vector<std::pair<const Token*, std::string>> comparison_funcs {};
     std::vector operands {left};
 
     do {
-      comparison_funcs.emplace_back(RULES[previous_->type].fn_name);
+      const Token* where {previous_};
+      comparison_funcs.emplace_back(where, RULES[previous_->type].fn_name);
       operands.emplace_back(parse_expression(prec));
     } while (match_precedence(Precedence::COMPARISON));
 
@@ -1131,111 +1150,115 @@ export class Parser {
   struct ParseRule {
     PrefixFn prefix {};
     InfixFn infix {};
+    bool is_method {};
     std::string fn_name {};
     Precedence prec {};
   };
 
-  #define UNUSED                     ParseRule {nullptr, nullptr, "", Precedence::NONE}
-  #define INFIX_RULE(fn, name, prec) ParseRule {nullptr, &Parser::fn, name, Precedence::prec}
-  #define PREFIX_RULE(fn, name)      ParseRule {&Parser::fn, nullptr, name, Precedence::NONE}
-  #define BOTH(pre, in, name, prec)  ParseRule {&Parser::pre, &Parser::in, name, Precedence::prec}
+  #define UNUSED                            ParseRule {nullptr, nullptr, false, "", Precedence::NONE}
+  #define INFIX_METHOD(fn, name, prec)      ParseRule {nullptr, &Parser::fn, true, name, Precedence::prec}
+  #define INFIX_RULE(fn, prec)              ParseRule {nullptr, &Parser::fn, false, "", Precedence::prec}
+  #define PREFIX_METHOD(fn, name)           ParseRule {&Parser::fn, nullptr, true, name, Precedence::NONE}
+  #define PREFIX_RULE(fn)                   ParseRule {&Parser::fn, nullptr, false, "", Precedence::NONE}
+  #define METHOD(prefix, infix, name, prec) ParseRule {&Parser::prefix, &Parser::infix, true, name, Precedence::prec}
+  #define BOTH(prefix, infix, prec)         ParseRule {&Parser::prefix, &Parser::infix, false, "", Precedence::prec}
 
   // @formatter:off; it will separate the comments from the rest of their lines, which is horrifying.
   // IMPORTANT: Prefix rules always have a precedence of none! Their precedence is decided by the parse_expression(prec) call inside them, not the parse rule table!
   // This means that for "BOTH" rules, the precedence only applies to the infix rule.
   static constexpr std::array<ParseRule, 92> RULES {{
-    /* TOKEN_LEFT_PAREN    */ BOTH(grouping, call, "", POSTFIX),
-    /* TOKEN_RIGHT_PAREN   */ UNUSED,
-    /* TOKEN_LEFT_BRACKET  */ BOTH(collection, subscript, "", POSTFIX),
-    /* TOKEN_RIGHT_BRACKET */ UNUSED,
-    /* TOKEN_LEFT_BRACE    */ INFIX_RULE(lambda_call, "", POSTFIX),
-    /* TOKEN_RIGHT_BRACE   */ UNUSED,
-    /* TOKEN_SEMICOLON     */ UNUSED,
-    /* TOKEN_COMMA         */ UNUSED,
-    /* TOKEN_TILDE         */ PREFIX_RULE(unary, "~"),
-    /* TOKEN_STAR          */ INFIX_RULE(binary, "*", FACTOR),
-    /* TOKEN_STAR_STAR     */ INFIX_RULE(binary_right_assoc, "**", EXPONENT),
-    /* TOKEN_STAR_EQ       */ UNUSED, // TODO: These things (+=, *=, /=, etc).
-    /* TOKEN_STAR_STAR_EQ  */ UNUSED,
-    /* TOKEN_MINUS         */ BOTH(unary, binary, "-", TERM),
-    /* TOKEN_MINUS_MINUS   */ BOTH(unary, postfix_inc_dec, "--", POSTFIX),
-    /* TOKEN_RIGHT_ARROW   */ UNUSED,
-    /* TOKEN_MINUS_EQ      */ UNUSED,
-    /* TOKEN_PLUS          */ INFIX_RULE(binary, "+", TERM),
-    /* TOKEN_PLUS_PLUS     */ BOTH(unary, postfix_inc_dec, "++", POSTFIX),
-    /* TOKEN_PLUS_EQ       */ UNUSED,
-    /* TOKEN_DOT           */ INFIX_RULE(member, "", POSTFIX),
-    /* TOKEN_DOT_DOT       */ INFIX_RULE(binary, "..", RANGE),
-    /* TOKEN_DOT_DOT_LT    */ INFIX_RULE(binary, "..<", RANGE),
-    /* TOKEN_QUEST         */ UNUSED,
-    /* TOKEN_QUEST_COLON   */ INFIX_RULE(binary, "?:", NIL_COALESCING),
-    /* TOKEN_QUEST_DOT     */ INFIX_RULE(member, "", POSTFIX),
-    /* TOKEN_GT            */ INFIX_RULE(comparison, ">", COMPARISON),
-    /* TOKEN_GT_GT         */ INFIX_RULE(binary, ">>", BIT_SHIFT),
-    /* TOKEN_GT_EQ         */ INFIX_RULE(comparison, ">=", COMPARISON),
-    /* TOKEN_LT            */ INFIX_RULE(comparison, "<", COMPARISON),
-    /* TOKEN_LT_LT         */ INFIX_RULE(binary, "<<", BIT_SHIFT),
-    /* TOKEN_LT_EQ         */ INFIX_RULE(comparison, "<=", COMPARISON),
-    /* TOKEN_COLON         */ UNUSED,
-    /* TOKEN_COLON_COLON   */ INFIX_RULE(namespace_member, "", ATOM),
-    /* TOKEN_SLASH         */ INFIX_RULE(binary, "/", FACTOR),
-    /* TOKEN_SLASH_EQ      */ UNUSED,
-    /* TOKEN_PERCENT       */ INFIX_RULE(binary, "%", FACTOR),
-    /* TOKEN_PERCENT_EQ    */ UNUSED,
-    /* TOKEN_PIPE          */ INFIX_RULE(binary, "|", BIT_OR),
-    /* TOKEN_PIPE_EQ       */ UNUSED,
-    /* TOKEN_CARET         */ INFIX_RULE(binary, "^", BIT_XOR),
-    /* TOKEN_CARET_EQ      */ UNUSED,
-    /* TOKEN_AMPERSAND     */ INFIX_RULE(binary, "&", BIT_AND),
-    /* TOKEN_AMPERSAND_EQ  */ UNUSED,
-    /* TOKEN_BANG          */ PREFIX_RULE(unary, "!"),
-    /* TOKEN_BANG_EQ       */ INFIX_RULE(comparison, "!=", COMPARISON),
-    /* TOKEN_EQ            */ INFIX_RULE(assignment, "=", ASSIGNMENT),
-    /* TOKEN_EQ_EQ         */ INFIX_RULE(comparison, "==", COMPARISON),
-    /* TOKEN_IDENTIFIER    */ PREFIX_RULE(variable, ""),
-    /* TOKEN_STRING        */ PREFIX_RULE(literal, ""),
-    /* TOKEN_INTERPOLATION */ PREFIX_RULE(string_interpolation, ""),
-    /* TOKEN_CHAR          */ PREFIX_RULE(literal, ""),
-    /* TOKEN_NUMBER        */ PREFIX_RULE(literal, ""),
-    /* TOKEN_AND           */ INFIX_RULE(binary, "and", AND),
-    /* TOKEN_AROUND        */ UNUSED,
-    /* TOKEN_BREAK         */ UNUSED,
-    /* TOKEN_CLASS         */ UNUSED,
-    /* TOKEN_CONTINUE      */ UNUSED,
-    /* TOKEN_DO            */ UNUSED,
-    /* TOKEN_EACH          */ UNUSED,
-    /* TOKEN_ELIF          */ UNUSED,
-    /* TOKEN_ELSE          */ UNUSED,
-    /* TOKEN_FALSE         */ PREFIX_RULE(literal, ""),
-    /* TOKEN_FOR           */ UNUSED, // TODO: Does this ever show up as an operator? How to handle it?
-    /* TOKEN_FUN           */ PREFIX_RULE(lambda, ""),
-    /* TOKEN_IF            */ INFIX_RULE(if_expr, "", IF),
-    /* TOKEN_IN            */ INFIX_RULE(binary, "in", IN),
-    /* TOKEN_IS            */ INFIX_RULE(binary_is, "", IS),
-    /* TOKEN_NAMESPACE     */ UNUSED,
-    /* TOKEN_NIL           */ PREFIX_RULE(literal, ""),
-    /* TOKEN_NOT           */ BOTH(prefix_not, infix_not, "", IN),
-    /* TOKEN_OF            */ UNUSED, // TODO: Does this ever show up as an operator? How to handle it?
-    /* TOKEN_OR            */ INFIX_RULE(binary, "or", OR),
-    /* TOKEN_OVERRIDE      */ UNUSED,
-    /* TOKEN_PASS          */ UNUSED,
-    /* TOKEN_PRINT         */ PREFIX_RULE(print, "print"),
-    /* TOKEN_PRINT_ERROR   */ PREFIX_RULE(print, "print_err"),
-    /* TOKEN_PRIVATE       */ UNUSED,
-    /* TOKEN_RETURN        */ UNUSED,
-    /* TOKEN_STATIC        */ UNUSED,
-    /* TOKEN_SUPER         */ PREFIX_RULE(super_id, ""),
-    /* TOKEN_THIS          */ PREFIX_RULE(this_id, ""),
-    /* TOKEN_TRUE          */ PREFIX_RULE(literal, ""),
-    /* TOKEN_USING         */ UNUSED,
-    /* TOKEN_VAL           */ UNUSED,
-    /* TOKEN_VAR           */ UNUSED,
-    /* TOKEN_WHILE         */ UNUSED,
-    /* TOKEN_INDENT        */ UNUSED,
-    /* TOKEN_DEDENT        */ UNUSED,
-    /* TOKEN_LINE          */ UNUSED,
-    /* TOKEN_EOF           */ UNUSED,
-    /* TOKEN_IGNORED_DEDENT*/ UNUSED,
+    /* TOKEN_LEFT_PAREN     */ BOTH(grouping, call, POSTFIX),
+    /* TOKEN_RIGHT_PAREN    */ UNUSED,
+    /* TOKEN_LEFT_BRACKET   */ BOTH(collection, subscript, POSTFIX),
+    /* TOKEN_RIGHT_BRACKET  */ UNUSED,
+    /* TOKEN_LEFT_BRACE     */ INFIX_RULE(lambda_call, POSTFIX),
+    /* TOKEN_RIGHT_BRACE    */ UNUSED,
+    /* TOKEN_SEMICOLON      */ UNUSED,
+    /* TOKEN_COMMA          */ UNUSED,
+    /* TOKEN_TILDE          */ PREFIX_METHOD(unary, "~"),
+    /* TOKEN_STAR           */ INFIX_METHOD(binary, "*", FACTOR),
+    /* TOKEN_STAR_STAR      */ INFIX_METHOD(binary_right_assoc, "**", EXPONENT),
+    /* TOKEN_STAR_EQ        */ UNUSED, // TODO: These things (+=, *=, /=, etc).
+    /* TOKEN_STAR_STAR_EQ   */ UNUSED,
+    /* TOKEN_MINUS          */ METHOD(unary, binary, "-", TERM),
+    /* TOKEN_MINUS_MINUS    */ METHOD(unary, postfix_inc_dec, "--", POSTFIX),
+    /* TOKEN_RIGHT_ARROW    */ UNUSED,
+    /* TOKEN_MINUS_EQ       */ UNUSED,
+    /* TOKEN_PLUS           */ INFIX_METHOD(binary, "+", TERM),
+    /* TOKEN_PLUS_PLUS      */ METHOD(unary, postfix_inc_dec, "++", POSTFIX),
+    /* TOKEN_PLUS_EQ        */ UNUSED,
+    /* TOKEN_DOT            */ INFIX_RULE(member, POSTFIX),
+    /* TOKEN_DOT_DOT        */ INFIX_METHOD(binary, "..", RANGE),
+    /* TOKEN_DOT_DOT_LT     */ INFIX_METHOD(binary, "..<", RANGE),
+    /* TOKEN_QUEST          */ UNUSED,
+    /* TOKEN_QUEST_COLON    */ INFIX_RULE(binary, NIL_COALESCING),
+    /* TOKEN_QUEST_DOT      */ INFIX_RULE(member, POSTFIX),
+    /* TOKEN_GT             */ INFIX_METHOD(comparison, ">", COMPARISON),
+    /* TOKEN_GT_GT          */ INFIX_METHOD(binary, ">>", BIT_SHIFT),
+    /* TOKEN_GT_EQ          */ INFIX_METHOD(comparison, ">=", COMPARISON),
+    /* TOKEN_LT             */ INFIX_METHOD(comparison, "<", COMPARISON),
+    /* TOKEN_LT_LT          */ INFIX_METHOD(binary, "<<", BIT_SHIFT),
+    /* TOKEN_LT_EQ          */ INFIX_METHOD(comparison, "<=", COMPARISON),
+    /* TOKEN_COLON          */ UNUSED,
+    /* TOKEN_COLON_COLON    */ INFIX_RULE(namespace_member, ATOM),
+    /* TOKEN_SLASH          */ INFIX_METHOD(binary, "/", FACTOR),
+    /* TOKEN_SLASH_EQ       */ UNUSED,
+    /* TOKEN_PERCENT        */ INFIX_METHOD(binary, "%", FACTOR),
+    /* TOKEN_PERCENT_EQ     */ UNUSED,
+    /* TOKEN_PIPE           */ INFIX_METHOD(binary, "|", BIT_OR),
+    /* TOKEN_PIPE_EQ        */ UNUSED,
+    /* TOKEN_CARET          */ INFIX_METHOD(binary, "^", BIT_XOR),
+    /* TOKEN_CARET_EQ       */ UNUSED,
+    /* TOKEN_AMPERSAND      */ INFIX_METHOD(binary, "&", BIT_AND),
+    /* TOKEN_AMPERSAND_EQ   */ UNUSED,
+    /* TOKEN_BANG           */ PREFIX_METHOD(unary, "!"),
+    /* TOKEN_BANG_EQ        */ INFIX_METHOD(comparison, "!=", COMPARISON),
+    /* TOKEN_EQ             */ INFIX_METHOD(assignment, "=", ASSIGNMENT),
+    /* TOKEN_EQ_EQ          */ INFIX_METHOD(comparison, "==", COMPARISON),
+    /* TOKEN_IDENTIFIER     */ PREFIX_METHOD(variable, ""), // Don't let the blank name string deceive you. It's a method. Methods can obviously be named with identifiers.
+    /* TOKEN_STRING         */ PREFIX_RULE(literal),
+    /* TOKEN_INTERPOLATION  */ PREFIX_RULE(string_interpolation),
+    /* TOKEN_CHAR           */ PREFIX_RULE(literal),
+    /* TOKEN_NUMBER         */ PREFIX_RULE(literal),
+    /* TOKEN_AND            */ INFIX_RULE(binary_and, AND),
+    /* TOKEN_AROUND         */ UNUSED,
+    /* TOKEN_BREAK          */ UNUSED,
+    /* TOKEN_CLASS          */ UNUSED,
+    /* TOKEN_CONTINUE       */ UNUSED,
+    /* TOKEN_DO             */ UNUSED,
+    /* TOKEN_EACH           */ UNUSED,
+    /* TOKEN_ELIF           */ UNUSED,
+    /* TOKEN_ELSE           */ UNUSED,
+    /* TOKEN_FALSE          */ PREFIX_RULE(literal),
+    /* TOKEN_FOR            */ UNUSED, // TODO: Does this ever show up as an operator? How to handle it?
+    /* TOKEN_FUN            */ PREFIX_RULE(lambda),
+    /* TOKEN_IF             */ INFIX_RULE(if_expr, IF),
+    /* TOKEN_IN             */ INFIX_METHOD(binary, "in", IN),
+    /* TOKEN_IS             */ INFIX_METHOD(binary_is, "", IS),
+    /* TOKEN_NAMESPACE      */ UNUSED,
+    /* TOKEN_NIL            */ PREFIX_RULE(literal),
+    /* TOKEN_NOT            */ BOTH(prefix_not, infix_not, IN),
+    /* TOKEN_OF             */ UNUSED, // TODO: Does this ever show up as an operator? How to handle it?
+    /* TOKEN_OR             */ INFIX_RULE(binary_or, OR),
+    /* TOKEN_OVERRIDE       */ UNUSED,
+    /* TOKEN_PASS           */ UNUSED,
+    /* TOKEN_PRINT          */ PREFIX_METHOD(print, "print"),
+    /* TOKEN_PRINT_ERROR    */ PREFIX_METHOD(print, "print_err"),
+    /* TOKEN_PRIVATE        */ UNUSED,
+    /* TOKEN_RETURN         */ UNUSED,
+    /* TOKEN_STATIC         */ UNUSED,
+    /* TOKEN_SUPER          */ PREFIX_RULE(super_id),
+    /* TOKEN_THIS           */ PREFIX_RULE(this_id),
+    /* TOKEN_TRUE           */ PREFIX_RULE(literal),
+    /* TOKEN_USING          */ UNUSED,
+    /* TOKEN_VAL            */ UNUSED,
+    /* TOKEN_VAR            */ UNUSED,
+    /* TOKEN_WHILE          */ UNUSED,
+    /* TOKEN_INDENT         */ UNUSED,
+    /* TOKEN_DEDENT         */ UNUSED,
+    /* TOKEN_LINE           */ UNUSED,
+    /* TOKEN_EOF            */ UNUSED,
+    /* TOKEN_IGNORED_DEDENT */ UNUSED,
   }};
   // @formatter:on
 

@@ -1,4 +1,4 @@
-class Any
+class Unit
   fun test() = "..."
 
 class Bool
@@ -7,20 +7,20 @@ class Bool
 class Char
   fun test() = "..."
 
-class List of A
+class Sequence of A
   fun test() = "..."
 
-class Map of A
+class List of A is Sequence
+  fun test() = "..."
+
+class Map of A is Sequence
+  fun test() = "..."
+
+class String is Sequence
   fun test() = "..."
 
 class Nothing
   fun test() = "..."
 
 class Number
-  fun test() = "..."
-
-class String
-  fun test() = "..."
-
-class Unit
   fun test() = "..."

@@ -38,6 +38,7 @@ export namespace Statements {
 
 export namespace Expressions {
   class Binary;
+  class Logical;
   class Comparison;
   class If;
   class Assignment;
@@ -92,6 +93,7 @@ export class StmtVisitorVoid {
 export class ExprVisitorVoid {
   public:
   virtual void visit_binary_expr(const Expressions::Binary& expr) = 0;
+  virtual void visit_logical_expr(const Expressions::Logical& expr) = 0;
   virtual void visit_comparison_expr(const Expressions::Comparison& expr) = 0;
   virtual void visit_if_expr(const Expressions::If& expr) = 0;
   virtual void visit_assignment_expr(const Expressions::Assignment& expr) = 0;
@@ -148,6 +150,7 @@ export class StmtVisitorAny {
 export class ExprVisitorAny {
   public:
   virtual std::any visit_binary_expr_any(const Expressions::Binary& expr) = 0;
+  virtual std::any visit_logical_expr_any(const Expressions::Logical& expr) = 0;
   virtual std::any visit_comparison_expr_any(const Expressions::Comparison& expr) = 0;
   virtual std::any visit_if_expr_any(const Expressions::If& expr) = 0;
   virtual std::any visit_assignment_expr_any(const Expressions::Assignment& expr) = 0;
@@ -282,6 +285,7 @@ export template <typename R>
 class ExprVisitor : public ExprVisitorAny {
   public:
   virtual R visit_binary_expr(const Expressions::Binary& expr) = 0;
+  virtual R visit_logical_expr(const Expressions::Logical& expr) = 0;
   virtual R visit_comparison_expr(const Expressions::Comparison& expr) = 0;
   virtual R visit_if_expr(const Expressions::If& expr) = 0;
   virtual R visit_assignment_expr(const Expressions::Assignment& expr) = 0;
@@ -308,6 +312,10 @@ class ExprVisitor : public ExprVisitorAny {
   private:
   std::any visit_binary_expr_any(const Expressions::Binary& expr) final {
     return visit_binary_expr(expr);
+  }
+
+  std::any visit_logical_expr_any(const Expressions::Logical& expr) final {
+    return visit_logical_expr(expr);
   }
 
   std::any visit_comparison_expr_any(const Expressions::Comparison& expr) final {
@@ -553,7 +561,7 @@ export class Statements::Method : public Stmt {
 
 export class Statements::Class : public Stmt {
   public:
-  Class(const Token* identifier, std::vector<Token*> type_params, const Token* superclass, std::vector<StmtNode> namespace_items, std::vector<StmtNode> initializers, std::vector<StmtNode> declarations) : identifier {identifier}, type_params {std::move(type_params)}, superclass {superclass}, namespace_items {std::move(namespace_items)}, initializers {std::move(initializers)}, declarations {std::move(declarations)} {}
+  Class(const Token* identifier, std::vector<Token*> type_params, std::vector<Token*> superclasses, std::vector<StmtNode> namespace_items, std::vector<StmtNode> initializers, std::vector<StmtNode> declarations) : identifier {identifier}, type_params {std::move(type_params)}, superclasses {std::move(superclasses)}, namespace_items {std::move(namespace_items)}, initializers {std::move(initializers)}, declarations {std::move(declarations)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_class_stmt_any(*this);
@@ -565,7 +573,7 @@ export class Statements::Class : public Stmt {
 
   const Token* identifier {};
   const std::vector<Token*> type_params {};
-  const Token* superclass {};
+  const std::vector<Token*> superclasses {};
   const std::vector<StmtNode> namespace_items {};
   const std::vector<StmtNode> initializers {};
   const std::vector<StmtNode> declarations {};
@@ -777,9 +785,26 @@ export class Expressions::Binary : public Expr {
   const ExprNode right {};
 };
 
+export class Expressions::Logical : public Expr {
+  public:
+  Logical(const Token* op, ExprNode left, ExprNode right) : op {op}, left {std::move(left)}, right {std::move(right)} {}
+
+  std::any accept(ExprVisitorAny& visitor) override {
+    return visitor.visit_logical_expr_any(*this);
+  }
+
+  void accept(ExprVisitorVoid& visitor) override {
+    visitor.visit_logical_expr(*this);
+  }
+
+  const Token* op {};
+  const ExprNode left {};
+  const ExprNode right {};
+};
+
 export class Expressions::Comparison : public Expr {
   public:
-  Comparison(std::vector<std::string> fn_names, std::vector<ExprNode> expressions) : fn_names {std::move(fn_names)}, expressions {std::move(expressions)} {}
+  Comparison(std::vector<std::pair<const Token*, std::string>> fn_names, std::vector<ExprNode> expressions) : fn_names {std::move(fn_names)}, expressions {std::move(expressions)} {}
 
   std::any accept(ExprVisitorAny& visitor) override {
     return visitor.visit_comparison_expr_any(*this);
@@ -789,7 +814,7 @@ export class Expressions::Comparison : public Expr {
     visitor.visit_comparison_expr(*this);
   }
 
-  const std::vector<std::string> fn_names {};
+  const std::vector<std::pair<const Token*, std::string>> fn_names {};
   const std::vector<ExprNode> expressions {};
 };
 
