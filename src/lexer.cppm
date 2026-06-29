@@ -13,10 +13,15 @@ import diagnostic;
 
 import std;
 
+/**
+ * When TokenType is updated, also make sure to change:
+ * - Parser RULES table (and the number in the definition)
+ * - Analyzer METHOD_RULES table (and the number in the definition)
+ */
 export enum TokenType {
-  // Single-character tokens (0 - 8)
-  TOKEN_LEFT_PAREN, TOKEN_RIGHT_PAREN, TOKEN_LEFT_BRACKET, TOKEN_RIGHT_BRACKET, TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE, TOKEN_SEMICOLON, TOKEN_COMMA, TOKEN_TILDE,
-  // Single or multi-character tokens (9 - 47)
+  // Single-character tokens (0 - 7)
+  TOKEN_LEFT_PAREN, TOKEN_RIGHT_PAREN, TOKEN_LEFT_BRACKET, TOKEN_RIGHT_BRACKET, TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE, TOKEN_SEMICOLON, TOKEN_COMMA,
+  // Single or multi-character tokens (8 - 48)
   TOKEN_STAR, TOKEN_STAR_STAR, TOKEN_STAR_EQ, TOKEN_STAR_STAR_EQ,
   TOKEN_MINUS, TOKEN_MINUS_MINUS, TOKEN_RIGHT_ARROW, TOKEN_MINUS_EQ,
   TOKEN_PLUS, TOKEN_PLUS_PLUS, TOKEN_PLUS_EQ,
@@ -30,19 +35,20 @@ export enum TokenType {
   TOKEN_PIPE, TOKEN_PIPE_EQ,
   TOKEN_CARET, TOKEN_CARET_EQ,
   TOKEN_AMPERSAND, TOKEN_AMPERSAND_EQ,
+  TOKEN_TILDE, TOKEN_TILDE_TILDE,
   TOKEN_BANG, TOKEN_BANG_EQ,
   TOKEN_EQ, TOKEN_EQ_EQ,
-  // Literals (48 - 52)
+  // Literals (49 - 53)
   TOKEN_IDENTIFIER, TOKEN_STRING, TOKEN_INTERPOLATION, TOKEN_CHAR, TOKEN_NUMBER,
-  // Keywords (53 - 86)
+  // Keywords (54 - 87)
   TOKEN_AND, TOKEN_AROUND, TOKEN_BREAK, TOKEN_CLASS, TOKEN_CONTINUE, TOKEN_DO, TOKEN_EACH, TOKEN_ELIF, TOKEN_ELSE, TOKEN_FALSE, TOKEN_FOR, TOKEN_FUN, TOKEN_IF,
   TOKEN_IN, TOKEN_IS, TOKEN_NAMESPACE, TOKEN_NIL, TOKEN_NOT, TOKEN_OF, TOKEN_OR, TOKEN_OVERRIDE, TOKEN_PASS, TOKEN_PRINT, TOKEN_PRINT_ERROR, TOKEN_PRIVATE,
   TOKEN_RETURN, TOKEN_STATIC, TOKEN_SUPER, TOKEN_THIS, TOKEN_TRUE, TOKEN_USING, TOKEN_VAL, TOKEN_VAR, TOKEN_WHILE,
-  // Whitespace (87 - 89)
+  // Whitespace (88 - 90)
   TOKEN_INDENT, TOKEN_DEDENT, TOKEN_LINE,
-  // EOF (90)
+  // EOF (91)
   TOKEN_EOF,
-  // Ignored dedents (91), only created during parsing, and only used to minimize unnecessary errors. There should be a better way, but I can't find it.
+  // Ignored dedents (92), only created during parsing, and only used to minimize unnecessary errors. There should be a better way, but I can't find it.
   TOKEN_IGNORED_DEDENT,
 };
 

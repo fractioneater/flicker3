@@ -53,11 +53,15 @@
 #define BOLD "\033[1m"
 #define CLEAR_FORMAT "\033[0m"
 
-// Restricting stuff
-#define MAX_PARAMETERS 16
-#define MAX_METHOD_NAME 64
-#define MAX_CONSTANTS 0x7FFF
-
 // Lexer stuff
 #define MAX_COMMENT_NEST 16
 #define MAX_INTERPOLATION_NEST 8
+
+// Parser stuff
+#define MAX_PARAMETERS 16
+
+// Analyzer stuff
+#define TYPE_ARENA_RESERVE_SIZE 64
+
+// Unused stuff
+#define MAX_CONSTANTS 0x7FFF

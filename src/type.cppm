@@ -4,6 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+module;
+#include "common.h"
+
 export module type;
 
 import lexer;
@@ -11,8 +14,6 @@ import lexer;
 import std;
 
 // There are two types of types: the parser's types, and the analyzer's types. Look for a comment above each category for an explanation of the structure.
-
-#define TYPE_ARENA_RESERVE_SIZE 32
 
 /**
  * SYNTACTIC (PARSER) TYPES --------------------------------------------------
@@ -396,10 +397,24 @@ export class TypeArena {
   // Invalid return means an error has already been handled, std::nullopt means it has yet to be.
   [[nodiscard]] std::optional<TypeId> member_type(TypeId id, const std::string& member_name) const {
     if (!id) return std::nullopt;
-    const auto symbols {definitions_[id.value].symbols};
+    const SymbolTable& symbols {definitions_[id.value].symbols};
     const auto it {symbols.find_object(member_name)};
     if (!it) return std::nullopt;
     return it->declared_type;
+  }
+
+  /**
+   * Gives a class member a new type, not altering its mutability. For method overloading.
+   * @param id Class holding the member to edit
+   * @param member_name Name of the member being edited
+   * @param new_type New type to assign to the member
+   */
+  void edit_member_type(TypeId id, const std::string& member_name, TypeId new_type) {
+    if (!id) return;
+    SymbolTable& symbols {definitions_[id.value].symbols};
+    auto it {symbols.objects.find(member_name)};
+    if (it == symbols.objects.end()) return;
+    it->second.declared_type = new_type;
   }
 
   /**
@@ -431,7 +446,7 @@ export class TypeArena {
   }
 
   [[nodiscard]] std::string to_string(TypeId id) const {
-    if (!id) throw std::runtime_error("Invalid type ID in to_string()");
+    if (!id) return "<invalid type>";
     return std::visit(
       [*this]<typename T>(const T& t) -> std::string {
         using A = std::decay_t<T>;

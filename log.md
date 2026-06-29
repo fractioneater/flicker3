@@ -63,10 +63,10 @@ I still haven't finished the [learncpp](https://learncpp.com) tutorials, by the 
 The repository is now public, licensed under the MPL 2.0.
 I've done two main things since the last entry:
 
-* Lots of tokens have been shuffled around, and I've added new helpful ones like `?:` (Elvis or Nil Coalescing Operator), `++`, `--`, and all the modifying
+- Lots of tokens have been shuffled around, and I've added new helpful ones like `?:` (Elvis or Nil Coalescing Operator), `++`, `--`, and all the modifying
   assignment operators (`+=`, `/=`, `^=`, and the rest).
 
-* Error recovery in the lexer. Now, instead of stopping at the first error, it will print a list of all that it finds. It won't continue to parse after
+- Error recovery in the lexer. Now, instead of stopping at the first error, it will print a list of all that it finds. It won't continue to parse after
   finding a lexer error, so I don't need too sophisticated error recovery, but I do still need to consume the right number of characters to continue lexing
   after an error.
 
@@ -398,5 +398,44 @@ Modules should export:
 
 Let's condense that all into a `SymbolTable` struct. Done. A scope has two `SymbolTable`s—for locals and imports.
 
-There's also a nice `Searchable` interface with three virtual functions, `find_type()`, `find_object()`, and `find_namespace()`, that currently only helps me out in namespace chaining. Did I mention namespace chaining? Because namespaces should
+There's also a nice `Searchable` interface with three virtual functions, `find_type()`, `find_object()`, and `find_namespace()`, that currently only helps me
+out in namespace chaining. Did I mention namespace chaining? Because namespaces should
 be able to hold namespaces, I need to handle `A::B::C`. Also done.
+
+## June 28 and 29, 2026
+
+Functions have been working for a while (with overloads), and most of the implementation of functions can easily be applied to lambdas, methods, and
+initializers. Initializers are a little different, I guess.
+
+On the 28th, I pretty effortlessly got lambdas working. There's still a lot I need to go back and do for all four types of functions—control flow analysis,
+mainly—but that's a task for later.
+
+Having finished that, it was time to move on to methods. And methods may actually be the most complex of the four. I very quickly discovered that not only do
+they need overloading, there's something new I have to make for them: a rule table. Many methods have restrictions on two things: parameters and return type.
+These aren't normal methods I'm talking about; they're operator methods. Say you want to define the "toggle operator," a new experiment of mine:
+
+```
+class Thing
+  var isReady = false
+
+  fun ~~()
+    ~~isReady
+    return this
+```
+
+That's a _proper_ implementation. But what if someone tried to do this, below?
+
+```
+class Thing
+  var isReady = false
+  
+  fun ~~(a: String, b: () -> Number)
+    pass
+```
+
+There are two things wrong with this, and now the analyzer will report both as errors:
+
+- It has a `Unit` return type instead of `this`'s type.
+- It takes two parameters, which isn't possible.
+
+Now that methods and variables can be stored on classes, testing has become much more fun.

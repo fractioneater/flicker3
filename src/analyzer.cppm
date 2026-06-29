@@ -119,6 +119,45 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
       add_object_safe(stmt.identifier, {stmt.is_mutable, type});
   }
 
+  struct OverloadResult {
+    enum class Kind { CREATE, UPDATE, ALREADY_HANDLED } kind {Kind::ALREADY_HANDLED};
+
+    TypeId new_type {};
+  };
+
+  OverloadResult overload(const Token* identifier, TypeId sig_id, const std::string& name, std::optional<TypeId> existing_type) {
+    // Lots of work just for a little overloading.
+    if (existing_type) {                        // If there's an object with this name...
+      if (const TypeId type {*existing_type}) { // And its type is valid...
+        const SemanticType& it {host_.type_arena().at(type)};
+        if (std::holds_alternative<OverloadSet>(it)) {
+          // Symbol found and is an overload.
+          const OverloadSet& current {std::get<OverloadSet>(it)};
+          if (current.has(sig_id)) {
+            report_error("A function with this signature has already been declared in this scope", identifier);
+          } else {
+            OverloadSet updated {current};
+            updated.add(sig_id);
+            const TypeId new_set {host_.type_arena().add(std::move(updated))};
+            return {OverloadResult::Kind::UPDATE, new_set};
+          }
+        } else {
+          // If it's defined as something other than an overload, give an error just like add_object_safe would.
+          try {
+            check_duplicate_name(SymbolKind::OBJECT, name);
+          } catch (AnalyzerException& e) {
+            if (e.kind == ExceptionKind::REDECLARED_NAME)
+              report_error("Name has already been declared in this scope", identifier, Diagnostic::ERROR);
+            else if (e.kind == ExceptionKind::SHADOWED_NAME)
+              report_error("Name shadows a declaration from another scope", identifier, Diagnostic::WARNING);
+          }
+        }
+        return {OverloadResult::Kind::ALREADY_HANDLED, {}};
+      }
+    }
+    return {OverloadResult::Kind::CREATE};
+  }
+
   void visit_function_stmt(const Statements::Function& stmt) override {
     // Define type params.
     begin_scope();
@@ -132,10 +171,10 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
     // Define regular params.
     std::vector<TypeId> param_types {};
     param_types.reserve(stmt.params.size());
-    for (const auto& [identifier, param_type, modifier] : stmt.params) {
+    for (const auto& [identifier, param_type, _] : stmt.params) {
       const TypeId t {resolve_syntactic_type(param_type)};
       param_types.emplace_back(t);
-      add_object_safe(identifier, {modifier != Param::Modifier::VAL, t});
+      add_object_safe(identifier, {true, t});
     }
 
     // Store return type as state.
@@ -154,55 +193,89 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
 
     // If there's no value given, infer instead of going straight to unit.
     if (!return_type) return_type = host_.core_types().any_t; // TODO: Find supertype for all returns. Show warning if it's Any or Any?.
+    // TODO: Error if there's a control path that doesn't return a value.
 
     // Leave params and function scopes.
     functions_.pop_back();
     end_scope();
 
-    // Define name with its signature.
+    // Define the function signature and attempt to overload it.
     const Function signature {param_types, return_type.value_or(host_.core_types().unit_t)};
     const TypeId sig_id {host_.type_arena().add(signature)};
-
-    // Lots of work just for a little overloading.
     const std::string name {stmt.identifier->src_string};
-    if (const std::optional obj {find_object(name)}) { // If there's an object with this name...
-      if (const TypeId type {obj->declared_type}) {    // And its type is valid...
-        const SemanticType& it {host_.type_arena().at(type)};
-        if (std::holds_alternative<OverloadSet>(it)) {
-          // Symbol found and is an overload.
-          const OverloadSet& current {std::get<OverloadSet>(it)};
-          if (current.has(sig_id)) {
-            report_error("A function with this signature has already been declared in this scope", stmt.identifier);
-          } else {
-            OverloadSet updated {current};
-            updated.add(sig_id);
-            const TypeId new_set {host_.type_arena().add(std::move(updated))};
-            if (!rebind_object(name, new_set))
-              report_error("Cannot overload imported function", stmt.identifier);
-          }
-        } else {
-          // If it's defined as something other than an overload, give an error just like add_object_safe would.
-          try {
-            check_duplicate_name(SymbolKind::OBJECT, name);
-          } catch (AnalyzerException& e) {
-            if (e.kind == ExceptionKind::REDECLARED_NAME)
-              report_error("Name has already been declared in this scope", stmt.identifier, Diagnostic::ERROR);
-            else if (e.kind == ExceptionKind::SHADOWED_NAME)
-              report_error("Name shadows a declaration from another scope", stmt.identifier, Diagnostic::WARNING);
-          }
-        }
-        return;
-      }
+    const auto found {find_object(name)};
+    const auto [result, new_type] {overload(stmt.identifier, sig_id, name, found ? found->declared_type : std::optional<TypeId> {})};
+    if (result == OverloadResult::Kind::UPDATE) {
+      if (!edit_object_type(name, new_type))
+        report_error("Cannot overload imported function", stmt.identifier);
+    } else if (result == OverloadResult::Kind::CREATE) {
+      // Symbol does not exist; create a new overload set.
+      add_object_safe(
+        stmt.identifier,
+        {false, host_.type_arena().add(OverloadSet {name, {sig_id}})}
+      );
     }
-    // Symbol does not exist; create a new overload set.
-    add_object_safe(
-      stmt.identifier,
-      {false, host_.type_arena().add(OverloadSet {name, {sig_id}})}
-    );
   }
 
-  void visit_initializer_stmt(const Statements::Initializer& stmt) override {} // NOT IMPLEMENTED
-  void visit_method_stmt(const Statements::Method& stmt) override {}           // NOT IMPLEMENTED
+  void visit_initializer_stmt(const Statements::Initializer& stmt) override {} // TODO: Not implemented
+
+  void visit_method_stmt(const Statements::Method& stmt) override {
+    // See visit_function_stmt() for more explanation of what's going on here.
+    begin_scope();
+
+    std::vector<TypeId> param_types {};
+    for (const auto& [identifier, param_type, _] : stmt.params) {
+      const TypeId t {resolve_syntactic_type(param_type)};
+      param_types.emplace_back(t);
+      add_object_safe(identifier, {true, t});
+    }
+
+    std::optional return_type {stmt.return_type ? resolve_syntactic_type(stmt.return_type) : std::optional<TypeId> {std::nullopt}};
+    if (return_type.has_value() && !return_type.value()) return_type = std::nullopt;
+
+    functions_.emplace_back();
+    stmt.body->VISIT;
+    for (const auto& [ret , where] : functions_.back().returns) {
+      if (return_type.has_value() && ret != return_type)
+        report_error("Return type mismatch", where + 1);
+    }
+    if (!return_type) return_type = host_.core_types().any_t; // TODO + TODO (see function).
+
+    functions_.pop_back();
+    end_scope();
+
+    const Function sig {param_types, return_type.value_or(host_.core_types().unit_t)};
+
+    // Just a little checking to make sure this method is allowed.
+    const auto [is_method, rule_param_count, rule_return_type, rule_name] {METHOD_RULES[stmt.identifier->type]};
+    if (is_method) {
+      // Param checking
+      if (rule_param_count == MethodRule::ParamCount::NONE && !sig.params.empty())
+        report_error("Method cannot take any parameters", stmt.params.front().identifier);
+      else if (rule_param_count == MethodRule::ParamCount::ONE && sig.params.size() != 1)
+        report_error("Method must take exactly one parameter", stmt.identifier);
+      else if (rule_param_count == MethodRule::ParamCount::COULD_BE_NONE_OR_ONE && sig.params.size() > 1)
+        report_error("Method cannot take more than one parameter", stmt.identifier);
+      // Return checking
+      if (rule_return_type == MethodRule::ReturnRestriction::BOOL && sig.return_type != host_.core_types().bool_t)
+        report_error("Method must return a Bool", stmt.identifier);
+      else if (rule_return_type == MethodRule::ReturnRestriction::THIS && sig.return_type != classes_.back().id)
+        report_error(std::format("Method must return the current class type ('{}')", host_.type_arena().to_string(classes_.back().id)), stmt.identifier);
+    } else return;
+
+    const TypeId sig_id {host_.type_arena().add(sig)};
+    const auto [result, new_type] {overload(stmt.identifier, sig_id, rule_name, host_.type_arena().member_type(classes_.back().id, rule_name))};
+
+    if (result == OverloadResult::Kind::UPDATE) {
+      host_.type_arena().edit_member_type(classes_.back().id, rule_name, new_type);
+    } else if (result == OverloadResult::Kind::CREATE) {
+      // Doesn't exist yet. Create a temporary scope then put it into the class.
+      begin_scope();
+      add_object_safe(stmt.identifier, {false, host_.type_arena().add(OverloadSet {rule_name, {sig_id}})});
+      store_scope_as_members(classes_.back().id);
+    }
+  }
+
   void visit_class_stmt(const Statements::Class& stmt) override {
     // Define class early so we can use it inside itself.
     const TypeId t {host_.type_arena().new_named(std::string {stmt.identifier->src_string}, static_cast<int>(stmt.type_params.size()))};
@@ -413,22 +486,17 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
   void visit_comparison_expr(const Expressions::Comparison& expr) override {
     for (const auto& term : expr.expressions) term->VISIT;
 
-    std::vector<TypeId> return_types {};
     for (int i {0}; i < expr.fn_names.size(); ++i) {
       const ExprNode left {expr.expressions[i]};
       const ExprNode right {expr.expressions[i + 1]};
       const auto& [where, fn] {expr.fn_names[i]};
       if (left->type) {
-        if (const TypeId return_type {host_.type_arena().method_return_type(left->type, fn, {right->type})}) {
-          if (return_type != host_.core_types().bool_t)
-            report_error(
-              std::format("'{}' comparison operator '{}' does not return a boolean", host_.type_arena().to_string(left->type), fn), where
-            ); // TODO: Report the error when the method is created, ignore it silently here.
-          return_types.emplace_back(return_type);
-        } else
+        if (const TypeId return_type {host_.type_arena().method_return_type(left->type, fn, {right->type})}; !return_type) {
+          // All comparison methods must return a bool. We only use method_return_type to make sure it exists. ^^^ Important part.
           report_error(
             std::format("'{}' does not implement '{}'", host_.type_arena().to_string(left->type), fn), where
           );
+        }
       }
     }
 
@@ -449,9 +517,9 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
     }
   }
 
-  void visit_assignment_expr(const Expressions::Assignment& expr) override {} // NOT IMPLEMENTED
-  void visit_call_expr(const Expressions::Call& expr) override {}             // NOT IMPLEMENTED
-  void visit_subscript_expr(const Expressions::Subscript& expr) override {}   // NOT IMPLEMENTED
+  void visit_assignment_expr(const Expressions::Assignment& expr) override {} // TODO: Not implemented
+  void visit_call_expr(const Expressions::Call& expr) override {}             // TODO: Not implemented
+  void visit_subscript_expr(const Expressions::Subscript& expr) override {}   // TODO: Not implemented
 
   void visit_member_expr(const Expressions::Member& expr) override {
     expr.object->VISIT;
@@ -505,7 +573,37 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
     expr.type = host_.core_types().string_t;
   }
 
-  void visit_lambda_expr(const Expressions::Lambda& expr) override {} // NOT IMPLEMENTED
+  void visit_lambda_expr(const Expressions::Lambda& expr) override {
+    begin_scope();
+
+    // Define params.
+    std::vector<TypeId> param_types {};
+    for (const auto& [identifier, param_type, _] : expr.params) {
+      const TypeId t {resolve_syntactic_type(param_type)};
+      param_types.emplace_back(t);
+      add_object_safe(identifier, {true, t});
+    }
+
+    functions_.emplace_back();
+
+    // Lambda body.
+    expr.body->VISIT;
+
+    TypeId return_type {};
+    for (const auto& [ret , where] : functions_.back().returns) {
+      if (!return_type && ret) return_type = ret;
+      else if (ret && return_type != ret)
+        report_error("Return type mismatch", where + 1);
+    }
+
+    // TODO: Do what functions do: find the common supertype.
+    // TODO: Error if there's a control path that doesn't return a value.
+
+    functions_.pop_back();
+    end_scope();
+
+    expr.type = host_.type_arena().add(Function {param_types, return_type});
+  }
 
   void visit_grouping_expr(const Expressions::Grouping& expr) override {
     expr.expr->VISIT;
@@ -552,7 +650,7 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
     expr.type = classes_.back().id;
   }
 
-  void visit_super_expr(const Expressions::Super& expr) override {} // NOT IMPLEMENTED
+  void visit_super_expr(const Expressions::Super& expr) override {} // TODO: Not implemented
 
   void visit_print_expr(const Expressions::Print& expr) override {
     expr.expr->VISIT;
@@ -816,8 +914,9 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
    * Rebinds an object symbol to a new type. Used for overload sets (when a new overload is added).
    * @param name Object name to rebind
    * @param t The symbol's new type
+   * @return If the object was found in the local scope—an imported object will not be rebound, and this will return false
    */
-  bool rebind_object(const std::string& name, TypeId t) {
+  bool edit_object_type(const std::string& name, TypeId t) {
     for (auto scope {scopes_.rbegin()}; scope != scopes_.rend(); ++scope) {
       if (auto e {scope->locals.objects.find(name)}; e != scope->locals.objects.end()) {
         e->second.declared_type = t; // Keep is_mutable.
@@ -826,6 +925,123 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
     }
     return false;
   }
+
+  struct MethodRule {
+    // Because non-methods technically have a method rule.
+    bool is_method {};
+
+    enum class ParamCount { NONE, ONE, COULD_BE_NONE_OR_ONE, UNRESTRICTED } param_count {ParamCount::UNRESTRICTED};
+
+    enum class ReturnRestriction { UNRESTRICTED, BOOL, THIS } return_type {ReturnRestriction::UNRESTRICTED};
+
+    std::string name {};
+  };
+
+  #define NOT_A_METHOD                  {false, MethodRule::ParamCount::UNRESTRICTED, MethodRule::ReturnRestriction::UNRESTRICTED, ""}
+  #define UNARY_METHOD(name)            {true, MethodRule::ParamCount::NONE, MethodRule::ReturnRestriction::UNRESTRICTED, name}
+  #define BINARY_METHOD(name)           {true, MethodRule::ParamCount::ONE, MethodRule::ReturnRestriction::UNRESTRICTED, name}
+  #define EITHER(name)                  {true, MethodRule::ParamCount::COULD_BE_NONE_OR_ONE, MethodRule::ReturnRestriction::UNRESTRICTED, name}
+  #define UNARY_MODIFYING_METHOD(name)  {true, MethodRule::ParamCount::NONE, MethodRule::ReturnRestriction::THIS, name}
+  #define BINARY_MODIFYING_METHOD(name) {true, MethodRule::ParamCount::ONE, MethodRule::ReturnRestriction::THIS, name}
+
+  // @formatter:off
+  static constexpr std::array<MethodRule, 93> METHOD_RULES {{
+    // MAKE SURE THE NAMES OF THE FUNCTIONS IN HERE MATCH THE ONES IN THE PARSER RULE TABLE EXACTLY!
+    /* TOKEN_LEFT_PAREN     */ NOT_A_METHOD,
+    /* TOKEN_RIGHT_PAREN    */ NOT_A_METHOD,
+    /* TOKEN_LEFT_BRACKET   */ NOT_A_METHOD,
+    /* TOKEN_RIGHT_BRACKET  */ NOT_A_METHOD,
+    /* TOKEN_LEFT_BRACE     */ NOT_A_METHOD,
+    /* TOKEN_RIGHT_BRACE    */ NOT_A_METHOD,
+    /* TOKEN_SEMICOLON      */ NOT_A_METHOD,
+    /* TOKEN_COMMA          */ NOT_A_METHOD,
+    /* TOKEN_STAR           */ BINARY_METHOD("*"),
+    /* TOKEN_STAR_STAR      */ BINARY_METHOD("**"),
+    /* TOKEN_STAR_EQ        */ BINARY_MODIFYING_METHOD("*="),
+    /* TOKEN_STAR_STAR_EQ   */ BINARY_MODIFYING_METHOD("**="),
+    /* TOKEN_MINUS          */ EITHER("-"),
+    /* TOKEN_MINUS_MINUS    */ UNARY_MODIFYING_METHOD("--"),
+    /* TOKEN_RIGHT_ARROW    */ NOT_A_METHOD,
+    /* TOKEN_MINUS_EQ       */ BINARY_MODIFYING_METHOD("-="),
+    /* TOKEN_PLUS           */ BINARY_METHOD("+"),
+    /* TOKEN_PLUS_PLUS      */ UNARY_MODIFYING_METHOD("++"),
+    /* TOKEN_PLUS_EQ        */ BINARY_MODIFYING_METHOD("+="),
+    /* TOKEN_DOT            */ NOT_A_METHOD,
+    /* TOKEN_DOT_DOT        */ BINARY_METHOD(".."),
+    /* TOKEN_DOT_DOT_LT     */ BINARY_METHOD("..<"),
+    /* TOKEN_QUEST          */ NOT_A_METHOD,
+    /* TOKEN_QUEST_COLON    */ NOT_A_METHOD,
+    /* TOKEN_QUEST_DOT      */ NOT_A_METHOD,
+    /* TOKEN_GT             */ { true, MethodRule::ParamCount::ONE, MethodRule::ReturnRestriction::BOOL, ">",},
+    /* TOKEN_GT_GT          */ BINARY_METHOD(">>"),
+    /* TOKEN_GT_EQ          */ { true, MethodRule::ParamCount::ONE, MethodRule::ReturnRestriction::BOOL, ">="},
+    /* TOKEN_LT             */ { true, MethodRule::ParamCount::ONE, MethodRule::ReturnRestriction::BOOL, "<"},
+    /* TOKEN_LT_LT          */ BINARY_METHOD("<<"),
+    /* TOKEN_LT_EQ          */ { true, MethodRule::ParamCount::ONE, MethodRule::ReturnRestriction::BOOL, "<="},
+    /* TOKEN_COLON          */ NOT_A_METHOD,
+    /* TOKEN_COLON_COLON    */ NOT_A_METHOD,
+    /* TOKEN_SLASH          */ BINARY_METHOD("/"),
+    /* TOKEN_SLASH_EQ       */ BINARY_MODIFYING_METHOD("/="),
+    /* TOKEN_PERCENT        */ BINARY_METHOD("%"),
+    /* TOKEN_PERCENT_EQ     */ BINARY_MODIFYING_METHOD("%="),
+    /* TOKEN_PIPE           */ BINARY_METHOD("|"),
+    /* TOKEN_PIPE_EQ        */ BINARY_MODIFYING_METHOD("|="),
+    /* TOKEN_CARET          */ BINARY_METHOD("^"),
+    /* TOKEN_CARET_EQ       */ BINARY_MODIFYING_METHOD("^="),
+    /* TOKEN_AMPERSAND      */ BINARY_METHOD("&"),
+    /* TOKEN_AMPERSAND_EQ   */ BINARY_MODIFYING_METHOD("&="),
+    /* TOKEN_TILDE          */ UNARY_METHOD("~"),
+    /* TOKEN_TILDE_TILDE    */ UNARY_MODIFYING_METHOD("~~"),
+    /* TOKEN_BANG           */ UNARY_METHOD("!"),
+    /* TOKEN_BANG_EQ        */ { true, MethodRule::ParamCount::ONE, MethodRule::ReturnRestriction::BOOL, "!="},
+    /* TOKEN_EQ             */ NOT_A_METHOD,
+    /* TOKEN_EQ_EQ          */ { true, MethodRule::ParamCount::ONE, MethodRule::ReturnRestriction::BOOL, "=="},
+    /* TOKEN_IDENTIFIER     */ { true, MethodRule::ParamCount::UNRESTRICTED, MethodRule::ReturnRestriction::UNRESTRICTED, ""},
+    /* TOKEN_STRING         */ NOT_A_METHOD,
+    /* TOKEN_INTERPOLATION  */ NOT_A_METHOD,
+    /* TOKEN_CHAR           */ NOT_A_METHOD,
+    /* TOKEN_NUMBER         */ NOT_A_METHOD,
+    /* TOKEN_AND            */ NOT_A_METHOD,
+    /* TOKEN_AROUND         */ NOT_A_METHOD,
+    /* TOKEN_BREAK          */ NOT_A_METHOD,
+    /* TOKEN_CLASS          */ NOT_A_METHOD,
+    /* TOKEN_CONTINUE       */ NOT_A_METHOD,
+    /* TOKEN_DO             */ NOT_A_METHOD,
+    /* TOKEN_EACH           */ NOT_A_METHOD,
+    /* TOKEN_ELIF           */ NOT_A_METHOD,
+    /* TOKEN_ELSE           */ NOT_A_METHOD,
+    /* TOKEN_FALSE          */ NOT_A_METHOD,
+    /* TOKEN_FOR            */ NOT_A_METHOD,
+    /* TOKEN_FUN            */ NOT_A_METHOD,
+    /* TOKEN_IF             */ NOT_A_METHOD,
+    /* TOKEN_IN             */ BINARY_METHOD("in"),
+    /* TOKEN_IS             */ NOT_A_METHOD,
+    /* TOKEN_NAMESPACE      */ NOT_A_METHOD,
+    /* TOKEN_NIL            */ NOT_A_METHOD,
+    /* TOKEN_NOT            */ NOT_A_METHOD, // I don't mean "Not, a method." Not is not a method. It's really not.
+    /* TOKEN_OF             */ NOT_A_METHOD,
+    /* TOKEN_OR             */ NOT_A_METHOD,
+    /* TOKEN_OVERRIDE       */ NOT_A_METHOD,
+    /* TOKEN_PASS           */ NOT_A_METHOD,
+    /* TOKEN_PRINT          */ NOT_A_METHOD,
+    /* TOKEN_PRINT_ERROR    */ NOT_A_METHOD,
+    /* TOKEN_PRIVATE        */ NOT_A_METHOD,
+    /* TOKEN_RETURN         */ NOT_A_METHOD,
+    /* TOKEN_STATIC         */ NOT_A_METHOD,
+    /* TOKEN_SUPER          */ NOT_A_METHOD,
+    /* TOKEN_THIS           */ NOT_A_METHOD,
+    /* TOKEN_TRUE           */ NOT_A_METHOD,
+    /* TOKEN_USING          */ NOT_A_METHOD,
+    /* TOKEN_VAL            */ NOT_A_METHOD,
+    /* TOKEN_VAR            */ NOT_A_METHOD,
+    /* TOKEN_WHILE          */ NOT_A_METHOD,
+    /* TOKEN_INDENT         */ NOT_A_METHOD,
+    /* TOKEN_DEDENT         */ NOT_A_METHOD,
+    /* TOKEN_LINE           */ NOT_A_METHOD,
+    /* TOKEN_EOF            */ NOT_A_METHOD,
+    /* TOKEN_IGNORED_DEDENT */ NOT_A_METHOD,
+  }};
+  // @formatter:on
 
   public:
   explicit Analyzer(AnalyzerHost& host) : host_ {host} {}

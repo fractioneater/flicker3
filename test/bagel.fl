@@ -11,6 +11,11 @@ class ColorHSL is Bool
   fun coat(other: Bool)
     pass
 
+  fun ++(a: String)
+    pass
+
+  fun ++() -> ColorHSL = this
+
 var x: ColorHSL = ColorHSL(50, 90, 0.52)
 x.name
 
@@ -19,6 +24,8 @@ each thing in x.name
 
 each t in x.jello
   print t
+
+++x
 
 print bagel2::Fruitful::t
 print bagel2::Fruitful::Inner::g

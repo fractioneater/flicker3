@@ -228,7 +228,9 @@ export class Parser {
     return items;
   }
 
-  // Declarations --------------------------------------------------
+  //////////////////////////////////////////////////////////////////////
+  // DECLARATIONS                                                     //
+  //////////////////////////////////////////////////////////////////////
 
   std::optional<StmtNode> declaration() {
     if (match(TOKEN_VAL)) return val_declaration();
@@ -566,7 +568,9 @@ export class Parser {
     return type;
   }
 
-  // Other Statements --------------------------------------------------
+  //////////////////////////////////////////////////////////////////////
+  // STATEMENTS                                                       //
+  //////////////////////////////////////////////////////////////////////
 
   StmtNode statement() {
     if (match(TOKEN_IF)) return if_statement();
@@ -721,6 +725,8 @@ export class Parser {
       )
     };
     expect(TOKEN_RIGHT_PAREN, "Expecting ')' after parameter list");
+    if (params.size() > MAX_PARAMETERS)
+      report_error(std::format("Maximum number of parameters is {}", MAX_PARAMETERS), params[MAX_PARAMETERS].identifier);
     return params;
   }
 
@@ -749,9 +755,12 @@ export class Parser {
     return true;
   }
 
-  // Expressions --------------------------------------------------
+  //////////////////////////////////////////////////////////////////////
+  // EXPRESSIONS                                                      //
+  //////////////////////////////////////////////////////////////////////
 
-  // Infix
+  // Infix --------------------------------------------------
+
   ExprNode binary_right_assoc(const ExprNode& left) {
     const Precedence prec {static_cast<int>(RULES[previous_->type].prec)};
     const Token* op {previous_};
@@ -818,12 +827,13 @@ export class Parser {
     return std::make_shared<Expressions::Assignment>(left, parse_expression(Precedence::ASSIGNMENT));
   }
 
-  // Postfix (treated as InfixFn)
-  ExprNode postfix_inc_dec(const ExprNode& expr) {
+  // Postfix (treated as InfixFn) --------------------------------------------------
+
+  ExprNode postfix_modifying(const ExprNode& expr) {
     const Token* op {previous_};
     diagnostics_.emplace_back(
       diagnostic_from_token(
-        "Postfix increment and decrement operators behave as their prefix equivalent; prefer the prefix version", op, Diagnostic::WARNING
+        "Postfix modifier operators (++, --, ~~) behave as their prefix equivalent; prefer the prefix version", op, Diagnostic::WARNING
       )
     );
     return std::make_shared<Expressions::Unary>(RULES[previous_->type].fn_name, op, expr);
@@ -871,7 +881,8 @@ export class Parser {
     return nullptr;
   }
 
-  // Prefix
+  // Prefix --------------------------------------------------
+
   ExprNode unary() {
     const Token* op {previous_};
     return std::make_shared<Expressions::Unary>(RULES[previous_->type].fn_name, op, parse_expression(Precedence::PREFIX));
@@ -885,6 +896,8 @@ export class Parser {
   ExprNode print() {
     return std::make_shared<Expressions::Print>(previous_, previous_->type == TOKEN_PRINT_ERROR, parse_expression(Precedence::PRINT));
   }
+
+  // Primary/atom --------------------------------------------------
 
   ExprNode collection() {
     if (match(TOKEN_RIGHT_BRACKET)) // Empty list.
@@ -978,7 +991,6 @@ export class Parser {
     return std::make_shared<Expressions::Interpolation>(start, expressions, end_strings);
   }
 
-  // Primary/atom
   // ReSharper disable once CppMemberFunctionMayBeConst because it needs to match the PrefixFn signature.
   ExprNode literal() {
     switch (previous_->type) {
@@ -1074,6 +1086,10 @@ export class Parser {
     return std::make_shared<Expressions::Map>(keys, values);
   }
 
+  //////////////////////////////////////////////////////////////////////
+  // OTHER INTERFACE                                                  //
+  //////////////////////////////////////////////////////////////////////
+
   ExprNode parse_expression() { return parse_expression(Precedence::BEGIN); }
 
   ExprNode parse_expression(Precedence precedence) {
@@ -1166,7 +1182,7 @@ export class Parser {
   // @formatter:off; it will separate the comments from the rest of their lines, which is horrifying.
   // IMPORTANT: Prefix rules always have a precedence of none! Their precedence is decided by the parse_expression(prec) call inside them, not the parse rule table!
   // This means that for "BOTH" rules, the precedence only applies to the infix rule.
-  static constexpr std::array<ParseRule, 92> RULES {{
+  static constexpr std::array<ParseRule, 93> RULES {{
     /* TOKEN_LEFT_PAREN     */ BOTH(grouping, call, POSTFIX),
     /* TOKEN_RIGHT_PAREN    */ UNUSED,
     /* TOKEN_LEFT_BRACKET   */ BOTH(collection, subscript, POSTFIX),
@@ -1175,23 +1191,22 @@ export class Parser {
     /* TOKEN_RIGHT_BRACE    */ UNUSED,
     /* TOKEN_SEMICOLON      */ UNUSED,
     /* TOKEN_COMMA          */ UNUSED,
-    /* TOKEN_TILDE          */ PREFIX_METHOD(unary, "~"),
     /* TOKEN_STAR           */ INFIX_METHOD(binary, "*", FACTOR),
     /* TOKEN_STAR_STAR      */ INFIX_METHOD(binary_right_assoc, "**", EXPONENT),
-    /* TOKEN_STAR_EQ        */ UNUSED, // TODO: These things (+=, *=, /=, etc).
-    /* TOKEN_STAR_STAR_EQ   */ UNUSED,
+    /* TOKEN_STAR_EQ        */ INFIX_METHOD(binary, "*=", ASSIGNMENT),
+    /* TOKEN_STAR_STAR_EQ   */ INFIX_METHOD(binary, "**=", ASSIGNMENT),
     /* TOKEN_MINUS          */ METHOD(unary, binary, "-", TERM),
-    /* TOKEN_MINUS_MINUS    */ METHOD(unary, postfix_inc_dec, "--", POSTFIX),
+    /* TOKEN_MINUS_MINUS    */ METHOD(unary, postfix_modifying, "--", POSTFIX),
     /* TOKEN_RIGHT_ARROW    */ UNUSED,
-    /* TOKEN_MINUS_EQ       */ UNUSED,
+    /* TOKEN_MINUS_EQ       */ INFIX_METHOD(binary, "-=", ASSIGNMENT),
     /* TOKEN_PLUS           */ INFIX_METHOD(binary, "+", TERM),
-    /* TOKEN_PLUS_PLUS      */ METHOD(unary, postfix_inc_dec, "++", POSTFIX),
-    /* TOKEN_PLUS_EQ        */ UNUSED,
+    /* TOKEN_PLUS_PLUS      */ METHOD(unary, postfix_modifying, "++", POSTFIX),
+    /* TOKEN_PLUS_EQ        */ INFIX_METHOD(binary, "+=", ASSIGNMENT),
     /* TOKEN_DOT            */ INFIX_RULE(member, POSTFIX),
     /* TOKEN_DOT_DOT        */ INFIX_METHOD(binary, "..", RANGE),
     /* TOKEN_DOT_DOT_LT     */ INFIX_METHOD(binary, "..<", RANGE),
     /* TOKEN_QUEST          */ UNUSED,
-    /* TOKEN_QUEST_COLON    */ INFIX_RULE(binary, NIL_COALESCING),
+    /* TOKEN_QUEST_COLON    */ INFIX_RULE(binary, NIL_COALESCING), // TODO: It can't be binary. Probably new AST node. OR... take it out and use 'or' like Python does.
     /* TOKEN_QUEST_DOT      */ INFIX_RULE(member, POSTFIX),
     /* TOKEN_GT             */ INFIX_METHOD(comparison, ">", COMPARISON),
     /* TOKEN_GT_GT          */ INFIX_METHOD(binary, ">>", BIT_SHIFT),
@@ -1202,18 +1217,20 @@ export class Parser {
     /* TOKEN_COLON          */ UNUSED,
     /* TOKEN_COLON_COLON    */ INFIX_RULE(namespace_member, ATOM),
     /* TOKEN_SLASH          */ INFIX_METHOD(binary, "/", FACTOR),
-    /* TOKEN_SLASH_EQ       */ UNUSED,
+    /* TOKEN_SLASH_EQ       */ INFIX_METHOD(binary, "/=", ASSIGNMENT),
     /* TOKEN_PERCENT        */ INFIX_METHOD(binary, "%", FACTOR),
-    /* TOKEN_PERCENT_EQ     */ UNUSED,
+    /* TOKEN_PERCENT_EQ     */ INFIX_METHOD(binary, "%=", ASSIGNMENT),
     /* TOKEN_PIPE           */ INFIX_METHOD(binary, "|", BIT_OR),
-    /* TOKEN_PIPE_EQ        */ UNUSED,
+    /* TOKEN_PIPE_EQ        */ INFIX_METHOD(binary, "+=", ASSIGNMENT),
     /* TOKEN_CARET          */ INFIX_METHOD(binary, "^", BIT_XOR),
-    /* TOKEN_CARET_EQ       */ UNUSED,
+    /* TOKEN_CARET_EQ       */ INFIX_METHOD(binary, "^=", ASSIGNMENT),
     /* TOKEN_AMPERSAND      */ INFIX_METHOD(binary, "&", BIT_AND),
-    /* TOKEN_AMPERSAND_EQ   */ UNUSED,
+    /* TOKEN_AMPERSAND_EQ   */ INFIX_METHOD(binary, "&=", ASSIGNMENT),
+    /* TOKEN_TILDE          */ PREFIX_METHOD(unary, "~"),
+    /* TOKEN_TILDE_TILDE    */ METHOD(unary, postfix_modifying, "~~", POSTFIX),
     /* TOKEN_BANG           */ PREFIX_METHOD(unary, "!"),
     /* TOKEN_BANG_EQ        */ INFIX_METHOD(comparison, "!=", COMPARISON),
-    /* TOKEN_EQ             */ INFIX_METHOD(assignment, "=", ASSIGNMENT),
+    /* TOKEN_EQ             */ INFIX_RULE(assignment, ASSIGNMENT),
     /* TOKEN_EQ_EQ          */ INFIX_METHOD(comparison, "==", COMPARISON),
     /* TOKEN_IDENTIFIER     */ PREFIX_METHOD(variable, ""), // Don't let the blank name string deceive you. It's a method. Methods can obviously be named with identifiers.
     /* TOKEN_STRING         */ PREFIX_RULE(literal),
@@ -1234,7 +1251,7 @@ export class Parser {
     /* TOKEN_FUN            */ PREFIX_RULE(lambda),
     /* TOKEN_IF             */ INFIX_RULE(if_expr, IF),
     /* TOKEN_IN             */ INFIX_METHOD(binary, "in", IN),
-    /* TOKEN_IS             */ INFIX_METHOD(binary_is, "", IS),
+    /* TOKEN_IS             */ INFIX_METHOD(binary_is, "", IS), // TODO: Is is not a method.
     /* TOKEN_NAMESPACE      */ UNUSED,
     /* TOKEN_NIL            */ PREFIX_RULE(literal),
     /* TOKEN_NOT            */ BOTH(prefix_not, infix_not, IN),
