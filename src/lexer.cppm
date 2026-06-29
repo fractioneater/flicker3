@@ -816,7 +816,6 @@ export class Lexer {
           return make_token(TOKEN_RIGHT_BRACE);
         case ';': return make_token(TOKEN_SEMICOLON);
         case ',': return make_token(TOKEN_COMMA);
-        case '~': return make_token(TOKEN_TILDE);
         case '.': return make_token(match('.') ? (match('<') ? TOKEN_DOT_DOT_LT : TOKEN_DOT_DOT) : TOKEN_DOT);
         case '?': return make_token(match('.') ? TOKEN_QUEST_DOT : match(':') ? TOKEN_QUEST_COLON : TOKEN_QUEST);
         case ':': return make_token(match(':') ? TOKEN_COLON_COLON : TOKEN_COLON);
@@ -828,6 +827,7 @@ export class Lexer {
         case '|': return make_token(match('=') ? TOKEN_PIPE_EQ : TOKEN_PIPE);
         case '^': return make_token(match('=') ? TOKEN_CARET_EQ : TOKEN_CARET);
         case '&': return make_token(match('=') ? TOKEN_AMPERSAND_EQ : TOKEN_AMPERSAND);
+        case '~': return make_token(match('~') ? TOKEN_TILDE_TILDE : TOKEN_TILDE);
         case '!': return make_token(match('=') ? TOKEN_BANG_EQ : TOKEN_BANG);
         case '=': return make_token(match('=') ? TOKEN_EQ_EQ : TOKEN_EQ);
         case '>': return make_token(match('=') ? TOKEN_GT_EQ : match('>') ? TOKEN_GT_GT : TOKEN_GT);
