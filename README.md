@@ -126,7 +126,8 @@ Do consider though, that whatever setup CMake requires, it's still the simpler p
 
 ## Awesome People
 
-Flicker's REPL is made amazing by [cpp-linenoise](https://github.com/yhirose/cpp-linenoise). Thanks to @yhirose and other contributors for this powerful tool.
+Flicker's REPL is made amazing by [cpp-linenoise](https://github.com/yhirose/cpp-linenoise). Thanks to its creator, the linenoise developers, and other
+contributors for this powerful tool.
 
 ## FAQ
 

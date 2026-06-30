@@ -46,14 +46,13 @@ target_sources(flicker_lib
 # Import Linenoise
 FetchContent_Declare(
 	linenoise
-	GIT_REPOSITORY
-	https://github.com/yhirose/cpp-linenoise.git
-	GIT_TAG master
+	GIT_REPOSITORY https://github.com/yhirose/cpp-linenoise.git
+	GIT_TAG 67be78f385ff552a21d6f2d0b71fac64d9298384
 )
 FetchContent_MakeAvailable(linenoise)
 
 # Create the flicker_lib target
-target_link_libraries(flicker_lib PRIVATE linenoise) # TODO: Specify a commit so nothing weird happens
+target_link_libraries(flicker_lib PRIVATE linenoise)
 set_target_properties(flicker_lib PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CMAKE_CXX_MODULE_STD 1 CMAKE_CXX_EXTENSIONS OFF)
 target_compile_options(flicker_lib PRIVATE -Wall -Werror)
 

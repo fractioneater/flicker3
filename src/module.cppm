@@ -354,7 +354,7 @@ export class ModuleLoader : public AnalyzerHost {
     save_history(history_path.c_str());
 
     // Clear the prompt characters from the last line with a quick ANSI escape.
-    // std::cout << "\033[2K\033[1G";
+    std::cout << "\033[1A\033[2K\033[1G";
   }
 
   void send_repl_line(const std::string& line) const {
