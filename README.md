@@ -1,6 +1,6 @@
 Flicker 1 was written in Kotlin. It used an AST and an interpreter. It was painfully slow and wasn't even finished.
 
-[Flicker 2] was written in C. It used bytecode in a VM. It was nice and fast, and it had lots of useful features.
+[Flicker 2](https://github.com/fractioneater/flicker) was written in C. It used bytecode in a VM. It was nice and fast, and it had lots of useful features.
 
 Flicker 3 will be...
 
@@ -124,6 +124,10 @@ To _test_ flicker:
 Of course, you can build with plain `clang++` or `g++` if you prefer.
 Do consider though, that whatever setup CMake requires, it's still the simpler path.
 
+## Awesome People
+
+Flicker's REPL is made amazing by [cpp-linenoise](https://github.com/yhirose/cpp-linenoise). Thanks to @yhirose and other contributors for this powerful tool.
+
 ## FAQ
 
 Curated by none other than _Someone_.
@@ -143,7 +147,7 @@ few circulating fan theories (it is important that I clarify **these are only ru
 
 ### What's the Developer's progress right now?
 
-Read the commit messages maybe.
+Read the commit messages, maybe.
 
 For a more detailed log of what's happening, check out `log.md`. This file, written by the Developer, is not intended to be a public changelog, however; more so
 a memoir in case he ever needs to create a presentation on this project...
@@ -154,5 +158,3 @@ namespaces), checks objects with their types, handles state for functions, class
 will handle type inference. Its implementation is probably a little more than half complete (though once it nears completion, the standard for "completion" will
 retreat further into the distance). One remark he passed on to me: "it's not quite as satisfying as the parser to see that a new feature works, but in terms of
 implementation, this is where the fun is at."
-
-[Flicker 2]: https://github.com/fractioneater/flicker

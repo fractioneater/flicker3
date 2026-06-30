@@ -15,9 +15,15 @@ project(flicker_3 LANGUAGES CXX)
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
+include(FetchContent)
+
 # Files are organized as a library so my code is only compiled once and flags can be applied specifically to it.
 add_library(flicker_lib)
 target_sources(flicker_lib
+	PRIVATE
+	src/linenoise-wrapper.h
+	src/linenoise-wrapper.cpp
+
 	PUBLIC FILE_SET HEADERS
 	BASE_DIRS src
 	FILES src/common.h
@@ -37,6 +43,17 @@ target_sources(flicker_lib
 	src/vm.cppm
 )
 
+# Import Linenoise
+FetchContent_Declare(
+	linenoise
+	GIT_REPOSITORY
+	https://github.com/yhirose/cpp-linenoise.git
+	GIT_TAG master
+)
+FetchContent_MakeAvailable(linenoise)
+
+# Create the flicker_lib target
+target_link_libraries(flicker_lib PRIVATE linenoise) # TODO: Specify a commit so nothing weird happens
 set_target_properties(flicker_lib PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CMAKE_CXX_MODULE_STD 1 CMAKE_CXX_EXTENSIONS OFF)
 target_compile_options(flicker_lib PRIVATE -Wall -Werror)
 
@@ -45,7 +62,6 @@ add_executable(flicker_3 src/main.cpp)
 target_link_libraries(flicker_3 flicker_lib)
 
 # GoogleTest
-include(FetchContent)
 FetchContent_Declare(
 	googletest
 	GIT_REPOSITORY https://github.com/google/googletest.git

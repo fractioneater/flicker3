@@ -6,6 +6,7 @@
 
 module;
 #include "common.h"
+#include "linenoise-wrapper.h"
 
 export module module_;
 
@@ -212,7 +213,8 @@ struct CoreModule : Module {
   void compile() {
     Module::compile(CORE_NAME, std::string {Core::SRC}, 2);
     if (status != MODULE_COMPILED) {
-      std::cerr << "This is a core library compilation error---it's not your fault. Submit an issue on Codeberg or communicate this to me however possible." << std::endl;
+      std::cerr << "This is a core library compilation error---it's not your fault. Submit an issue on Codeberg or communicate this to me however possible." <<
+        std::endl;
       // Exit code 70: internal software error (core library error, my fault).
       throw std::system_error(70, std::generic_category());
     }
@@ -321,22 +323,38 @@ export class ModuleLoader : public AnalyzerHost {
       repl_ = std::make_unique<ReplModule>(*this, core_->analyzer);
     }
 
-    constexpr std::string_view prompt {"~ > "};
-    std::string line {};
+    [[maybe_unused]] constexpr auto prompt {"~ > "};
+    [[maybe_unused]] constexpr auto color_prompt {PROMPT_COLOR "~ > " CLEAR_FORMAT};
+    [[maybe_unused]] constexpr auto continuation_prompt {"  . "};
+    [[maybe_unused]] constexpr auto color_continuation_prompt {PROMPT_COLOR "  . " CLEAR_FORMAT};
 
     #if PRINT_COLORS
-    #  define PROMPT PROMPT_COLOR << prompt << CLEAR_FORMAT
+    #  define PROMPT color_prompt
+    #  define CONT_PROMPT color_continuation_prompt
     #else
     #  define PROMPT prompt
+    #  define CONT_PROMPT continuation_prompt
     #endif
 
-    // Not the cleanest syntax, but this comma expression works to print the "~ >" prompt and then get input.
-    while (std::cout << PROMPT, std::getline(std::cin >> std::ws, line)) {
+    enable_multiline();
+    set_continuation_prompt(CONT_PROMPT);
+
+    // The history file is placed in the same directory as the executable, so multiple Flicker builds can have different history files and nothing
+    // gets polluted excessively by adding the file to the CWD. The get_executable_path() function is not pretty, though.
+    const std::filesystem::path exec_path {get_executable_path()};
+    const std::filesystem::path history_path {exec_path.parent_path() / ".flicker-history"};
+    load_history(history_path.c_str());
+
+    std::string line {};
+    while (read_line(PROMPT, line)) {
       send_repl_line(line);
+      add_history(line);
     }
 
+    save_history(history_path.c_str());
+
     // Clear the prompt characters from the last line with a quick ANSI escape.
-    std::cout << "\033[2K\033[1G";
+    // std::cout << "\033[2K\033[1G";
   }
 
   void send_repl_line(const std::string& line) const {
