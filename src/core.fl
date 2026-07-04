@@ -10,13 +10,18 @@ class Char
 class Sequence of A
   fun test() = "..."
 
-class List of A is Sequence
+class List of A
+  is Sequence of A
+
   fun test() = "..."
 
-class Map of A is Sequence
+class Map of A
+  is Sequence of A
+
   fun test() = "..."
 
-class String is Sequence
+class String
+  is Sequence of Char
   fun test() = "..."
 
 class Nothing

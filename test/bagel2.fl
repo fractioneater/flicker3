@@ -4,6 +4,12 @@ namespace Fruitful
 
   var t = 0.223
 
-  class ExampleBecauseWhyNot
-    init(val im: String)
+  class ExampleBecauseWhyNot(val im: String, trash: Number)
+
+    namespace
+      val tortuga = 34
+
+    init
+      print tortuga
       print im
+      print trash

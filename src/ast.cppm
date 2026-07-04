@@ -20,7 +20,6 @@ export namespace Statements {
   class Expression;
   class Variable;
   class Function;
-  class Initializer;
   class Method;
   class Class;
   class Namespace;
@@ -73,7 +72,6 @@ export class StmtVisitorVoid {
   virtual void visit_expression_stmt(const Statements::Expression& stmt) = 0;
   virtual void visit_variable_stmt(const Statements::Variable& stmt) = 0;
   virtual void visit_function_stmt(const Statements::Function& stmt) = 0;
-  virtual void visit_initializer_stmt(const Statements::Initializer& stmt) = 0;
   virtual void visit_method_stmt(const Statements::Method& stmt) = 0;
   virtual void visit_class_stmt(const Statements::Class& stmt) = 0;
   virtual void visit_namespace_stmt(const Statements::Namespace& stmt) = 0;
@@ -130,7 +128,6 @@ export class StmtVisitorAny {
   virtual std::any visit_expression_stmt_any(const Statements::Expression& stmt) = 0;
   virtual std::any visit_variable_stmt_any(const Statements::Variable& stmt) = 0;
   virtual std::any visit_function_stmt_any(const Statements::Function& stmt) = 0;
-  virtual std::any visit_initializer_stmt_any(const Statements::Initializer& stmt) = 0;
   virtual std::any visit_method_stmt_any(const Statements::Method& stmt) = 0;
   virtual std::any visit_class_stmt_any(const Statements::Class& stmt) = 0;
   virtual std::any visit_namespace_stmt_any(const Statements::Namespace& stmt) = 0;
@@ -188,7 +185,6 @@ class StmtVisitor : public StmtVisitorAny {
   virtual R visit_expression_stmt(const Statements::Expression& stmt) = 0;
   virtual R visit_variable_stmt(const Statements::Variable& stmt) = 0;
   virtual R visit_function_stmt(const Statements::Function& stmt) = 0;
-  virtual R visit_initializer_stmt(const Statements::Initializer& stmt) = 0;
   virtual R visit_method_stmt(const Statements::Method& stmt) = 0;
   virtual R visit_class_stmt(const Statements::Class& stmt) = 0;
   virtual R visit_namespace_stmt(const Statements::Namespace& stmt) = 0;
@@ -222,10 +218,6 @@ class StmtVisitor : public StmtVisitorAny {
 
   std::any visit_function_stmt_any(const Statements::Function& stmt) final {
     return visit_function_stmt(stmt);
-  }
-
-  std::any visit_initializer_stmt_any(const Statements::Initializer& stmt) final {
-    return visit_initializer_stmt(stmt);
   }
 
   std::any visit_method_stmt_any(const Statements::Method& stmt) final {
@@ -525,22 +517,6 @@ export class Statements::Function : public Stmt {
   const StmtNode body {};
 };
 
-export class Statements::Initializer : public Stmt {
-  public:
-  Initializer(std::vector<Param> params, StmtNode body) : params {std::move(params)}, body {std::move(body)} {}
-
-  std::any accept(StmtVisitorAny& visitor) override {
-    return visitor.visit_initializer_stmt_any(*this);
-  }
-
-  void accept(StmtVisitorVoid& visitor) override {
-    visitor.visit_initializer_stmt(*this);
-  }
-
-  const std::vector<Param> params {};
-  const StmtNode body {};
-};
-
 export class Statements::Method : public Stmt {
   public:
   Method(const Token* identifier, std::vector<Param> params, SyntacticTypePtr return_type, StmtNode body) : identifier {identifier}, params {std::move(params)}, return_type {std::move(return_type)}, body {std::move(body)} {}
@@ -561,7 +537,7 @@ export class Statements::Method : public Stmt {
 
 export class Statements::Class : public Stmt {
   public:
-  Class(const Token* identifier, std::vector<Token*> type_params, std::vector<Token*> superclasses, std::vector<StmtNode> namespace_items, std::vector<StmtNode> initializers, std::vector<StmtNode> declarations) : identifier {identifier}, type_params {std::move(type_params)}, superclasses {std::move(superclasses)}, namespace_items {std::move(namespace_items)}, initializers {std::move(initializers)}, declarations {std::move(declarations)} {}
+  Class(const Token* identifier, std::vector<Token*> type_params, std::vector<Param> constructor_params, std::vector<std::pair<SyntacticTypePtr, std::vector<ExprNode>>> supertypes, std::vector<StmtNode> namespace_items, StmtNode initializer, std::vector<StmtNode> declarations) : identifier {identifier}, type_params {std::move(type_params)}, constructor_params {std::move(constructor_params)}, supertypes {std::move(supertypes)}, namespace_items {std::move(namespace_items)}, initializer {std::move(initializer)}, declarations {std::move(declarations)} {}
 
   std::any accept(StmtVisitorAny& visitor) override {
     return visitor.visit_class_stmt_any(*this);
@@ -573,9 +549,10 @@ export class Statements::Class : public Stmt {
 
   const Token* identifier {};
   const std::vector<Token*> type_params {};
-  const std::vector<Token*> superclasses {};
+  const std::vector<Param> constructor_params {};
+  const std::vector<std::pair<SyntacticTypePtr, std::vector<ExprNode>>> supertypes {};
   const std::vector<StmtNode> namespace_items {};
-  const std::vector<StmtNode> initializers {};
+  const StmtNode initializer {};
   const std::vector<StmtNode> declarations {};
 };
 

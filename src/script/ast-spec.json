@@ -34,11 +34,6 @@
 				{"type": "StmtNode", "name": "body", "move": true}
 			]
 		}, {
-			"name": "Initializer", "fields": [
-				{"type": "std::vector<Param>", "name": "params", "move": true},
-				{"type": "StmtNode", "name": "body", "move": true}
-			]
-		}, {
 			"name": "Method", "fields": [
 				{"type": "Token*", "name": "identifier"},
 				{"type": "std::vector<Param>", "name": "params", "move": true},
@@ -49,9 +44,10 @@
 			"name": "Class", "fields": [
 				{"type": "Token*", "name": "identifier"},
 				{"type": "std::vector<Token*>", "name": "type_params", "move": true},
-				{"type": "std::vector<Token*>", "name": "superclasses", "move": true},
+				{"type": "std::vector<Param>", "name": "constructor_params", "move": true},
+				{"type": "std::vector<std::pair<SyntacticTypePtr, std::vector<ExprNode>>>", "name": "supertypes", "move": true},
 				{"type": "std::vector<StmtNode>", "name": "namespace_items", "move": true},
-				{"type": "std::vector<StmtNode>", "name": "initializers", "move": true},
+				{"type": "StmtNode", "name": "initializer", "move": true},
 				{"type": "std::vector<StmtNode>", "name": "declarations", "move": true}
 			]
 		}, {

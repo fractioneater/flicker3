@@ -1,7 +1,10 @@
 using "test/bagel2.fl"
 
-class ColorHSL is Bool
-  init(var h: Number, var s: Number, var l: Number)
+class ColorHSL(var h: Number, var s: Number, var l: Number)
+  is Bool
+
+  init
+    print "color"
 
   val name = "test color"
 

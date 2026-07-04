@@ -44,6 +44,7 @@ class SyntacticType {
   public:
   virtual ~SyntacticType() = default;
   [[nodiscard]] virtual TypeKind kind() const = 0;
+  [[nodiscard]] virtual std::string to_string() const = 0;
 };
 
 export using SyntacticTypePtr = std::shared_ptr<SyntacticType>;
@@ -54,6 +55,7 @@ export struct NamedType final : SyntacticType {
 
   explicit NamedType(std::string name, const Token* token) : name {std::move(name)}, identifier {token} {}
   [[nodiscard]] TypeKind kind() const override { return TypeKind::NAMED; }
+  [[nodiscard]] std::string to_string() const override { return name; }
 };
 
 export struct AppliedType final : SyntacticType {
@@ -62,6 +64,16 @@ export struct AppliedType final : SyntacticType {
 
   AppliedType(const SyntacticTypePtr& constructor, std::vector<SyntacticTypePtr> args) : constructor {std::move(constructor)}, args {std::move(args)} {}
   [[nodiscard]] TypeKind kind() const override { return TypeKind::APPLIED; }
+  [[nodiscard]] std::string to_string() const override { return constructor->to_string() + " of " + args_to_string(); }
+
+  [[nodiscard]] std::string args_to_string() const {
+    std::string result {};
+    for (const auto& arg : args) {
+      if (arg != args.front()) result += " ";
+      result += arg->to_string();
+    }
+    return result;
+  }
 };
 
 export struct OptionalType final : SyntacticType {
@@ -69,6 +81,7 @@ export struct OptionalType final : SyntacticType {
 
   explicit OptionalType(const SyntacticTypePtr& inner) : inner {std::move(inner)} {}
   [[nodiscard]] TypeKind kind() const override { return TypeKind::OPTIONAL; }
+  [[nodiscard]] std::string to_string() const override { return inner->to_string() + "?"; }
 };
 
 export struct FunctionType final : SyntacticType {
@@ -77,6 +90,16 @@ export struct FunctionType final : SyntacticType {
 
   FunctionType(std::vector<SyntacticTypePtr> params, const SyntacticTypePtr& return_type) : params {std::move(params)}, return_type {std::move(return_type)} {}
   [[nodiscard]] TypeKind kind() const override { return TypeKind::FUNCTION; }
+
+  [[nodiscard]] std::string to_string() const override {
+    std::string result {"("};
+    for (const auto& param : params) {
+      if (param != params.front()) result += ", ";
+      result += param->to_string();
+    }
+    result += ") -> " + return_type->to_string();
+    return result;
+  }
 };
 
 export struct NamespacedType final : SyntacticType {
@@ -88,6 +111,15 @@ export struct NamespacedType final : SyntacticType {
     : namespace_path {std::move(namespace_path)}, name {std::move(name)}, where {token} {}
 
   [[nodiscard]] TypeKind kind() const override { return TypeKind::NAMESPACED; }
+  [[nodiscard]] std::string to_string() const override {
+    std::string result {};
+    for (const auto& path_name : namespace_path) {
+      result += path_name;
+      result += "::";
+    }
+    result += name;
+    return result;
+  }
 };
 
 /**

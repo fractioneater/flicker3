@@ -18,9 +18,23 @@ import std;
 #define VISIT accept(*this)
 
 struct ScopeFrame {
+  /**
+   * The symbols (objects, types, and namespaces) defined in the scope.
+   */
   SymbolTable locals {};
+  /**
+   * Objects, types, and namespaces imported into the scope. These will not be exported, even if their name is requested to be.
+   */
   SymbolTable imports {};
+  /**
+   * Arena ID for the current class, if the scope is for a class instead of a block.
+   * Use current_class() to get the ID of the innermost class (or std::nullopt if there is no class in scope).
+   */
+  std::optional<TypeId> class_id {};
 };
+
+// These two types of context frames (loop and function) don't define any identifiers, so they can be separated from the symbol table stack.
+// Any scope that does define identifiers must be consolidated into ScopeFrame. RIP ClassFrame.
 
 struct LoopFrame {
   bool labeled {};
@@ -33,18 +47,9 @@ struct FunctionFrame {
   /**
    * Used to check return statements against the function's return type and infer the return type from returns.
    * Token* points to the keyword "return," so if the value isn't core_types().unit_t, the token plus one should be the start of the value expr.
-   * It is possible for the type to be invalid, only in the case where a return value is not inferrable.
+   * It is possible for the type to be invalid, but only in the case where a return value is not inferrable.
    */
   std::vector<std::pair<TypeId, const Token*>> returns {};
-};
-
-struct ClassFrame {
-  /**
-   * The class's type. This should never be invalid.
-   */
-  TypeId id;
-
-  explicit ClassFrame(TypeId this_id) : id {this_id} {}
 };
 
 // Tiny interface for some fun exceptions.
@@ -69,9 +74,6 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
   std::vector<LoopFrame> loops_ {};
   // Function contexts (for return types).
   std::vector<FunctionFrame> functions_ {};
-  // Class contexts (for superclass).
-  std::vector<ClassFrame> classes_ {};
-  // TODO: Consider one stack for all contexts (for variable resolution in class scope).
 
   void report_error(
     const std::string& message, const Token* error_token, Diagnostic::Severity severity = Diagnostic::ERROR, const Diagnostic* context = nullptr
@@ -217,8 +219,6 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
     }
   }
 
-  void visit_initializer_stmt(const Statements::Initializer& stmt) override {} // TODO: Not implemented
-
   void visit_method_stmt(const Statements::Method& stmt) override {
     // See visit_function_stmt() for more explanation of what's going on here.
     begin_scope();
@@ -259,77 +259,113 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
       // Return checking
       if (rule_return_type == MethodRule::ReturnRestriction::BOOL && sig.return_type != host_.core_types().bool_t)
         report_error("Method must return a Bool", stmt.identifier);
-      else if (rule_return_type == MethodRule::ReturnRestriction::THIS && sig.return_type != classes_.back().id)
-        report_error(std::format("Method must return the current class type ('{}')", host_.type_arena().to_string(classes_.back().id)), stmt.identifier);
+      else if (rule_return_type == MethodRule::ReturnRestriction::THIS && sig.return_type != *current_class())
+        report_error(std::format("Method must return the current class type ('{}')", host_.type_arena().to_string(*current_class())), stmt.identifier);
     } else return;
 
     const TypeId sig_id {host_.type_arena().add(sig)};
-    const auto [result, new_type] {overload(stmt.identifier, sig_id, rule_name, host_.type_arena().member_type(classes_.back().id, rule_name))};
+    const auto [result, new_type] {overload(stmt.identifier, sig_id, rule_name, host_.type_arena().member_type(*current_class(), rule_name))};
 
     if (result == OverloadResult::Kind::UPDATE) {
-      host_.type_arena().edit_member_type(classes_.back().id, rule_name, new_type);
+      host_.type_arena().edit_member_type(*current_class(), rule_name, new_type);
     } else if (result == OverloadResult::Kind::CREATE) {
-      // Doesn't exist yet. Create a temporary scope then put it into the class.
+      // Doesn't exist yet. Create a temporary scope, then put it into the class.
       begin_scope();
       add_object_safe(stmt.identifier, {false, host_.type_arena().add(OverloadSet {rule_name, {sig_id}})});
-      store_scope_as_members(classes_.back().id);
+      store_scope_as_members();
     }
   }
 
   void visit_class_stmt(const Statements::Class& stmt) override {
-    // Define class early so we can use it inside itself.
+    // Create the class type, but we won't define it in the scope yet.
     const TypeId t {host_.type_arena().new_named(std::string {stmt.identifier->src_string}, static_cast<int>(stmt.type_params.size()))};
-    add_type_safe(stmt.identifier, t);
 
-    // Find supertypes.
-    std::vector<TypeId> supertypes {};
-    for (const auto super : stmt.superclasses) {
-      if (const auto type {find_type(std::string {super->src_string})})
-        supertypes.emplace_back(*type);
-      else report_error(std::format("Unresolved reference to type '{}'", super->src_string), super);
-    }
-    // And if it doesn't have something else to link it to Any, we'll fix that.
-    if (supertypes.empty() && t != host_.core_types().any_t) supertypes.emplace_back(host_.core_types().any_t);
-    host_.type_arena().define_supertypes(t, std::move(supertypes));
+    ScopeFrame& class_containing_scope {scopes_.back()};
+    begin_scope();
+    ScopeFrame& class_scope {scopes_.back()};
 
     // Define type params.
-    begin_scope();
-    for (auto param_iter {std::begin(stmt.type_params)}; param_iter != std::end(stmt.type_params); ++param_iter) {
+    for (auto param_iter {std::begin(stmt.type_params)}; param_iter != std::end(stmt.type_params); ++param_iter)
       add_type_safe(
         *param_iter,
         host_.type_arena().add(TypeParam {static_cast<int>(param_iter - std::begin(stmt.type_params)), std::string {stmt.identifier->src_string}})
       );
+
+    std::vector<std::pair<const Token*, ObjectSymbol>> ctor_only_params {};
+    for (const auto& [identifier, param_type, modifier] : stmt.constructor_params) {
+      if (modifier == Param::NONE) {
+        // Put it in the scope that only superclass initializers and init block can access.
+        ctor_only_params.emplace_back(identifier, ObjectSymbol {true, resolve_syntactic_type(param_type)});
+      } else {
+        // Put it in the class scope as a field.
+        add_object_safe(identifier, {modifier == Param::VAR, resolve_syntactic_type(param_type)});
+      }
     }
+    // TODO FIRST: Store constructor in class in arena
 
-    classes_.emplace_back(t); // This marks the start of the region where 'this' is allowed.
+    // Superclass initializers may use constructor-only params (without var or val prefix), so we open a temporary scope and toss them in.
+    begin_scope();
+    for (const auto& [token, symbol] : ctor_only_params) add_object_safe(token, symbol);
 
-    // Visit namespace items.
+    // Find supertypes.
+    std::vector<TypeId> supertypes {};
+    for (const auto& [syntactic_t, args] : stmt.supertypes) {
+      for (const auto& arg : args) arg->VISIT;
+      if (const auto semantic_t {resolve_syntactic_type(syntactic_t)})
+        // TODO SECOND: With constructors stored in the arena validate superclass constructors and type params
+        supertypes.emplace_back(semantic_t);
+      else report_error(std::format("Unresolved reference to type '{}'", syntactic_t->to_string()), nullptr); // TODO: Where?
+    }
+    end_scope(); // End the temp scope for constructor-only params.
+
+    // TODO THIRD: Fix this somehow: currently, String isn't a subclass of Sequence because it's a subclass of "Sequence of Char" instead.
+
+    // And if it doesn't have something else to link it to Any, we'll fix that.
+    if (supertypes.empty() && t != host_.core_types().any_t) supertypes.emplace_back(host_.core_types().any_t);
+    host_.type_arena().define_supertypes(t, std::move(supertypes));
+
+    // Now it's time to define the class name so it can be used inside itself.
+    add_type_safe(stmt.identifier, t);
+
+    // Visit namespace items first—they don't need anything but the constructor to be declared already, but other members rely on them being declared.
     if (!stmt.namespace_items.empty()) {
       begin_scope();
       for (const auto& it : stmt.namespace_items) it->VISIT;
-      store_scope_as_namespace(stmt.identifier);
-      // TODO: Also put the items in the outer scope for in-class access.
+      // Namespace definitions are treated as imports to the class.
+      const auto& [o, t, n] {scopes_.back().locals};
+      class_scope.imports.objects    = o;
+      class_scope.imports.types      = t;
+      class_scope.imports.namespaces = n;
+      // And then the scope is ended with this, which puts everything into a namespace in the scope outside the class.
+      store_scope_as_namespace(class_containing_scope, stmt.identifier);
     }
 
-    // Visit declarations before initializers to avoid "this" prefix.
+    scopes_.back().class_id = t; // This marks the start of the region where 'this' is allowed.
+
+    // This needs to be inside the class scope to make members accessible in the initializer.
     for (const auto& it : stmt.declarations) it->VISIT;
 
-    // Visit initializers.
-    if (!stmt.initializers.empty()) {
+    // Visit initializer. It can actually be null (as opposed to just Statements::Pass), so it's best to use an if check.
+    if (stmt.initializer) {
+      // And because nothing inside it needs to be stored, we'll just use a temporary scope.
       begin_scope();
-      for (const auto& it : stmt.initializers) it->VISIT;
-      end_scope(); // But store in class... TODO.
+      // Another benefit of this temporary scope: it's simple to throw in the constructor-only parameters to make them accessible here.
+      for (const auto& [token, symbol] : ctor_only_params) add_object_safe(token, symbol);
+      stmt.initializer->VISIT;
+      end_scope();
     }
 
-    // Leave scopes.
-    classes_.pop_back();
-    store_scope_as_members(t);
+    // Storing as members will also add any type params and the class's name to the type table, but that's okay, because a class's
+    // type table is never used—I think.
+    store_scope_as_members(); // End class scope.
+    // Yes, this happened above, and now it's happening below. It's because this is the outer scope.
+    add_type_safe(stmt.identifier, t);
   }
 
   void visit_namespace_stmt(const Statements::Namespace& stmt) override {
     begin_scope();
     for (const auto& it : stmt.declarations) it->VISIT;
-    store_scope_as_namespace(stmt.identifier);
+    store_scope_as_namespace(scopes_.back(), stmt.identifier);
   }
 
   void visit_import_stmt(const Statements::Import& stmt) override {
@@ -354,7 +390,7 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
         import_type_safe(stmt.path, name, type);
       for (const auto& [name, ns] : namespaces)
         import_namespace_safe(stmt.path, name, ns);
-      store_scope_as_namespace(stmt.path, name);
+      store_scope_as_namespace(scopes_.back(), stmt.path, name);
     } else if (stmt.import_all) {
       // Import all by name.
       // The first (and only) token in stmt.imports is the '.' or '*' character.
@@ -643,11 +679,11 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
   }
 
   void visit_this_expr(const Expressions::This& expr) override {
-    if (classes_.empty()) {
+    if (!current_class()) {
       report_error("'this' expression outside of class", expr.identifier);
       return;
     }
-    expr.type = classes_.back().id;
+    expr.type = *current_class();
   }
 
   void visit_super_expr(const Expressions::Super& expr) override {} // TODO: Not implemented
@@ -684,6 +720,12 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
     // TODO: I feel like I should give back some helpful context from this. loop_id_with_label() returns how many loops to break from, but that info is ignored.
   }
 
+  /**
+   * Parses a syntactic type and converts it to a semantic type in the type arena, reporting all errors.
+   * May return TypeId::INVALID.
+   * @param type Syntactic type
+   * @return Arena type ID
+   */
   TypeId resolve_syntactic_type(const SyntacticTypePtr& type) {
     switch (type->kind()) {
       case TypeKind::NAMED: {
@@ -743,21 +785,22 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
   }
 
   /**
-   * Moves the current scope's objects and types to the member table of a class, and ends the scope.
-   * @param t Named class TypeId to add object symbol table to
+   * Moves the current scope's objects and types to the member table of the current class and ends the scope.
    */
-  void store_scope_as_members(TypeId t) {
-    host_.type_arena().add_members(t, std::move(scopes_.back().locals.objects), std::move(scopes_.back().locals.types));
+  void store_scope_as_members() {
+    if (const auto t {current_class()})
+      host_.type_arena().add_members(*t, std::move(scopes_.back().locals.objects), std::move(scopes_.back().locals.types));
     end_scope();
   }
 
   /**
-   * Moves the current scope's objects to a namespace, and ends the scope.
+   * Moves the current scope's objects to a namespace and ends the scope.
+   * @param location Scope to add the namespace to
    * @param token Identifier token for error reporting
-   * @param name Optional name if different from error reporting token
+   * @param name Optional name if different from the error reporting token
    */
-  void store_scope_as_namespace(const Token* const token, const std::optional<std::string>& name = std::nullopt) {
-    const auto temp {std::make_shared<SymbolTable>(scopes_.back().locals)};
+  void store_scope_as_namespace(ScopeFrame& location, const Token* const token, const std::optional<std::string>& name = std::nullopt) {
+    const auto temp {std::make_shared<SymbolTable>(location.locals)};
     end_scope();
     add_namespace_safe(token, temp, name);
   }
@@ -924,6 +967,12 @@ export class Analyzer : public StmtVisitorVoid, public ExprVisitorVoid, Searchab
       }
     }
     return false;
+  }
+
+  [[nodiscard]] std::optional<TypeId> current_class() const {
+    for (auto it {scopes_.rbegin()}; it != scopes_.rend(); ++it)
+      if (it->class_id) return it->class_id;
+    return std::nullopt;
   }
 
   struct MethodRule {

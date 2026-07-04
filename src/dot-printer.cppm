@@ -53,13 +53,6 @@ class DotTreeWalker {
       owner_.walk(stmt.body, parent_id);
     }
 
-    void visit_initializer_stmt(const Statements::Initializer& stmt) override {
-      const int parent_id {owner_.current_parent_id_};
-      for (const auto& [_, type, _1] : stmt.params)
-        owner_.walk(type, parent_id);
-      owner_.walk(stmt.body, parent_id);
-    }
-
     void visit_method_stmt(const Statements::Method& stmt) override {
       const int parent_id {owner_.current_parent_id_};
       for (const auto& [_, type, _1] : stmt.params)
@@ -73,8 +66,8 @@ class DotTreeWalker {
       const int parent_id {owner_.current_parent_id_};
       for (const auto& a : stmt.namespace_items)
         owner_.walk(a, parent_id);
-      for (const auto& a : stmt.initializers)
-        owner_.walk(a, parent_id);
+      if (stmt.initializer)
+        owner_.walk(stmt.initializer, parent_id);
       for (const auto& a : stmt.declarations)
         owner_.walk(a, parent_id);
     }
@@ -287,18 +280,6 @@ class DotTreeWalker {
       return blah;
     }
 
-    std::string visit_initializer_stmt(const Statements::Initializer& stmt) override {
-      std::string blah {"init "};
-      blah += "(";
-      for (std::size_t i {0}; i < stmt.params.size(); ++i) {
-        if (i > 0) blah += ", ";
-        blah += stmt.params[i].identifier->src_string;
-      }
-      blah += ")";
-
-      return blah;
-    }
-
     std::string visit_method_stmt(const Statements::Method& stmt) override {
       std::string blah {"method "};
       blah += stmt.identifier->src_string;
@@ -328,11 +309,11 @@ class DotTreeWalker {
         }
       }
       // Superclasses.
-      if (!stmt.superclasses.empty()) {
+      if (!stmt.supertypes.empty()) {
         blah += " is ";
-        for (int i {0}; i < stmt.superclasses.size(); ++i) {
+        for (int i {0}; i < stmt.supertypes.size(); ++i) {
           if (i > 0) blah += ", ";
-          blah += stmt.superclasses[i]->src_string;
+          blah += stmt.supertypes[i].first->to_string();
         }
       }
       return blah;

@@ -164,8 +164,10 @@ export class Parser {
    */
   Token* expect(TokenType type, std::string_view message, Token* error_token = nullptr, std::optional<Diagnostic> context = std::nullopt) {
     error_token = error_token == nullptr ? current_ : error_token;
-    if (!match(type))
+    if (!match(type)) {
       report_error(std::string {message}, error_token, Diagnostic::ERROR, context);
+      return nullptr;
+    }
     return previous_;
   }
 
@@ -322,10 +324,10 @@ export class Parser {
   }
 
   StmtNode class_declaration() {
-    // Property 1: Name
+    // Name
     const Token* name {expect(TOKEN_IDENTIFIER, "Expecting a class name")};
 
-    // Property 2: Type parameters
+    // Type parameters
     std::vector<Token*> type_params {};
     if (match_generic()) {
       if (!check(TOKEN_IDENTIFIER)) report_error("Expecting a type parameter", current_);
@@ -333,46 +335,104 @@ export class Parser {
         type_params.emplace_back(previous_);
     }
 
-    // Property 3: Superclass
-    std::vector<Token*> superclasses {};
-    if (match(TOKEN_IS)) {
-      do {
-        superclasses.emplace_back(expect(TOKEN_IDENTIFIER, "Expecting a superclass name"));
-      } while (match(TOKEN_COMMA));
+    // Primary constructor parameters (optional)
+    std::vector<Param> constructor_params {};
+    if (match(TOKEN_LEFT_PAREN)) {
+      constructor_params = parse_list<Param>(
+        TOKEN_RIGHT_PAREN, [this] {
+          auto mod {Param::Modifier::NONE};
+          if (match(TOKEN_VAL)) mod = Param::Modifier::VAL;
+          else if (match(TOKEN_VAR)) mod = Param::Modifier::VAR;
+
+          const auto id {expect(TOKEN_IDENTIFIER, "Expecting a parameter name")};
+          expect(TOKEN_COLON, "Expecting ':' then a parameter type");
+          return Param {id, standard_type("a type for this parameter", true), mod};
+        }
+      );
+      expect(TOKEN_RIGHT_PAREN, "Expecting ')' after parameter list");
     }
 
-    // Properties 4, 5 & 6: Contents
+    // Contents
     match_line();
+    if (previous_->type != TOKEN_LINE)
+      report_error(
+        "Expecting a line break before the class body", current_, Diagnostic::ERROR,
+        Diagnostic {"Supertypes belong inside the body, not in the header line", Diagnostic::NOTE}
+      );
     expect(TOKEN_INDENT, "Expecting indentation to increase when class block begins");
+    match_line(); // CONSIDER: Is this necessary?
 
+    using SuperArgs = std::vector<ExprNode>;
+    using Supertype = std::pair<SyntacticTypePtr, SuperArgs>;
+    std::vector<Supertype> supertypes {};
+    bool seen_non_supertype {false};
     std::vector<StmtNode> namespace_items {};
-    if (match(TOKEN_NAMESPACE))
-      namespace_items = parse_block<StmtNode>(true, "class namespace", [this] { return declaration_in_namespace(); });
-    match_line();
-
     std::vector<StmtNode> declarations {};
-    std::vector<StmtNode> initializers {};
+    StmtNode initializer {};
     while (!check(TOKEN_DEDENT)) {
-      if (check(TOKEN_EOF)) return nullptr; // No class body (error case).
-
-      // TODO: Access specifiers/things.
-      if (match(TOKEN_VAL)) declarations.emplace_back(val_declaration());
-      else if (match(TOKEN_VAR)) declarations.emplace_back(var_declaration());
-      else if (match(TOKEN_FUN)) declarations.emplace_back(method());
-      else if (check(TOKEN_IDENTIFIER) && current_->src_string == "init")
-        initializers.emplace_back(initializer());
-      else if (match(TOKEN_CLASS)) declarations.emplace_back(class_declaration());
-      else if (match(TOKEN_USING)) declarations.emplace_back(using_declaration());
-
-      else if (unexpected_indent()) continue;
-      else if (match(TOKEN_NAMESPACE)) {
-        if (namespace_items.empty())
-          report_error("Namespace must come first", previous_);
-        else
-          report_error("Classes can only have one namespace", previous_);
-      } else {
-        report_error("Invalid class item—expecting a namespace, initializer, method, or variable declaration", current_);
-        advance();
+      switch (current_->type) {
+        case TOKEN_EOF:
+          return nullptr; // No class body (error case).
+        case TOKEN_IS: {
+          advance();
+          if (seen_non_supertype) report_error("Supertypes must be declared above any other class member", previous_);
+          const SyntacticTypePtr type {standard_type("a supertype for this class", true)};
+          std::vector<ExprNode> args {};
+          if (match(TOKEN_LEFT_PAREN)) {
+            args = parse_list<ExprNode>(TOKEN_RIGHT_PAREN, [this] { return parse_expression(); });
+            expect(TOKEN_RIGHT_PAREN, "Expecting ')' after supertype constructor parameters");
+          }
+          supertypes.emplace_back(type, std::move(args));
+          break;
+        }
+        case TOKEN_VAL:
+          advance();
+          seen_non_supertype = true;
+          declarations.emplace_back(val_declaration());
+          break;
+        case TOKEN_VAR:
+          advance();
+          seen_non_supertype = true;
+          declarations.emplace_back(var_declaration());
+          break;
+        case TOKEN_FUN:
+          advance();
+          seen_non_supertype = true;
+          declarations.emplace_back(method());
+          break;
+        case TOKEN_CLASS:
+          advance();
+          seen_non_supertype = true;
+          declarations.emplace_back(class_declaration());
+          break;
+        case TOKEN_USING:
+          advance();
+          // This may be the one thing that can go above supertypes. TODO: Put more thought into it.
+          declarations.emplace_back(using_declaration());
+          break;
+        case TOKEN_NAMESPACE:
+          advance();
+          seen_non_supertype = true;
+          if (namespace_items.empty())
+            namespace_items = parse_block<StmtNode>(true, "class namespace", [this] { return declaration_in_namespace(); });
+          else report_error("Classes can only have one namespace", previous_);
+          break;
+        case TOKEN_INDENT:
+          unexpected_indent();
+          continue;
+        case TOKEN_IDENTIFIER:
+          // TODO: Access specifiers.
+          if (current_->src_string == "init") {
+            seen_non_supertype = true;
+            advance();
+            if (initializer) report_error("Classes can only have one initializer", previous_);
+            initializer = block_or_statement();
+            break;
+          }
+        // Notice how there's no break here. THIS CASE MUST BE RIGHT BEFORE DEFAULT TO GET THE SAME ERROR!
+        default:
+          report_error("Invalid class item—expecting a namespace, initializer, method, or variable declaration", current_);
+          advance();
       }
 
       if (panic_mode_) synchronize();
@@ -382,7 +442,7 @@ export class Parser {
     }
     advance(); // Match the dedent we've already checked for.
 
-    return std::make_shared<Statements::Class>(name, type_params, superclasses, namespace_items, initializers, declarations);
+    return std::make_shared<Statements::Class>(name, type_params, constructor_params, supertypes, namespace_items, initializer, declarations);
   }
 
   StmtNode namespace_declaration() {
@@ -417,43 +477,6 @@ export class Parser {
     const Token* name {expect(TOKEN_IDENTIFIER, "Expecting either a type alias name or a path for an import file")};
     expect(TOKEN_EQ, "Expecting '=' and a type to create alias for");
     return std::make_shared<Statements::Typealias>(name, broad_type());
-  }
-
-  StmtNode initializer() {
-    // Consume the 'init' word—it was checked, not matched.
-    advance();
-
-    expect(TOKEN_LEFT_PAREN, "Expecting '(' to start a parameter list");
-    std::vector params {
-      parse_list<Param>(
-        TOKEN_RIGHT_PAREN, [this] {
-          auto mod {Param::Modifier::NONE};
-          if (match(TOKEN_VAL)) mod = Param::Modifier::VAL;
-          else if (match(TOKEN_VAR)) mod = Param::Modifier::VAR;
-
-          const auto id {expect(TOKEN_IDENTIFIER, "Expecting a parameter name")};
-          expect(TOKEN_COLON, "Expecting ':' then a parameter type");
-          return Param {id, standard_type("a type for this parameter", true), mod};
-        }
-      )
-    };
-    expect(TOKEN_RIGHT_PAREN, "Expecting ')' after parameter list");
-
-    // Initializers can do so much in the parameters that they often don't need a body:
-    // init(val x: Number)
-    bool no_body {false};
-
-    if (match(TOKEN_EQ)) report_error("Cannot return from initializer", previous_);
-    else if (check(TOKEN_LINE)) {
-      // Look ahead to see if there is a body.
-      const Token* lookahead {current_};
-      while (lookahead->type == TOKEN_LINE) ++lookahead;
-      if (lookahead->type != TOKEN_INDENT && lookahead->type != TOKEN_DO)
-        no_body = true;
-    }
-    StmtNode body {no_body ? std::make_shared<Statements::Pass>() : block_or_statement()};
-
-    return std::make_shared<Statements::Initializer>(params, body);
   }
 
   StmtNode method() {
